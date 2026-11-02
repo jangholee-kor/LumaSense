@@ -2,6 +2,7 @@
 import argparse
 from dataclasses import asdict
 import json
+import math
 import time
 import uuid
 
@@ -13,8 +14,10 @@ from windows.core.watchdog import recovery_window_seconds, validate_timing
 
 
 def brightness_sweep(backend, monitor, log, sleep=time.sleep):
-    if monitor.brightness is None or not float(monitor.brightness).is_integer():
+    if (monitor.brightness is None or not math.isfinite(monitor.brightness)
+            or not math.isclose(monitor.brightness, round(monitor.brightness), rel_tol=0, abs_tol=1e-6)):
         raise ValueError("기존 밝기를 복원할 수 없어 시험을 중단합니다.")
+    restore_percent = round(monitor.brightness)
     test_id = uuid.uuid4().hex
     log.event("sweep_started", test_id=test_id, monitor=asdict(monitor))
     try:
@@ -26,13 +29,14 @@ def brightness_sweep(backend, monitor, log, sleep=time.sleep):
                       physical_result="unverified")
             print(f"밝기 {percent}% 요청 / Twinkle Tray 보고 {reported.brightness}%", flush=True)
     finally:
-        backend.set_brightness(monitor.identifier, int(monitor.brightness))
+        backend.set_brightness(monitor.identifier, restore_percent)
         sleep(2)
         restored = next(m for m in backend.monitors() if m.identifier == monitor.identifier)
-        log.event("brightness_restored", test_id=test_id, requested=monitor.brightness, reported=restored.brightness)
-        if restored.brightness != monitor.brightness:
+        log.event("brightness_restored", test_id=test_id, requested=restore_percent, reported=restored.brightness)
+        if (restored.brightness is None
+                or not math.isclose(restored.brightness, restore_percent, rel_tol=0, abs_tol=1e-6)):
             raise RuntimeError("Twinkle Tray 보고 밝기가 원래 값과 다릅니다. 수동 확인이 필요합니다.")
-    print(f"기존 밝기 {monitor.brightness}% 복원 요청 완료. 시험 ID: {test_id}", flush=True)
+    print(f"기존 밝기 {restore_percent}% 복원 요청 완료. 시험 ID: {test_id}", flush=True)
     return test_id
 
 
