@@ -1,5 +1,6 @@
 """Checks recorded physical acceptance, never infers it from API return codes."""
 import json
+import argparse
 from pathlib import Path
 
 
@@ -22,12 +23,15 @@ def pending_items(record):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="실물 검증 상태를 보고하며 구현을 차단하지 않습니다.")
+    parser.add_argument("--require-physical", action="store_true", help="실물 검증 미충족 시 종료 코드 1")
+    args = parser.parse_args()
     path = Path(__file__).resolve().parents[1] / "docs/phase1-validation.json"
     pending = pending_items(json.loads(path.read_text(encoding="utf-8")))
     if pending:
-        print("Phase 2 진입 대기: " + ", ".join(pending))
-        return 1
-    print("기록된 Phase 1 실기 검증 기준 충족. Phase 2 개발을 시작할 수 있습니다.")
+        print("실물 검증 대기 (후속 구현 가능): " + ", ".join(pending))
+        return 1 if args.require_physical else 0
+    print("기록된 Phase 1 실기 검증 기준 충족.")
     return 0
 
 

@@ -37,13 +37,15 @@ powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1 --sleep-test --met
 ## 개발 단계
 
 Phase 1 구현과 대상 모니터의 실기 검증은 [검증 상태](docs/phase1-validation.json)로 추적한다.
-실기 검증 결과를 기록한 뒤 아래 명령으로 Phase 2 진입 조건을 확인한다.
+아래 명령으로 실기 검증 대기 항목을 확인한다.
+실물 검증 대기 상태에서도 후속 펌웨어와 프로그램을 구현할 수 있다.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\check_phase1.ps1
 ```
 
-Phase 2의 ESP-IDF 펌웨어는 [하드웨어 확인 항목](docs/hardware.md)을 확인하고 시작한다.
+실물 검증을 필수 검사로 사용할 때만 `--require-physical` 옵션을 추가한다.
+Phase 2의 ESP-IDF 펌웨어 배선과 메모리 설정은 [하드웨어 확인 항목](docs/hardware.md)을 참고한다.
 Phase 3부터 USB 통신, 자동 밝기, 인체 감지 제어를 독립 모듈로 연결한다.
 
 ## 구성
