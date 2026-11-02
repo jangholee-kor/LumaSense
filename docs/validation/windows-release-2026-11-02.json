@@ -1,0 +1,19 @@
+{
+  "version": "0.3.0",
+  "source_commit": "8c34cae4b3cf3c3506cde6e19672d4212d0aa5b3",
+  "source_dirty_at_packaging": false,
+  "archive": ".local/releases/LumaSense-0.3.0-20261102.zip",
+  "archive_bytes": 50084250,
+  "archive_sha256": "4f12d73af2fd6017611ae36f0710f87f8a076568fae628ea434c69f155d5fa8f",
+  "manifest_file_count": 230,
+  "manifest_file_hash_check": "pass",
+  "zip_integrity": "pass",
+  "exe_sha256": "fe842512af2f68b855906a4913816daf37eb227c928a1f62dab15af4c2f9f0e8",
+  "release_folder_checks": {
+    "gui_smoke_and_screenshot": "pass",
+    "watchdog": "pass_simulated",
+    "lease_guard": "pass_simulated"
+  },
+  "physical_validation": "not_run",
+  "real_24h_run": "not_run"
+}
