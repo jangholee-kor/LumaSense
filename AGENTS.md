@@ -1,4 +1,15 @@
-# imagegen-studio 작업 규칙
+# Smart Monitor Controller 작업 규칙
+
+## 프로젝트 범위와 검증
+
+- Windows 11, Python 3.12 이상, PySide6를 사용한다.
+- Phase 1은 센서 없이 Windows 모니터 제어를 검증한다.
+- Philips 32M2N8900의 실제 밝기·절전·복귀 결과가 기록될 때까지 Phase 2 펌웨어 구현으로 넘어가지 않는다.
+- API 반환, Twinkle Tray 보고값, 사용자의 화면 관찰을 구분한다.
+- 화면 절전에는 5초 취소 가능 카운트다운과 독립 복귀 프로세스를 사용한다.
+- DDC/CI VCP 0xD6 전원 제어, PC 절전, 최대 절전, 잠금은 구현하지 않는다.
+- GUI 스레드에서 CLI나 전원 API를 동기 실행하지 않는다.
+- MCU GPIO는 Phase 2에서 실제 모듈 표기와 회로도를 확인한 뒤 확정한다.
 
 ## 한국어 문서와 설명
 
