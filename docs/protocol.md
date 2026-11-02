@@ -8,7 +8,7 @@ ESP32-S3는 J1 ESP USB의 USB Serial/JTAG CDC로 UTF-8 JSON Lines를 전송한�
 ## 센서 데이터
 
 ```json
-{"ver":1,"type":"telemetry","device":"smart-monitor-s3","firmware":"0.2.1","seq":1234,"uptime_ms":258000,"lux":125.5,"light_ok":true,"radar_ok":true,"sensor_ok":true,"presence":true,"moving":false,"stationary":true,"distance_cm":67,"radar_state":2,"moving_distance_cm":0,"stationary_distance_cm":67,"moving_energy":0,"stationary_energy":59,"engineering":false,"errors":[]}
+{"ver":1,"type":"telemetry","device":"smart-monitor-s3","firmware":"0.2.2","seq":1234,"uptime_ms":258000,"lux":125.5,"light_ok":true,"radar_ok":true,"sensor_ok":true,"presence":true,"moving":false,"stationary":true,"distance_cm":67,"radar_state":2,"moving_distance_cm":0,"stationary_distance_cm":67,"moving_energy":0,"stationary_energy":59,"engineering":false,"errors":[]}
 ```
 
 `seq`는 부팅 후 전송마다 증가하며 재부팅 시 다시 0부터 시작한다.<br>
@@ -20,6 +20,7 @@ ESP32-S3는 J1 ESP USB의 USB Serial/JTAG CDC로 UTF-8 JSON Lines를 전송한�
 원시 움직임·정지 거리와 에너지는 별도 필드로 보존한다.<br>
 공학 모드에서는 `moving_gate_energy`, `stationary_gate_energy` 배열에 실제 프레임이 제공한 거리문 수만큼 기록한다.<br>
 추가 진단 필드는 `radar_rejected_frames`, `usb_dropped_lines`, `light_error`, `radar_init_error`, `free_heap`이다.<br>
+0.2.2부터 `main_stack_min_free_bytes`는 메인 작업이 부팅 이후 기록한 최소 스택 여유량을 바이트로 나타낸다.<br>
 구현체는 알 수 없는 추가 필드를 허용하고 버전과 알려진 필드의 형식을 검사한다.
 
 펌웨어 0.2.1은 telemetry와 `get_status` ACK에 다음 `status_led` 진단 객체를 추가한다.

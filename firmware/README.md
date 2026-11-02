@@ -20,6 +20,11 @@ USB Serial/JTAG, 플래시·PSRAM, 부팅 스트랩 핀과 중복되는 설정�
 제공 회로도의 J1 ESP USB를 데이터 통신과 플래시에 사용한다.<br>
 J3는 CP2102에 연결되며 이 펌웨어의 센서 JSON 스트림은 출력하지 않는다.
 
+펌웨어 0.2.2는 메인 작업 스택을 8192바이트 이상으로 설정한다.<br>
+기존 빌드 설정이 더 작으면 컴파일 단계에서 중단하므로 menuconfig의 ESP System Settings에서 Main task stack size를 8192 이상으로 저장한다.<br>
+USB 명령 수신 버퍼는 정적 메모리에 두며 `main_stack_min_free_bytes`로 부팅 이후 메인 스택의 최소 여유량을 보고한다.<br>
+USB JSON 스트림에 일반 로그가 섞이지 않도록 보조 콘솔은 None으로 설정한다.
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\setup_firmware.ps1
 powershell -ExecutionPolicy Bypass -File scripts\build_firmware.ps1

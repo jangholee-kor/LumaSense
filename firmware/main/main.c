@@ -16,6 +16,9 @@
 #include "freertos/task.h"
 
 #define USB_LINE_CAPACITY 2048
+_Static_assert(CONFIG_ESP_MAIN_TASK_STACK_SIZE >= 8192, "Set ESP main task stack size to at least 8192 bytes");
+/* This single-task command buffer must not consume the telemetry/printf stack. */
+static char usb_line[USB_LINE_CAPACITY];
 static bh1750_t light;
 static ld2412_t radar;
 static smc_status_led_t status_led;
@@ -83,7 +86,7 @@ static void telemetry(void) {
     cJSON_AddNumberToObject(root, "ver", 1);
     cJSON_AddStringToObject(root, "type", "telemetry");
     cJSON_AddStringToObject(root, "device", "smart-monitor-s3");
-    cJSON_AddStringToObject(root, "firmware", "0.2.1");
+    cJSON_AddStringToObject(root, "firmware", "0.2.2");
     cJSON_AddNumberToObject(root, "seq", sequence++);
     cJSON_AddNumberToObject(root, "uptime_ms", (double)(now / 1000));
     if (lux_ok) cJSON_AddNumberToObject(root, "lux", lux); else cJSON_AddNullToObject(root, "lux");
@@ -124,6 +127,7 @@ static void telemetry(void) {
     cJSON_AddStringToObject(root, "light_error", esp_err_to_name(light_error));
     cJSON_AddStringToObject(root, "radar_init_error", esp_err_to_name(radar_error));
     cJSON_AddNumberToObject(root, "free_heap", esp_get_free_heap_size());
+    cJSON_AddNumberToObject(root, "main_stack_min_free_bytes", uxTaskGetStackHighWaterMark(NULL));
     led_diagnostics(root);
     send_json(root);
 }
@@ -197,7 +201,7 @@ static void command(const char *line) {
         else if (!strcmp(name->valuestring, "get_status")) {
             result = ESP_OK;
             cJSON_AddStringToObject(reply, "device", "smart-monitor-s3");
-            cJSON_AddStringToObject(reply, "firmware", "0.2.1");
+            cJSON_AddStringToObject(reply, "firmware", "0.2.2");
             cJSON_AddNumberToObject(reply, "report_ms", report_ms);
             cJSON_AddNumberToObject(reply, "sda_gpio", CONFIG_SMC_I2C_SDA);
             cJSON_AddNumberToObject(reply, "scl_gpio", CONFIG_SMC_I2C_SCL);
@@ -247,7 +251,6 @@ void app_main(void) {
         light_error = bh1750_init(&light, CONFIG_SMC_I2C_SDA, CONFIG_SMC_I2C_SCL, CONFIG_SMC_BH1750_ADDR);
         radar_error = ld2412_init(&radar, CONFIG_SMC_RADAR_RX, CONFIG_SMC_RADAR_TX, CONFIG_SMC_RADAR_BAUD);
     }
-    char line[USB_LINE_CAPACITY];
     size_t used = 0;
     bool discard_line = false;
     int64_t next_report = 0, next_read = esp_timer_get_time() + 200000, next_retry = 0;
@@ -273,11 +276,11 @@ void app_main(void) {
         int count = usb_serial_jtag_read_bytes(bytes, sizeof(bytes), 0);
         for (int i = 0; i < count; ++i) {
             if (bytes[i] == '\n') {
-                if (!discard_line && used) { line[used] = 0; command(line); }
+                if (!discard_line && used) { usb_line[used] = 0; command(usb_line); }
                 else if (discard_line) command("{}");
                 used = 0; discard_line = false;
             } else if (bytes[i] != '\r') {
-                if (used + 1 < sizeof(line) && !discard_line) line[used++] = bytes[i];
+                if (used + 1 < sizeof(usb_line) && !discard_line) usb_line[used++] = bytes[i];
                 else discard_line = true;
             }
         }
