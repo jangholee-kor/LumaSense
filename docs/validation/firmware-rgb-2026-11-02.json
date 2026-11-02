@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-02",
+  "firmware": "0.2.1",
+  "target": "esp32s3",
+  "module_user_report": "MCN16R8",
+  "idf_version": "5.5.4",
+  "idf_commit": "735507283d5b2f9fb363a1901172dbd9e847945d",
+  "led": {
+    "schematic_reference": "D10 SK6812MINI-HS",
+    "gpio": 38,
+    "channel_brightness": 4,
+    "max_channel_brightness": 32,
+    "rmt_resolution_hz": 20000000,
+    "wire_order": "GRB_MSB_first",
+    "bit_period_ns": 1250,
+    "zero_high_ns": 300,
+    "one_high_ns": 650,
+    "reset_low_us": 100,
+    "max_tx_wait_ms": 20,
+    "startup_grace_ms": 3000,
+    "red_blink_on_ms": 500,
+    "red_blink_off_ms": 500,
+    "schematic_supply_v": 3.3,
+    "reference_datasheet_supply_v": [3.7, 5.5],
+    "physical_supply_and_color_check": "not_run"
+  },
+  "profiles": [
+    {
+      "profile": "default",
+      "app_bytes": 289136,
+      "merged_bytes": 354672,
+      "merged_sha256": "DAB0092E74B97E4CE153C80425774F89210245F93F1A62345B40DD2C16406300",
+      "zip_sha256": "9b76ceb51f5d74f0f58d7971d9bb8db94cf1948485f10cb6d8b33d2573eacdfd",
+      "psram_configured": false
+    },
+    {
+      "profile": "psram",
+      "app_bytes": 296816,
+      "merged_bytes": 362352,
+      "merged_sha256": "B4CC36A2B4B734753A76A02A4E12BE71B0A8F3340B26BBF4790EFC4A4758C7CE",
+      "zip_sha256": "4231d584b0400f08d2f8bd05377c293502508019e977473828ee38a336b9ad3a",
+      "psram_configured": true
+    },
+    {"profile": "led_disabled", "app_bytes": 289040, "build": "pass", "packaged": false}
+  ],
+  "checks": {
+    "idf_build_default": "pass",
+    "idf_build_psram": "pass",
+    "idf_build_led_disabled": "pass",
+    "native_ld2412_parser": "pass",
+    "native_led_model_gpio_and_timing": "pass",
+    "native_led_driver_mock_transport": "pass",
+    "python_tests": {"passed": 94, "failed": 0},
+    "package_manifest_and_binary_hashes": "pass",
+    "zip_integrity_and_contents": "pass",
+    "powershell_syntax": "pass"
+  },
+  "physical_checks": {
+    "board_flash": "not_run",
+    "actual_rgb_colors_and_blink": "not_run",
+    "sensor_reading": "not_run",
+    "side_facing_bh1750": "not_run",
+    "led_light_interference": "not_run",
+    "psram_initialization": "not_run"
+  }
+}

@@ -1,4 +1,17 @@
 menu "Smart Monitor Controller"
+    config SMC_STATUS_LED_ENABLE
+        bool "Use on-board SK6812MINI-HS RGB sensor status LED"
+        default y
+    config SMC_STATUS_LED_GPIO
+        int "Status RGB LED GPIO (on-board D10: GPIO38)"
+        default 38
+        range 0 48
+        depends on SMC_STATUS_LED_ENABLE
+    config SMC_STATUS_LED_BRIGHTNESS
+        int "Status RGB LED channel brightness (0=off, 4=default, max 32/255)"
+        default 4
+        range 0 32
+        depends on SMC_STATUS_LED_ENABLE
     config SMC_I2C_SDA
         int "BH1750 SDA GPIO (example wiring)"
         default 8

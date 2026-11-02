@@ -21,10 +21,12 @@ try {
         $files += @{ offset=$entry.Name; file=$fileName; sha256=(Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash }
     }
     $sdk = Get-Content -LiteralPath (Join-Path $buildPath 'config\sdkconfig.json') -Raw | ConvertFrom-Json
+    $projectDescription = Get-Content -LiteralPath (Join-Path $buildPath 'project_description.json') -Raw | ConvertFrom-Json
     $manifest = @{
-        firmware='0.2.0'; target='esp32s3'; profile=$profileName; flash_size='16MB'; psram_enabled=[bool]$EnablePsram
+        firmware=$projectDescription.project_version; target='esp32s3'; profile=$profileName; flash_size='16MB'; psram_enabled=[bool]$EnablePsram
         idf_commit=(& git -C $env:IDF_PATH rev-parse HEAD); physical_validation='unverified'
         gpio=@{sda=$sdk.SMC_I2C_SDA;scl=$sdk.SMC_I2C_SCL;radar_rx=$sdk.SMC_RADAR_RX;radar_tx=$sdk.SMC_RADAR_TX}
+        status_led=@{enabled=[bool]$sdk.SMC_STATUS_LED_ENABLE;gpio=$sdk.SMC_STATUS_LED_GPIO;brightness=$sdk.SMC_STATUS_LED_BRIGHTNESS}
         files=$files; merged_sha256=(Get-FileHash -LiteralPath (Join-Path $outputPath 'firmware-merged.bin') -Algorithm SHA256).Hash
     }
     $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $outputPath 'manifest.json') -Encoding UTF8

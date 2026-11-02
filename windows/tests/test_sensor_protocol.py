@@ -39,6 +39,14 @@ def test_errors_are_null_not_false_absence():
     assert validate_telemetry(good)["presence"] is None
 
 
+def test_led_driver_failure_does_not_invalidate_healthy_sensor_data():
+    value = packet(firmware="0.2.1", status_led={"enabled": True, "gpio": 38, "brightness": 4,
+                   "state": "present", "driver_ok": False, "error": "ESP_ERR_TIMEOUT", "requested_rgb": [0, 4, 0]})
+    decoded = JsonLines().feed((json.dumps(value) + "\n").encode())[0]
+    assert validate_telemetry(decoded)["sensor_ok"]
+    assert decoded["status_led"]["driver_ok"] is False
+
+
 def test_select_port_ambiguous_and_explicit():
     devices = [{"port": "COM3", "vid": 0x303a, "pid": 0x1001}]
     assert select_port(available=devices) == "COM3"

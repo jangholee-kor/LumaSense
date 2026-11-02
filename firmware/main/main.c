@@ -6,16 +6,19 @@
 #include "cJSON.h"
 #include "bh1750.h"
 #include "ld2412.h"
+#include "status_led.h"
 #include "driver/gpio.h"
 #include "driver/usb_serial_jtag.h"
 #include "esp_system.h"
 #include "esp_timer.h"
+#include "soc/soc_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 #define USB_LINE_CAPACITY 2048
 static bh1750_t light;
 static ld2412_t radar;
+static smc_status_led_t status_led;
 static bool pins_ok;
 static bool light_ok;
 static float lux;
@@ -48,16 +51,39 @@ static void nullable_bool(cJSON *root, const char *name, bool valid, bool value)
     else cJSON_AddNullToObject(root, name);
 }
 
+static bool radar_valid(int64_t now) {
+    return radar.installed && radar.last_data_us > 0 && radar.latest.sensor_ok &&
+           now - radar.last_data_us <= (int64_t)CONFIG_SMC_RADAR_STALE_MS * 1000;
+}
+
+static bool light_valid(int64_t now) {
+    return light_ok && now - last_light_us < 1000000;
+}
+
+static void led_diagnostics(cJSON *root) {
+    cJSON *led = cJSON_AddObjectToObject(root, "status_led");
+    cJSON_AddBoolToObject(led, "enabled", status_led.enabled);
+    cJSON_AddNumberToObject(led, "gpio", status_led.gpio);
+    cJSON_AddNumberToObject(led, "brightness", status_led.brightness);
+    cJSON_AddBoolToObject(led, "driver_ok", status_led.error == ESP_OK);
+    cJSON_AddStringToObject(led, "error", esp_err_to_name(status_led.error));
+    cJSON_AddStringToObject(led, "state", smc_led_state_name(status_led.frame.state));
+    cJSON_AddNumberToObject(led, "updates", status_led.updates);
+    cJSON *rgb = cJSON_AddArrayToObject(led, "requested_rgb");
+    cJSON_AddItemToArray(rgb, cJSON_CreateNumber(status_led.frame.red));
+    cJSON_AddItemToArray(rgb, cJSON_CreateNumber(status_led.frame.green));
+    cJSON_AddItemToArray(rgb, cJSON_CreateNumber(status_led.frame.blue));
+}
+
 static void telemetry(void) {
     int64_t now = esp_timer_get_time();
-    bool radar_ok = radar.installed && radar.last_data_us > 0 && radar.latest.sensor_ok &&
-                    now - radar.last_data_us <= (int64_t)CONFIG_SMC_RADAR_STALE_MS * 1000;
-    bool lux_ok = light_ok && now - last_light_us < 1000000;
+    bool radar_ok = radar_valid(now);
+    bool lux_ok = light_valid(now);
     cJSON *root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "ver", 1);
     cJSON_AddStringToObject(root, "type", "telemetry");
     cJSON_AddStringToObject(root, "device", "smart-monitor-s3");
-    cJSON_AddStringToObject(root, "firmware", "0.2.0");
+    cJSON_AddStringToObject(root, "firmware", "0.2.1");
     cJSON_AddNumberToObject(root, "seq", sequence++);
     cJSON_AddNumberToObject(root, "uptime_ms", (double)(now / 1000));
     if (lux_ok) cJSON_AddNumberToObject(root, "lux", lux); else cJSON_AddNullToObject(root, "lux");
@@ -98,6 +124,7 @@ static void telemetry(void) {
     cJSON_AddStringToObject(root, "light_error", esp_err_to_name(light_error));
     cJSON_AddStringToObject(root, "radar_init_error", esp_err_to_name(radar_error));
     cJSON_AddNumberToObject(root, "free_heap", esp_get_free_heap_size());
+    led_diagnostics(root);
     send_json(root);
 }
 
@@ -170,12 +197,13 @@ static void command(const char *line) {
         else if (!strcmp(name->valuestring, "get_status")) {
             result = ESP_OK;
             cJSON_AddStringToObject(reply, "device", "smart-monitor-s3");
-            cJSON_AddStringToObject(reply, "firmware", "0.2.0");
+            cJSON_AddStringToObject(reply, "firmware", "0.2.1");
             cJSON_AddNumberToObject(reply, "report_ms", report_ms);
             cJSON_AddNumberToObject(reply, "sda_gpio", CONFIG_SMC_I2C_SDA);
             cJSON_AddNumberToObject(reply, "scl_gpio", CONFIG_SMC_I2C_SCL);
             cJSON_AddNumberToObject(reply, "radar_rx_gpio", CONFIG_SMC_RADAR_RX);
             cJSON_AddNumberToObject(reply, "radar_tx_gpio", CONFIG_SMC_RADAR_TX);
+            led_diagnostics(reply);
         } else if (!strcmp(name->valuestring, "set_reporting")) {
             int interval;
             if (integer_field(request, "interval_ms", 100, 5000, &interval)) {
@@ -193,20 +221,28 @@ static void command(const char *line) {
 }
 
 static bool validate_pins(void) {
-    int pins[] = {CONFIG_SMC_I2C_SDA, CONFIG_SMC_I2C_SCL, CONFIG_SMC_RADAR_RX, CONFIG_SMC_RADAR_TX};
-    for (int i = 0; i < 4; ++i) {
-        if (!GPIO_IS_VALID_OUTPUT_GPIO(pins[i]) || pins[i] == 19 || pins[i] == 20 ||
-            pins[i] == 0 || pins[i] == 3 || pins[i] == 45 || pins[i] == 46 ||
-            (pins[i] >= 26 && pins[i] <= 37)) return false;
-        for (int j = 0; j < i; ++j) if (pins[j] == pins[i]) return false;
-    }
-    return true;
+    const int pins[] = {CONFIG_SMC_I2C_SDA, CONFIG_SMC_I2C_SCL, CONFIG_SMC_RADAR_RX, CONFIG_SMC_RADAR_TX,
+#ifdef CONFIG_SMC_STATUS_LED_ENABLE
+                        CONFIG_SMC_STATUS_LED_GPIO,
+#endif
+    };
+    return smc_gpio_validate(pins, sizeof(pins) / sizeof(pins[0]), SOC_GPIO_VALID_OUTPUT_GPIO_MASK);
 }
 
 void app_main(void) {
     usb_serial_jtag_driver_config_t usb = {.tx_buffer_size = 8192, .rx_buffer_size = 4096};
     ESP_ERROR_CHECK(usb_serial_jtag_driver_install(&usb));
     pins_ok = validate_pins();
+#ifdef CONFIG_SMC_STATUS_LED_ENABLE
+    const int led_pin[] = {CONFIG_SMC_STATUS_LED_GPIO};
+    bool led_pin_usable = smc_gpio_validate(led_pin, 1, SOC_GPIO_VALID_OUTPUT_GPIO_MASK) &&
+                          led_pin[0] != CONFIG_SMC_I2C_SDA && led_pin[0] != CONFIG_SMC_I2C_SCL &&
+                          led_pin[0] != CONFIG_SMC_RADAR_RX && led_pin[0] != CONFIG_SMC_RADAR_TX;
+    smc_status_led_init(&status_led, true, led_pin[0], CONFIG_SMC_STATUS_LED_BRIGHTNESS, led_pin_usable);
+#else
+    smc_status_led_init(&status_led, false, -1, 0, false);
+#endif
+    smc_status_led_update(&status_led, pins_ok, false, false, false, esp_timer_get_time() / 1000);
     if (pins_ok) {
         light_error = bh1750_init(&light, CONFIG_SMC_I2C_SDA, CONFIG_SMC_I2C_SCL, CONFIG_SMC_BH1750_ADDR);
         radar_error = ld2412_init(&radar, CONFIG_SMC_RADAR_RX, CONFIG_SMC_RADAR_TX, CONFIG_SMC_RADAR_BAUD);
@@ -245,6 +281,9 @@ void app_main(void) {
                 else discard_line = true;
             }
         }
+        now = esp_timer_get_time();
+        smc_status_led_update(&status_led, pins_ok, light_valid(now), radar_valid(now),
+                              radar.latest.state != 0, now / 1000);
         if (now >= next_report) { telemetry(); next_report = esp_timer_get_time() + report_ms * 1000; }
         vTaskDelay(pdMS_TO_TICKS(10));
     }
