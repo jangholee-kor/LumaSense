@@ -24,7 +24,7 @@
   },
   "execution_state": {
     "test_id": "7a50e7010c984e0fad1045a9955dffa6",
-    "physical_result": "pass",
+    "physical_result": "unverified",
     "observed_wake_seconds_approx": 10,
     "manual_input_before_wake": false,
     "user_observation": "약 10초에 자동으로 켜짐 · 직접 깨우지 않음",
@@ -133,6 +133,405 @@
       "samples": 225,
       "max_gap_seconds": 0.235,
       "locked_observed": false
+    },
+    "superseded_by": "1471cce18fd94545bba71d08c0718c4e",
+    "notification_confound_not_excluded": true
+  },
+  "ten_minute_sensor_stream": {
+    "start": "2026-11-02T13:38:47.907319+00:00",
+    "end": "2026-11-02T13:48:48.084432+00:00",
+    "elapsed_seconds": 600.172,
+    "packets": 2859,
+    "healthy": 2859,
+    "sequence_gaps": 0,
+    "restarts": 0,
+    "max_receive_gap_seconds": 0.235,
+    "usb_dropped_lines_first_last": [
+      1388,
+      1388
+    ],
+    "serial_errors": [],
+    "samples": [
+      {
+        "received_at": "2026-11-02T13:38:47.907319+00:00",
+        "received_monotonic": 74442.687,
+        "packet": {
+          "ver": 1,
+          "type": "telemetry",
+          "device": "smart-monitor-s3",
+          "firmware": "0.2.5",
+          "radar_calibration_pending": false,
+          "seq": 2784,
+          "uptime_ms": 738587,
+          "lux": 284.1666564941406,
+          "light_ok": true,
+          "radar_ok": true,
+          "sensor_ok": true,
+          "presence": true,
+          "moving": false,
+          "stationary": true,
+          "radar_state": 2,
+          "radar_reserved": 0,
+          "moving_distance_cm": 0,
+          "stationary_distance_cm": 40,
+          "moving_energy": 0,
+          "stationary_energy": 100,
+          "distance_cm": 40,
+          "engineering": false,
+          "errors": [],
+          "radar_rejected_frames": 0,
+          "usb_dropped_lines": 1388,
+          "light_error": "ESP_OK",
+          "radar_init_error": "ESP_OK",
+          "free_heap": 348616,
+          "main_stack_min_free_bytes": 6132,
+          "status_led": {
+            "enabled": true,
+            "gpio": 38,
+            "brightness": 4,
+            "driver_ok": true,
+            "error": "ESP_OK",
+            "state": "present",
+            "updates": 3,
+            "requested_rgb": [
+              0,
+              4,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "received_at": "2026-11-02T13:48:48.084432+00:00",
+        "received_monotonic": 75042.859,
+        "packet": {
+          "ver": 1,
+          "type": "telemetry",
+          "device": "smart-monitor-s3",
+          "firmware": "0.2.5",
+          "radar_calibration_pending": false,
+          "seq": 5642,
+          "uptime_ms": 1338767,
+          "lux": 239.99998474121094,
+          "light_ok": true,
+          "radar_ok": true,
+          "sensor_ok": true,
+          "presence": true,
+          "moving": true,
+          "stationary": true,
+          "radar_state": 3,
+          "radar_reserved": 1,
+          "moving_distance_cm": 80,
+          "stationary_distance_cm": 40,
+          "moving_energy": 100,
+          "stationary_energy": 100,
+          "distance_cm": 40,
+          "engineering": false,
+          "errors": [],
+          "radar_rejected_frames": 0,
+          "usb_dropped_lines": 1388,
+          "light_error": "ESP_OK",
+          "radar_init_error": "ESP_OK",
+          "free_heap": 348616,
+          "main_stack_min_free_bytes": 6132,
+          "status_led": {
+            "enabled": true,
+            "gpio": 38,
+            "brightness": 4,
+            "driver_ok": true,
+            "error": "ESP_OK",
+            "state": "present",
+            "updates": 3,
+            "requested_rgb": [
+              0,
+              4,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "monitor_power_trials": [
+    {
+      "test_id": "a9da449a35754cedaca7b91063ec18cd",
+      "physical_result": "unverified",
+      "observation": "Initially reported approximately ten seconds; notification effects were later suspected.",
+      "events": [
+        {
+          "time": "2026-11-02T13:43:26.252945+00:00",
+          "event": "sleep_countdown",
+          "test_id": "a9da449a35754cedaca7b91063ec18cd",
+          "seconds": 5,
+          "affects": "all_displays"
+        },
+        {
+          "time": "2026-11-02T13:43:31.380897+00:00",
+          "event": "watchdog_ready",
+          "test_id": "a9da449a35754cedaca7b91063ec18cd",
+          "seconds": 10,
+          "method": "monitor_power",
+          "fallback_seconds": 30,
+          "first_fallback_after_seconds": 40
+        },
+        {
+          "time": "2026-11-02T13:43:31.409610+00:00",
+          "event": "recovery_armed",
+          "test_id": "a9da449a35754cedaca7b91063ec18cd",
+          "pid": 57228,
+          "method": "monitor_power",
+          "seconds": 10,
+          "fallback_seconds": 30,
+          "first_fallback_after_seconds": 40
+        },
+        {
+          "time": "2026-11-02T13:43:31.747174+00:00",
+          "event": "display_off_requested",
+          "test_id": "a9da449a35754cedaca7b91063ec18cd",
+          "result": {
+            "api": "SC_MONITORPOWER",
+            "value": 2,
+            "accepted": true,
+            "physical_result": "unverified"
+          }
+        },
+        {
+          "time": "2026-11-02T13:43:41.382498+00:00",
+          "event": "wake_request_started",
+          "test_id": "a9da449a35754cedaca7b91063ec18cd",
+          "stage": "primary",
+          "method": "monitor_power",
+          "fallback_seconds": 30
+        },
+        {
+          "time": "2026-11-02T13:43:41.417627+00:00",
+          "event": "wake_attempt",
+          "test_id": "a9da449a35754cedaca7b91063ec18cd",
+          "stage": "primary",
+          "method": "monitor_power",
+          "result": {
+            "api": "SC_MONITORPOWER",
+            "value": -1,
+            "accepted": true,
+            "physical_result": "unverified"
+          }
+        },
+        {
+          "time": "2026-11-02T13:44:11.418686+00:00",
+          "event": "wake_request_started",
+          "test_id": "a9da449a35754cedaca7b91063ec18cd",
+          "stage": "fallback",
+          "method": "execution_state",
+          "fallback_seconds": 30
+        },
+        {
+          "time": "2026-11-02T13:44:11.419189+00:00",
+          "event": "wake_attempt",
+          "test_id": "a9da449a35754cedaca7b91063ec18cd",
+          "stage": "fallback",
+          "method": "execution_state",
+          "result": {
+            "api": "execution_state",
+            "accepted": true,
+            "physical_result": "unverified"
+          }
+        },
+        {
+          "time": "2026-11-02T13:44:11.419189+00:00",
+          "event": "recovery_finished",
+          "test_id": "a9da449a35754cedaca7b91063ec18cd",
+          "physical_result": "unverified"
+        }
+      ]
+    },
+    {
+      "test_id": "3e59325b54ec4c5cb2a31b09b3ae4537",
+      "physical_result": "unverified",
+      "observed_wake_seconds_approx": 27,
+      "observation": "User reported 27 seconds and suspected the question notification had awakened the screen.",
+      "events": [
+        {
+          "time": "2026-11-02T13:44:42.634242+00:00",
+          "event": "sleep_countdown",
+          "test_id": "3e59325b54ec4c5cb2a31b09b3ae4537",
+          "seconds": 5,
+          "affects": "all_displays"
+        },
+        {
+          "time": "2026-11-02T13:44:47.749336+00:00",
+          "event": "watchdog_ready",
+          "test_id": "3e59325b54ec4c5cb2a31b09b3ae4537",
+          "seconds": 10,
+          "method": "monitor_power",
+          "fallback_seconds": 30,
+          "first_fallback_after_seconds": 40
+        },
+        {
+          "time": "2026-11-02T13:44:47.779859+00:00",
+          "event": "recovery_armed",
+          "test_id": "3e59325b54ec4c5cb2a31b09b3ae4537",
+          "pid": 41452,
+          "method": "monitor_power",
+          "seconds": 10,
+          "fallback_seconds": 30,
+          "first_fallback_after_seconds": 40
+        },
+        {
+          "time": "2026-11-02T13:44:47.998975+00:00",
+          "event": "display_off_requested",
+          "test_id": "3e59325b54ec4c5cb2a31b09b3ae4537",
+          "result": {
+            "api": "SC_MONITORPOWER",
+            "value": 2,
+            "accepted": true,
+            "physical_result": "unverified"
+          }
+        },
+        {
+          "time": "2026-11-02T13:44:57.750981+00:00",
+          "event": "wake_request_started",
+          "test_id": "3e59325b54ec4c5cb2a31b09b3ae4537",
+          "stage": "primary",
+          "method": "monitor_power",
+          "fallback_seconds": 30
+        },
+        {
+          "time": "2026-11-02T13:44:57.788323+00:00",
+          "event": "wake_attempt",
+          "test_id": "3e59325b54ec4c5cb2a31b09b3ae4537",
+          "stage": "primary",
+          "method": "monitor_power",
+          "result": {
+            "api": "SC_MONITORPOWER",
+            "value": -1,
+            "accepted": true,
+            "physical_result": "unverified"
+          }
+        },
+        {
+          "time": "2026-11-02T13:45:27.789838+00:00",
+          "event": "wake_request_started",
+          "test_id": "3e59325b54ec4c5cb2a31b09b3ae4537",
+          "stage": "fallback",
+          "method": "execution_state",
+          "fallback_seconds": 30
+        },
+        {
+          "time": "2026-11-02T13:45:27.789838+00:00",
+          "event": "wake_attempt",
+          "test_id": "3e59325b54ec4c5cb2a31b09b3ae4537",
+          "stage": "fallback",
+          "method": "execution_state",
+          "result": {
+            "api": "execution_state",
+            "accepted": true,
+            "physical_result": "unverified"
+          }
+        },
+        {
+          "time": "2026-11-02T13:45:27.790843+00:00",
+          "event": "recovery_finished",
+          "test_id": "3e59325b54ec4c5cb2a31b09b3ae4537",
+          "physical_result": "unverified"
+        }
+      ]
     }
+  ],
+  "execution_state_quiet_retest": {
+    "test_id": "1471cce18fd94545bba71d08c0718c4e",
+    "physical_result": "pass",
+    "user_observation": "이번건 10초 조금 넘어서 바로 켜졌음",
+    "observation_before_question": true,
+    "question_sent_before_observation": false,
+    "observed_wake_seconds": "slightly over 10",
+    "primary_seconds": 10,
+    "fallback_seconds": 60,
+    "fallback_scheduled_after_seconds": 70,
+    "events": [
+      {
+        "time": "2026-11-02T13:47:26.798284+00:00",
+        "event": "sleep_countdown",
+        "test_id": "1471cce18fd94545bba71d08c0718c4e",
+        "seconds": 5,
+        "affects": "all_displays"
+      },
+      {
+        "time": "2026-11-02T13:47:31.965421+00:00",
+        "event": "watchdog_ready",
+        "test_id": "1471cce18fd94545bba71d08c0718c4e",
+        "seconds": 10,
+        "method": "execution_state",
+        "fallback_seconds": 60,
+        "first_fallback_after_seconds": 70
+      },
+      {
+        "time": "2026-11-02T13:47:31.994934+00:00",
+        "event": "recovery_armed",
+        "test_id": "1471cce18fd94545bba71d08c0718c4e",
+        "pid": 38016,
+        "method": "execution_state",
+        "seconds": 10,
+        "fallback_seconds": 60,
+        "first_fallback_after_seconds": 70
+      },
+      {
+        "time": "2026-11-02T13:47:32.311101+00:00",
+        "event": "display_off_requested",
+        "test_id": "1471cce18fd94545bba71d08c0718c4e",
+        "result": {
+          "api": "SC_MONITORPOWER",
+          "value": 2,
+          "accepted": true,
+          "physical_result": "unverified"
+        }
+      },
+      {
+        "time": "2026-11-02T13:47:41.966647+00:00",
+        "event": "wake_request_started",
+        "test_id": "1471cce18fd94545bba71d08c0718c4e",
+        "stage": "primary",
+        "method": "execution_state",
+        "fallback_seconds": 60
+      },
+      {
+        "time": "2026-11-02T13:47:41.966647+00:00",
+        "event": "wake_attempt",
+        "test_id": "1471cce18fd94545bba71d08c0718c4e",
+        "stage": "primary",
+        "method": "execution_state",
+        "result": {
+          "api": "execution_state",
+          "accepted": true,
+          "physical_result": "unverified"
+        }
+      },
+      {
+        "time": "2026-11-02T13:48:41.967827+00:00",
+        "event": "wake_request_started",
+        "test_id": "1471cce18fd94545bba71d08c0718c4e",
+        "stage": "fallback",
+        "method": "monitor_power",
+        "fallback_seconds": 60
+      },
+      {
+        "time": "2026-11-02T13:48:42.017891+00:00",
+        "event": "wake_attempt",
+        "test_id": "1471cce18fd94545bba71d08c0718c4e",
+        "stage": "fallback",
+        "method": "monitor_power",
+        "result": {
+          "api": "SC_MONITORPOWER",
+          "value": -1,
+          "accepted": true,
+          "physical_result": "unverified"
+        }
+      },
+      {
+        "time": "2026-11-02T13:48:42.017891+00:00",
+        "event": "recovery_finished",
+        "test_id": "1471cce18fd94545bba71d08c0718c4e",
+        "physical_result": "unverified"
+      }
+    ]
   }
 }
