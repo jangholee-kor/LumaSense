@@ -12,21 +12,25 @@
   "display_off": "pass",
   "automatic_wake": "pass",
   "sleep_trial": {
-    "status": "preliminary_user_observation",
+    "status": "precise_user_retest_reported",
     "countdown_seconds": 5,
     "primary_method": "monitor_power",
     "recovery_delay_seconds": 5,
     "allow_mouse": false,
-    "reported_wake_latency_seconds_approx": 5,
-    "method_attribution": "monitor_power_supported_by_approximate_user_timing",
-    "per_monitor_sleep_wake_results": "unrecorded",
-    "precise_retest": "pending_user_report",
-    "matching_completed_log_test_id": "0ba39fe1ed82432a80cad05ee057547d"
+    "timing_reference": "user_stopwatch_started_when_screen_went_dark",
+    "reported_wake_latency_seconds": {"Q27U2G5R4-": 12.3, "27B2H2": 14.88},
+    "method_attribution": "unresolved_primary_and_fallback_both_precede_visible_wake",
+    "per_monitor_sleep_wake_results": {"Q27U2G5R4-": "pass", "27B2H2": "pass"},
+    "precise_retest": "reported",
+    "matching_completed_log_test_id": "28c937d2098341bab4930a44994c2f35",
+    "log_correlation": "latest_completed_trial_with_matching_settings_and_screenshot_command_count",
+    "input_intervention": "unrecorded",
+    "supersedes": {"wake_latency_seconds_approx": 5, "method_status": "monitor_power_preliminary_pass"}
   },
   "wake_methods": {
-    "monitor_power": "preliminary_pass",
+    "monitor_power": "unverified_individually",
     "execution_state": "unverified",
     "mouse_move": "unverified"
   },
-  "user_report": "Q27~가 메인 모니터임. 두 모니터 다 직접 슬라이드로 제어 시 잘 동작하는 것을 확인함. 절전/복귀 시험 방법 안내 요청."
+  "user_report": "주 모니터는 Q27U2G5R4-. 두 모니터의 수동 슬라이더 밝기 제어를 확인했다. 정밀 재시험에서 화면이 꺼지자마자 시간을 재어 Q27은 12.3초, 보조 모니터는 14.88초에 켜지는 것을 확인했다."
 }
