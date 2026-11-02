@@ -6,14 +6,71 @@
   "gpio_assignment": "default_8_9_16_17_confirmed_by_real_sensor_data_on_COM64",
   "board_evidence": "board-bringup-2026-11-02.json",
   "phases": [
-    {"phase": 1, "implementation": "complete", "host_checks": "pass", "office_manual_brightness": "user_confirmed_two_monitors", "office_wake_execution_state": "user_confirmed_before_fallback", "philips_32m2n8900": "not_run", "physical_completion_criterion": "pending"},
-    {"phase": 2, "implementation": "complete", "default_and_psram_builds": "pass", "native_parser": "pass", "flash_and_sensors": "pass_firmware_0.2.3_default_profile", "ten_minute_receive": "pass_2857_healthy_packets_in_600.063_seconds", "physical_completion_criterion": "pass", "absence_classification": "single_empty_occupied_cycle_pass_after_background_calibration", "current_firmware": "0.2.5_default_profile", "radar_tuning_evidence": "radar-tuning-2026-11-02.json"},
-    {"phase": 3, "implementation": "complete", "fake_serial_worker_and_qt_reconnect": "pass", "physical_usb_reconnect": "not_run", "physical_completion_criterion": "pending"},
-    {"phase": 4, "implementation": "complete", "mapping_filter_ramp_rate_manual_profile": "pass", "qt_simulated_brightness": "pass", "lighting_and_actual_monitor_response": "not_run", "physical_completion_criterion": "pending"},
-    {"phase": 5, "implementation": "complete", "absence_input_error_countdown_crash_guard": "pass", "qt_off_redetection_error_simulation": "pass", "actual_radar_off_wake_and_stationary_30_minutes": "not_run", "lock_logon_and_hdr_sdr": "not_run", "physical_completion_criterion": "pending"},
-    {"phase": 6, "implementation": "complete", "exe_and_helpers": "pass_simulated", "real_24h_run": "not_run", "real_24h_simulation": "not_run", "physical_completion_criterion": "pending"}
+    {
+      "phase": 1,
+      "implementation": "complete",
+      "host_checks": "pass",
+      "office_manual_brightness": "user_confirmed_two_monitors",
+      "office_wake_execution_state": "user_confirmed_before_fallback",
+      "philips_32m2n8900": "pass_sdr_brightness_off_execution_state_quiet_retest",
+      "physical_completion_criterion": "pass",
+      "home_evidence": "home-remaining-2026-11-02.json"
+    },
+    {
+      "phase": 2,
+      "implementation": "complete",
+      "default_and_psram_builds": "pass",
+      "native_parser": "pass",
+      "flash_and_sensors": "pass_firmware_0.2.3_default_profile",
+      "ten_minute_receive": "pass_2857_healthy_packets_in_600.063_seconds",
+      "physical_completion_criterion": "pass",
+      "absence_classification": "single_empty_occupied_cycle_pass_after_background_calibration",
+      "current_firmware": "0.2.5_default_profile",
+      "radar_tuning_evidence": "radar-tuning-2026-11-02.json"
+    },
+    {
+      "phase": 3,
+      "implementation": "complete",
+      "fake_serial_worker_and_qt_reconnect": "pass",
+      "physical_usb_reconnect": "pass_home_COM3_physical_cable_removal_and_reconnect",
+      "physical_completion_criterion": "pass",
+      "home_evidence": "home-automation-2026-11-02.json"
+    },
+    {
+      "phase": 4,
+      "implementation": "complete",
+      "mapping_filter_ramp_rate_manual_profile": "pass",
+      "qt_simulated_brightness": "pass",
+      "lighting_and_actual_monitor_response": "pass_home_BH1750_cover_uncover_user_observed",
+      "physical_completion_criterion": "pass",
+      "home_evidence": "home-automation-2026-11-02.json"
+    },
+    {
+      "phase": 5,
+      "implementation": "complete",
+      "absence_input_error_countdown_crash_guard": "pass",
+      "qt_off_redetection_error_simulation": "pass",
+      "actual_radar_off_wake_and_stationary_30_minutes": "partial_off_wake_pass_one_cycle_stationary_30_minutes_not_run",
+      "lock_logon_and_hdr_sdr": "not_run",
+      "physical_completion_criterion": "partial",
+      "actual_radar_off_wake": "pass_home_one_cycle_execution_state",
+      "stationary_30_minutes": "not_run",
+      "home_evidence": "home-automation-2026-11-02.json"
+    },
+    {
+      "phase": 6,
+      "implementation": "complete",
+      "exe_and_helpers": "pass_simulated",
+      "real_24h_run": "not_run",
+      "real_24h_simulation": "not_run",
+      "physical_completion_criterion": "pending"
+    }
   ],
-  "automated_tests": {"passed": 93, "failed": 0, "physical_io": false},
+  "automated_tests": {
+    "passed": 93,
+    "failed": 0,
+    "physical_io": false
+  },
   "exe": {
     "sha256": "fe842512af2f68b855906a4913816daf37eb227c928a1f62dab15af4c2f9f0e8",
     "mode": "onedir_windowed",
@@ -43,8 +100,25 @@
     "scope": "exe_simulation_only",
     "pass": true
   },
-  "other_checks": ["pip_check", "compileall", "powershell_syntax", "korean_ui_tab_render_review"],
+  "other_checks": [
+    "pip_check",
+    "compileall",
+    "powershell_syntax",
+    "korean_ui_tab_render_review"
+  ],
   "hardware_mutations_this_stage": [],
-  "physical_observations": ["office-user-observations-2026-11-02.json", "office-execution-state-2026-11-02.json"],
-  "firmware_build_evidence": "firmware-build-2026-11-02.json"
+  "physical_observations": [
+    "office-user-observations-2026-11-02.json",
+    "office-execution-state-2026-11-02.json",
+    "home-2026-11-02.json",
+    "home-remaining-2026-11-02.json",
+    "home-automation-2026-11-02.json"
+  ],
+  "firmware_build_evidence": "firmware-build-2026-11-02.json",
+  "latest_windows_automated_tests": {
+    "passed": 104,
+    "failed": 0,
+    "physical_io": false,
+    "source_commit": "f4a11ad"
+  }
 }

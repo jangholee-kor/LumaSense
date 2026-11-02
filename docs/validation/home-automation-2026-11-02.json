@@ -1074,5 +1074,357 @@
         }
       }
     ]
+  },
+  "automatic_presence": {
+    "start": "2026-11-02T13:53:35.295501+00:00",
+    "end": "2026-11-02T13:55:09.656716+00:00",
+    "physical_result": "pass",
+    "user_observation": "자리 비움 때 꺼지고, 돌아오니 자동으로 켜짐",
+    "absence_seconds": 30,
+    "recent_input_seconds": 30,
+    "use_recent_input": true,
+    "max_distance_cm": 150,
+    "countdown_seconds": 5,
+    "wake_method": "execution_state",
+    "single_cycle_only": true,
+    "sensor_packets": 450,
+    "healthy": 450,
+    "presence_counts": {
+      "True": 251,
+      "False": 199
+    },
+    "max_receive_gap_seconds": 0.234,
+    "sequence_gaps": 0,
+    "events": [
+      {
+        "time": "2026-11-02T13:53:35.295501+00:00",
+        "event": "automation_settings_applied",
+        "auto_brightness": false,
+        "auto_presence": true,
+        "simulated": false
+      },
+      {
+        "time": "2026-11-02T13:53:35.390093+00:00",
+        "event": "presence_state",
+        "state": "SENSOR_ERROR",
+        "reason": "정상"
+      },
+      {
+        "time": "2026-11-02T13:53:40.432698+00:00",
+        "event": "presence_state",
+        "state": "PRESENT",
+        "reason": "인체 감지"
+      },
+      {
+        "time": "2026-11-02T13:54:03.527833+00:00",
+        "event": "presence_state",
+        "state": "PRESENT",
+        "reason": "최근 입력 또는 입력 상태 확인 불가"
+      },
+      {
+        "time": "2026-11-02T13:54:05.380070+00:00",
+        "event": "presence_state",
+        "state": "MAYBE_ABSENT",
+        "reason": "연속 부재 확인 중"
+      },
+      {
+        "time": "2026-11-02T13:54:35.403768+00:00",
+        "event": "presence_state",
+        "state": "ABSENT",
+        "reason": "화면 절전 카운트다운"
+      },
+      {
+        "time": "2026-11-02T13:54:40.868695+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "off",
+          "id": "2d6dd0ff49a349ed8ad4c35e20696a32",
+          "epoch": 10
+        },
+        "ok": true,
+        "result": {
+          "api": "SC_MONITORPOWER",
+          "value": 2,
+          "accepted": true,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:54:40.983305+00:00",
+        "event": "presence_state",
+        "state": "DISPLAY_OFF",
+        "reason": "화면 절전 요청 접수 (실제 상태 미확인)"
+      },
+      {
+        "time": "2026-11-02T13:54:45.368413+00:00",
+        "event": "presence_state",
+        "state": "RECOVERING",
+        "reason": "인체 감지"
+      },
+      {
+        "time": "2026-11-02T13:54:45.370417+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "wake",
+          "id": "f5fca4f3d7734d3fb87ca561aa24d8d4",
+          "epoch": 10
+        },
+        "ok": true,
+        "result": {
+          "api": "execution_state",
+          "accepted": true,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:54:45.471177+00:00",
+        "event": "presence_state",
+        "state": "PRESENT",
+        "reason": "인체 감지"
+      },
+      {
+        "time": "2026-11-02T13:54:45.534287+00:00",
+        "event": "lease_released",
+        "token": "lease-fd26fb23658b44da913f9067bd7195fd"
+      }
+    ],
+    "samples": [
+      {
+        "received_at": "2026-11-02T13:54:03.510663+00:00",
+        "received_monotonic": 75358.281,
+        "packet": {
+          "ver": 1,
+          "type": "telemetry",
+          "device": "smart-monitor-s3",
+          "firmware": "0.2.5",
+          "radar_calibration_pending": false,
+          "seq": 7144,
+          "uptime_ms": 1654187,
+          "lux": 515.8333129882812,
+          "light_ok": true,
+          "radar_ok": true,
+          "sensor_ok": true,
+          "presence": false,
+          "moving": false,
+          "stationary": false,
+          "radar_state": 0,
+          "radar_reserved": 0,
+          "moving_distance_cm": 0,
+          "stationary_distance_cm": 0,
+          "moving_energy": 0,
+          "stationary_energy": 0,
+          "distance_cm": null,
+          "engineering": false,
+          "errors": [],
+          "radar_rejected_frames": 0,
+          "usb_dropped_lines": 1388,
+          "light_error": "ESP_OK",
+          "radar_init_error": "ESP_OK",
+          "free_heap": 348616,
+          "main_stack_min_free_bytes": 6132,
+          "status_led": {
+            "enabled": true,
+            "gpio": 38,
+            "brightness": 4,
+            "driver_ok": true,
+            "error": "ESP_OK",
+            "state": "absent",
+            "updates": 4,
+            "requested_rgb": [
+              4,
+              4,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "received_at": "2026-11-02T13:54:45.304728+00:00",
+        "received_monotonic": 75400.078,
+        "packet": {
+          "ver": 1,
+          "type": "telemetry",
+          "device": "smart-monitor-s3",
+          "firmware": "0.2.5",
+          "radar_calibration_pending": false,
+          "seq": 7343,
+          "uptime_ms": 1695977,
+          "lux": 506.6666564941406,
+          "light_ok": true,
+          "radar_ok": true,
+          "sensor_ok": true,
+          "presence": true,
+          "moving": true,
+          "stationary": true,
+          "radar_state": 3,
+          "radar_reserved": 3,
+          "moving_distance_cm": 138,
+          "stationary_distance_cm": 0,
+          "moving_energy": 100,
+          "stationary_energy": 0,
+          "distance_cm": 138,
+          "engineering": false,
+          "errors": [],
+          "radar_rejected_frames": 0,
+          "usb_dropped_lines": 1388,
+          "light_error": "ESP_OK",
+          "radar_init_error": "ESP_OK",
+          "free_heap": 348616,
+          "main_stack_min_free_bytes": 6132,
+          "status_led": {
+            "enabled": true,
+            "gpio": 38,
+            "brightness": 4,
+            "driver_ok": true,
+            "error": "ESP_OK",
+            "state": "present",
+            "updates": 5,
+            "requested_rgb": [
+              0,
+              4,
+              0
+            ]
+          }
+        }
+      }
+    ],
+    "limitations": [
+      "One absent/present cycle; no repeated-cycle or measured distance boundary test.",
+      "Physical off-to-on duration was not measured."
+    ]
+  },
+  "physical_usb_reconnect": {
+    "start": "2026-11-02T13:55:30.523608+00:00",
+    "end": "2026-11-02T13:57:20.414084+00:00",
+    "physical_result": "pass",
+    "user_observation": "센서 재연결됨 · 화면 계속 켜짐",
+    "port": "COM3",
+    "device_matched_by": "configured_usb_serial_number",
+    "auto_presence_enabled": true,
+    "new_off_request_during_disconnect": false,
+    "events": [
+      {
+        "time": "2026-11-02T13:55:30.523608+00:00",
+        "event": "serial_status",
+        "state": "error",
+        "message": "ClearCommError failed (PermissionError(13, '장치가 명령을 인식하지 않습니다.', None, 22))",
+        "port": "COM3",
+        "connected": false
+      },
+      {
+        "time": "2026-11-02T13:55:30.548812+00:00",
+        "event": "presence_state",
+        "state": "SENSOR_ERROR",
+        "reason": "ClearCommError failed (PermissionError(13, '장치가 명령을 인식하지 않습니다.', None, 22))"
+      },
+      {
+        "time": "2026-11-02T13:55:32.524350+00:00",
+        "event": "serial_status",
+        "state": "error",
+        "message": "지정한 USB 장치가 없거나 여러 개입니다.",
+        "port": "COM3",
+        "connected": false
+      },
+      {
+        "time": "2026-11-02T13:55:32.630723+00:00",
+        "event": "presence_state",
+        "state": "SENSOR_ERROR",
+        "reason": "지정한 USB 장치가 없거나 여러 개입니다."
+      },
+      {
+        "time": "2026-11-02T13:55:36.546163+00:00",
+        "event": "serial_status",
+        "state": "connecting",
+        "message": "펌웨어 확인 중",
+        "port": "COM3",
+        "connected": false
+      },
+      {
+        "time": "2026-11-02T13:55:36.574792+00:00",
+        "event": "presence_state",
+        "state": "SENSOR_ERROR",
+        "reason": "펌웨어 확인 중"
+      },
+      {
+        "time": "2026-11-02T13:55:36.605351+00:00",
+        "event": "serial_status",
+        "state": "connected",
+        "message": "센서 연결됨",
+        "port": "COM3",
+        "connected": true
+      },
+      {
+        "time": "2026-11-02T13:55:36.683190+00:00",
+        "event": "presence_state",
+        "state": "SENSOR_ERROR",
+        "reason": "정상"
+      },
+      {
+        "time": "2026-11-02T13:55:41.713827+00:00",
+        "event": "presence_state",
+        "state": "PRESENT",
+        "reason": "인체 감지"
+      },
+      {
+        "time": "2026-11-02T13:57:20.104409+00:00",
+        "event": "presence_state",
+        "state": "MAYBE_ABSENT",
+        "reason": "연속 부재 확인 중"
+      }
+    ],
+    "post_reconnect_sample": {
+      "received_at": "2026-11-02T13:57:20.414084+00:00",
+      "received_monotonic": 75555.187,
+      "packet": {
+        "ver": 1,
+        "type": "telemetry",
+        "device": "smart-monitor-s3",
+        "firmware": "0.2.5",
+        "radar_calibration_pending": false,
+        "seq": 502,
+        "uptime_ms": 105427,
+        "lux": 519.1666259765625,
+        "light_ok": true,
+        "radar_ok": true,
+        "sensor_ok": true,
+        "presence": false,
+        "moving": false,
+        "stationary": false,
+        "radar_state": 0,
+        "radar_reserved": 0,
+        "moving_distance_cm": 0,
+        "stationary_distance_cm": 0,
+        "moving_energy": 0,
+        "stationary_energy": 0,
+        "distance_cm": null,
+        "engineering": false,
+        "errors": [],
+        "radar_rejected_frames": 0,
+        "usb_dropped_lines": 0,
+        "light_error": "ESP_OK",
+        "radar_init_error": "ESP_OK",
+        "free_heap": 348616,
+        "main_stack_min_free_bytes": 6132,
+        "status_led": {
+          "enabled": true,
+          "gpio": 38,
+          "brightness": 4,
+          "driver_ok": true,
+          "error": "ESP_OK",
+          "state": "absent",
+          "updates": 4,
+          "requested_rgb": [
+            4,
+            4,
+            0
+          ]
+        }
+      }
+    },
+    "interpretation": "Intentional removal caused serial errors and MCU restart; automatic off was suppressed until reconnection and stabilization."
   }
 }
