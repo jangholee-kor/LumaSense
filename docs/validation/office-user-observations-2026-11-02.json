@@ -27,6 +27,23 @@
     "input_intervention": "unrecorded",
     "supersedes": {"wake_latency_seconds_approx": 5, "method_status": "monitor_power_preliminary_pass"}
   },
+  "api_isolation_trials": [
+    {
+      "test_id": "ec56b936f272408cbcda38278d251b0a",
+      "primary_method": "monitor_power",
+      "recovery_delay_seconds": 5,
+      "fallback_seconds": 30,
+      "fallback_method": "execution_state",
+      "allow_mouse": false,
+      "reported_wake_latency_seconds": 38,
+      "timing_reference": "screen_off_per_ongoing_test_instructions",
+      "per_monitor_wake_latency": "unrecorded",
+      "input_intervention": "unrecorded",
+      "automatic_wake": "pass",
+      "inference": "wake_after_execution_state_fallback; individual_api_causality_not_confirmed",
+      "user_report": "38초에 깨어남"
+    }
+  ],
   "wake_methods": {
     "monitor_power": "unverified_individually",
     "execution_state": "unverified",

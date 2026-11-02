@@ -1,0 +1,103 @@
+{
+  "user_observation": {
+    "test_id": "ec56b936f272408cbcda38278d251b0a",
+    "primary_method": "monitor_power",
+    "recovery_delay_seconds": 5,
+    "fallback_seconds": 30,
+    "fallback_method": "execution_state",
+    "allow_mouse": false,
+    "reported_wake_latency_seconds": 38,
+    "timing_reference": "screen_off_per_ongoing_test_instructions",
+    "per_monitor_wake_latency": "unrecorded",
+    "input_intervention": "unrecorded",
+    "automatic_wake": "pass",
+    "inference": "wake_after_execution_state_fallback; individual_api_causality_not_confirmed",
+    "user_report": "38초에 깨어남"
+  },
+  "events": [
+    {
+      "time": "2026-11-02T03:29:55.011982+00:00",
+      "event": "sleep_countdown",
+      "test_id": "ec56b936f272408cbcda38278d251b0a",
+      "seconds": 5,
+      "affects": "all_displays"
+    },
+    {
+      "time": "2026-11-02T03:30:00.190170+00:00",
+      "event": "watchdog_ready",
+      "test_id": "ec56b936f272408cbcda38278d251b0a",
+      "seconds": 5,
+      "method": "monitor_power",
+      "fallback_seconds": 30,
+      "first_fallback_after_seconds": 35
+    },
+    {
+      "time": "2026-11-02T03:30:00.194169+00:00",
+      "event": "recovery_armed",
+      "test_id": "ec56b936f272408cbcda38278d251b0a",
+      "pid": 23084,
+      "method": "monitor_power",
+      "seconds": 5,
+      "fallback_seconds": 30,
+      "first_fallback_after_seconds": 35
+    },
+    {
+      "time": "2026-11-02T03:30:00.645437+00:00",
+      "event": "display_off_requested",
+      "test_id": "ec56b936f272408cbcda38278d251b0a",
+      "result": {
+        "api": "SC_MONITORPOWER",
+        "value": 2,
+        "accepted": true,
+        "physical_result": "unverified"
+      }
+    },
+    {
+      "time": "2026-11-02T03:30:05.191851+00:00",
+      "event": "wake_request_started",
+      "test_id": "ec56b936f272408cbcda38278d251b0a",
+      "stage": "primary",
+      "method": "monitor_power",
+      "fallback_seconds": 30
+    },
+    {
+      "time": "2026-11-02T03:30:05.204358+00:00",
+      "event": "wake_attempt",
+      "test_id": "ec56b936f272408cbcda38278d251b0a",
+      "stage": "primary",
+      "method": "monitor_power",
+      "result": {
+        "api": "SC_MONITORPOWER",
+        "value": -1,
+        "accepted": true,
+        "physical_result": "unverified"
+      }
+    },
+    {
+      "time": "2026-11-02T03:30:35.205910+00:00",
+      "event": "wake_request_started",
+      "test_id": "ec56b936f272408cbcda38278d251b0a",
+      "stage": "fallback",
+      "method": "execution_state",
+      "fallback_seconds": 30
+    },
+    {
+      "time": "2026-11-02T03:30:35.205910+00:00",
+      "event": "wake_attempt",
+      "test_id": "ec56b936f272408cbcda38278d251b0a",
+      "stage": "fallback",
+      "method": "execution_state",
+      "result": {
+        "api": "execution_state",
+        "accepted": true,
+        "physical_result": "unverified"
+      }
+    },
+    {
+      "time": "2026-11-02T03:30:35.206915+00:00",
+      "event": "recovery_finished",
+      "test_id": "ec56b936f272408cbcda38278d251b0a",
+      "physical_result": "unverified"
+    }
+  ]
+}
