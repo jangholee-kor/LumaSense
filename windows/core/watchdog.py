@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .diagnostics import Diagnostics
 from .power import WAKE_METHODS, WindowsPower
+from .processes import helper_command, process_cwd
 
 
 def recovery_methods(method, allow_mouse):
@@ -54,12 +55,12 @@ def arm_watchdog(root: Path, test_id: str, method: str, seconds: int, allow_mous
     root.mkdir(parents=True, exist_ok=True)
     ready = root / f"watchdog-{uuid.uuid4().hex}.ready"
     flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    process = subprocess.Popen([sys.executable, "-m", "windows.core.watchdog", "--root", str(root),
+    process = subprocess.Popen(helper_command("windows.core.watchdog", "--root", str(root),
                                 "--ready", str(ready), "--test-id", test_id, "--method", method,
                                 "--seconds", str(seconds), "--fallback-seconds", str(fallback_seconds),
                                 *( ["--allow-mouse"] if allow_mouse else []),
-                                *( ["--simulate"] if simulate else [])],
-                               cwd=Path(__file__).resolve().parents[2], stdin=subprocess.DEVNULL,
+                                *( ["--simulate"] if simulate else [])),
+                               cwd=process_cwd(), stdin=subprocess.DEVNULL,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=flags)
     deadline = time.monotonic() + 4
     while time.monotonic() < deadline:
