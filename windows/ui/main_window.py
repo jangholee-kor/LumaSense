@@ -399,4 +399,6 @@ class MainWindow(QMainWindow):
             event.ignore()
         else:
             self.cancel_sleep()
+            if not self.quitting:
+                self.quit_app()
             event.accept()

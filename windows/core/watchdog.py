@@ -26,7 +26,7 @@ def recovery_sequence(power, diagnostics, test_id, method, allow_mouse, sleep=ti
     diagnostics.event("recovery_finished", test_id=test_id, physical_result="unverified")
 
 
-def arm_watchdog(root: Path, test_id: str, method: str, seconds: int, allow_mouse: bool):
+def arm_watchdog(root: Path, test_id: str, method: str, seconds: int, allow_mouse: bool, simulate=False):
     if method not in WAKE_METHODS or not 5 <= seconds <= 30:
         raise ValueError("복귀 설정 범위 오류")
     if method == "mouse_move" and not allow_mouse:
@@ -36,7 +36,8 @@ def arm_watchdog(root: Path, test_id: str, method: str, seconds: int, allow_mous
     flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
     process = subprocess.Popen([sys.executable, "-m", "windows.core.watchdog", "--root", str(root),
                                 "--ready", str(ready), "--test-id", test_id, "--method", method,
-                                "--seconds", str(seconds), *( ["--allow-mouse"] if allow_mouse else [])],
+                                "--seconds", str(seconds), *( ["--allow-mouse"] if allow_mouse else []),
+                                *( ["--simulate"] if simulate else [])],
                                cwd=Path(__file__).resolve().parents[2], stdin=subprocess.DEVNULL,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=flags)
     deadline = time.monotonic() + 4
@@ -58,12 +59,16 @@ def main():
     parser.add_argument("--method", choices=WAKE_METHODS, required=True)
     parser.add_argument("--seconds", type=int, required=True)
     parser.add_argument("--allow-mouse", action="store_true")
+    parser.add_argument("--simulate", action="store_true", help="장치 제어 없는 안전장치 통합 테스트")
     args = parser.parse_args()
     log = Diagnostics(args.root)
     try:
         if not 5 <= args.seconds <= 30:
             raise ValueError("복귀 지연 범위 오류")
-        power = WindowsPower()
+        class SimulatedPower:
+            def wake(self, method, allow_mouse):
+                return {"accepted": False, "simulated": True, "physical_result": "unverified"}
+        power = SimulatedPower() if args.simulate else WindowsPower()
         log.event("watchdog_ready", test_id=args.test_id, seconds=args.seconds, method=args.method)
         args.ready.write_text(json.dumps({"ready": True}), encoding="utf-8")
         time.sleep(args.seconds)

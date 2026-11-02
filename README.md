@@ -7,10 +7,44 @@ Windows 11에서 Twinkle Tray와 Windows API로 모니터를 제어하는 Python
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 powershell -ExecutionPolicy Bypass -File scripts\test.ps1
+powershell -ExecutionPolicy Bypass -File scripts\run_windows.ps1
 ```
 
 Twinkle Tray는 별도 설치하고 실행한다.
 실행 경로는 기본 설치 폴더, Microsoft Store 실행 별칭, PATH, 사용자가 지정한 경로에서 검색한다.
+설치 프로그램은 [공식 Twinkle Tray 저장소](https://github.com/xanderfrangos/twinkle-tray)에서 받는다.
+
+## 실행과 진단
+
+창에서 대상 모니터를 선택하고 밝기 시험 버튼을 누른다.
+창 닫기는 트레이로 숨기며 트레이 메뉴 또는 창의 종료 버튼으로 프로그램을 종료한다.
+트레이를 사용할 수 없는 환경에서는 창을 닫으면 종료한다.
+밝기 명령은 선택한 모니터에 적용되고 Windows 절전 명령은 연결된 화면 전체에 적용된다.
+
+```powershell
+# 실행 파일과 모니터 목록 조회
+powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1
+# 지정 모니터의 20/50/80% 시험 후 기존 보고 밝기로 복원
+powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1 --brightness-sweep --monitor-name 27B2H2
+# 5초 카운트다운 후 절전, 10초 후 지정 방식으로 복귀 요청
+powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1 --sleep-test --method monitor_power --seconds 10
+```
+
+설정과 실행 로그는 `%LOCALAPPDATA%\SmartMonitorController`에 저장된다.
+`SMC_DATA_DIR` 환경 변수로 별도 경로를 지정할 수 있다.
+자세한 시험·복귀 절차는 [testing.md](docs/testing.md), 확인된 결과는 [개발 기록](docs/development-log.md)을 참고한다.
+
+## 개발 단계
+
+Phase 1 구현과 대상 모니터의 실기 검증은 [검증 상태](docs/phase1-validation.json)로 추적한다.
+실기 검증 결과를 기록한 뒤 아래 명령으로 Phase 2 진입 조건을 확인한다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\check_phase1.ps1
+```
+
+Phase 2의 ESP-IDF 펌웨어는 [하드웨어 확인 항목](docs/hardware.md)을 확인하고 시작한다.
+Phase 3부터 USB 통신, 자동 밝기, 인체 감지 제어를 독립 모듈로 연결한다.
 
 ## 구성
 

@@ -1,0 +1,11 @@
+{
+  "target_model": "Philips 32M2N8900",
+  "observed_by": "",
+  "observed_at": "",
+  "display_mode": "",
+  "brightness": {"20": "unverified", "50": "unverified", "80": "unverified"},
+  "display_off": "unverified",
+  "wake_methods": {"monitor_power": "unverified", "execution_state": "unverified", "mouse_move": "unverified"},
+  "evidence": "",
+  "notes": "회사 27B2H2 초기 API 시험은 development-log.md 참고. 최종 대상의 실제 화면 관찰 기록 대기."
+}
