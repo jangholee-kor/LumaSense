@@ -1,0 +1,1078 @@
+{
+  "date": "2026-11-02",
+  "display": "Philips 32M2N8900",
+  "display_mode": "SDR",
+  "firmware": "0.2.5",
+  "automatic_brightness": {
+    "start": "2026-11-02T13:50:13.450541+00:00",
+    "end": "2026-11-02T13:52:16.122439+00:00",
+    "physical_result": "pass",
+    "user_observation": "어두워졌다가 다시 밝아짐",
+    "requested_levels": [
+      53,
+      51,
+      48,
+      19,
+      13,
+      15,
+      19,
+      30,
+      32,
+      45,
+      48,
+      50,
+      48,
+      57,
+      64,
+      66,
+      68,
+      77,
+      79,
+      77,
+      75,
+      72,
+      70,
+      68,
+      70,
+      72,
+      74,
+      71,
+      62,
+      64,
+      66,
+      68,
+      66,
+      68,
+      70,
+      75,
+      78,
+      75,
+      73,
+      71,
+      68,
+      64
+    ],
+    "commands_ok": true,
+    "reported_after_trial": 64.0,
+    "lux_min_max": [
+      2.5,
+      784.9999389648438
+    ],
+    "sensor_packets": 584,
+    "sensor_errors": 0,
+    "curve": [
+      [
+        0.0,
+        10.0
+      ],
+      [
+        5.0,
+        15.0
+      ],
+      [
+        30.0,
+        25.0
+      ],
+      [
+        100.0,
+        40.0
+      ],
+      [
+        300.0,
+        60.0
+      ],
+      [
+        500.0,
+        75.0
+      ],
+      [
+        1000.0,
+        85.0
+      ]
+    ],
+    "events": [
+      {
+        "time": "2026-11-02T13:50:23.902279+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 53,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "6660b38a742e4daa9e063758686019e0"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:23.902279+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 53,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:50:30.563787+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 51,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "60ce0d98e3b9425c830912c6dd456cc1"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:30.563787+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 51,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:50:31.999326+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 48,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "6c79460f81524dfbb62e3deded836d34"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:31.999326+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 48,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:50:33.523268+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 19,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "a4f2ce6cd9d341478e2e8dc0adbebab0"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:33.523268+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 19,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:50:34.926848+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 13,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "ad94bd9d08ef4b2aafe5cddf38b0bf3b"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:34.926848+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 13,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:50:44.140819+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 15,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "17d998a53ecd40a88609788d810412b8"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:44.140819+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 15,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:50:45.578526+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 19,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "1464c38b2be44a50b7bc6a5351b0eff8"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:45.578526+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 19,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:50:47.092737+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 30,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "ad0946d585124494b2997f6cdd0281b9"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:47.092737+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 30,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:50:48.619245+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 32,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "e6ed529eeac1489ba7fde51f13895e36"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:48.618244+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 32,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:50:50.070861+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 45,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "aa9980d1431d4e9286077b20342f2ba8"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:50.069862+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 45,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:50:51.576993+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 48,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "cbd7557b28b24dfa9c81ce2fa9dca853"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:50:51.576993+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 48,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:08.359607+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 50,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "87232ddb20f54679af9ef435853aad0f"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:08.358607+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 50,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:11.517353+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 48,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "183f3ffcf4ec450abc72259b5cd536b0"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:11.517353+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 48,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:12.954033+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 57,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "73c86a390d1f4808a69fa653e25cc413"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:12.953029+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 57,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:14.468637+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 64,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "e7fcb259048a46ad91de78f7dc8c2a03"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:14.468637+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 64,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:16.374694+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 66,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "d106f2c1e8f84cf6b5867375e6142bf1"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:16.374694+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 66,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:18.079824+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 68,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "744c42eb5ec441d28fd813e1ef2d592e"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:18.079824+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 68,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:19.514759+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 77,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "4c6342b3d78047cf817a4502beee301d"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:19.514759+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 77,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:20.936652+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 79,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "fee21c9efc774e31b54e32f8d0e71523"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:20.936652+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 79,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:28.679572+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 77,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "4b161762ddad4d739fb91f3718c5112c"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:28.679572+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 77,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:30.112866+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 75,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "f292d5298a5c48928796f55ef3198010"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:30.112866+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 75,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:31.859094+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 72,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "555d6a4c3c9b46ebb98f9103a5df6826"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:31.859094+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 72,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:35.473170+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 70,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "a489548258ec435a888eddf60d970288"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:35.473170+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 70,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:36.999597+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 68,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "199b6f173f4645bcb7a6ddbccdef5336"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:36.999597+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 68,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:39.765041+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 70,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "748df542506742cbbe35924f19efb9ad"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:39.765041+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 70,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:41.394095+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 72,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "f325d889533f4d11a92f1724b902adff"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:41.394095+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 72,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:43.577114+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 74,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "7b68e49576e54f22877214fd249c63db"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:43.577114+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 74,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:44.988452+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 71,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "73859b1a34a247c7ad6a177e62a0ae61"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:44.988452+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 71,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:46.403523+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 62,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "d21d8a022025438bbd1495ffacf0709a"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:46.402522+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 62,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:48.816352+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 64,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "a384c9fcaac74f859a0422d54e539266"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:48.816352+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 64,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:50.235272+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 66,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "b97f302e75754a62a86dcf388a8e52b9"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:50.235272+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 66,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:51.779360+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 68,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "dc67f41dd8f24d638099a4ca1ecf976e"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:51.779360+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 68,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:54.273924+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 66,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "3e389ed8060f4d72b98eefeb1c791d68"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:54.273924+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 66,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:55.838679+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 68,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "a093f2df53074f80b13ce2c64f9a385a"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:55.838679+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 68,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:57.884953+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 70,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "a947678cf02b484ca17bf5dffddfa075"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:57.884953+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 70,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:51:59.298660+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 75,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "7947df5ae6724df09dc28dbe3b511b0b"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:51:59.298660+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 75,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:52:00.731680+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 78,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "44ae058ce5c047a289845c6deaa12096"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:52:00.731680+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 78,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:52:02.703411+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 75,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "faa0432cd8234912a190391675603263"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:52:02.703411+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 75,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:52:04.452222+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 73,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "5476b4bd6d0f49d99ac147bf09a38b14"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:52:04.452222+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 73,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:52:06.729246+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 71,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "430a9c3f4ed9493ca876892cb1a65fbe"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:52:06.729246+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 71,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:52:08.163586+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 68,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "b658c400f0fa42cba79d383fd9c1cb4e"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:52:08.163586+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 68,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T13:52:09.600922+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 64,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 7,
+          "id": "f0049719b80e451ba46197b574fa7b52"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T13:52:09.600922+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 64,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      }
+    ],
+    "samples": [
+      {
+        "received_at": "2026-11-02T13:50:30.775831+00:00",
+        "received_monotonic": 75145.546,
+        "packet": {
+          "ver": 1,
+          "type": "telemetry",
+          "device": "smart-monitor-s3",
+          "firmware": "0.2.5",
+          "radar_calibration_pending": false,
+          "seq": 6131,
+          "uptime_ms": 1441457,
+          "lux": 2.5,
+          "light_ok": true,
+          "radar_ok": true,
+          "sensor_ok": true,
+          "presence": true,
+          "moving": false,
+          "stationary": true,
+          "radar_state": 2,
+          "radar_reserved": 0,
+          "moving_distance_cm": 0,
+          "stationary_distance_cm": 60,
+          "moving_energy": 0,
+          "stationary_energy": 100,
+          "distance_cm": 60,
+          "engineering": false,
+          "errors": [],
+          "radar_rejected_frames": 0,
+          "usb_dropped_lines": 1388,
+          "light_error": "ESP_OK",
+          "radar_init_error": "ESP_OK",
+          "free_heap": 348616,
+          "main_stack_min_free_bytes": 6132,
+          "status_led": {
+            "enabled": true,
+            "gpio": 38,
+            "brightness": 4,
+            "driver_ok": true,
+            "error": "ESP_OK",
+            "state": "present",
+            "updates": 3,
+            "requested_rgb": [
+              0,
+              4,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "received_at": "2026-11-02T13:51:22.227191+00:00",
+        "received_monotonic": 75197.0,
+        "packet": {
+          "ver": 1,
+          "type": "telemetry",
+          "device": "smart-monitor-s3",
+          "firmware": "0.2.5",
+          "radar_calibration_pending": false,
+          "seq": 6376,
+          "uptime_ms": 1492907,
+          "lux": 784.9999389648438,
+          "light_ok": true,
+          "radar_ok": true,
+          "sensor_ok": true,
+          "presence": true,
+          "moving": true,
+          "stationary": true,
+          "radar_state": 3,
+          "radar_reserved": 241,
+          "moving_distance_cm": 60,
+          "stationary_distance_cm": 40,
+          "moving_energy": 100,
+          "stationary_energy": 100,
+          "distance_cm": 40,
+          "engineering": false,
+          "errors": [],
+          "radar_rejected_frames": 0,
+          "usb_dropped_lines": 1388,
+          "light_error": "ESP_OK",
+          "radar_init_error": "ESP_OK",
+          "free_heap": 348616,
+          "main_stack_min_free_bytes": 6132,
+          "status_led": {
+            "enabled": true,
+            "gpio": 38,
+            "brightness": 4,
+            "driver_ok": true,
+            "error": "ESP_OK",
+            "state": "present",
+            "updates": 3,
+            "requested_rgb": [
+              0,
+              4,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
