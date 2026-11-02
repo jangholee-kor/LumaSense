@@ -1,0 +1,224 @@
+{
+  "date": "2026-11-02",
+  "scope": "real_board_flash_and_sensor_data",
+  "firmware": "0.2.3",
+  "source_commit": "26e52f7",
+  "board": {
+    "port": "COM64",
+    "chip": "ESP32-S3 QFN56",
+    "revision": "0.2",
+    "flash_bytes": 16777216,
+    "psram_hardware_reported_bytes": 8388608,
+    "psram_runtime_enabled": false,
+    "usb_mode": "USB-Serial/JTAG"
+  },
+  "gpio": {
+    "sda": 8,
+    "scl": 9,
+    "radar_rx": 16,
+    "radar_tx": 17,
+    "status_led": 38
+  },
+  "bh1750_address": "0x23",
+  "flash": {
+    "pass": true,
+    "offsets": [
+      "0x0",
+      "0x8000",
+      "0x10000"
+    ],
+    "esptool_written_hash_verifications": 3,
+    "app_sha256": "293dcdd9e33addbbfda81e90e3272d28a54d45d3740b35fe749c6e772e20aa2b"
+  },
+  "initial_failures_fixed": [
+    {
+      "firmware": "0.2.1",
+      "failure": "main_stack_overflow_and_reboot_loop",
+      "fix": "static_usb_buffer_and_8192_byte_main_stack"
+    },
+    {
+      "firmware": "0.2.2",
+      "failure": "valid_nonzero_reserved_byte_rejected",
+      "fix": "accept_and_report_reserved_byte_without_fixed_zero_check"
+    }
+  ],
+  "ten_minute_capture": {
+    "first_received_utc": "2026-11-02T07:24:34.863363+00:00",
+    "last_received_utc": "2026-11-02T07:34:34.616304+00:00",
+    "duration_between_received_packets_seconds": 599.752941,
+    "packet_count": 2857,
+    "healthy_count": 2857,
+    "sequence_gaps_independent": 0,
+    "restart_count_independent": 0,
+    "lux_min": 0.8333333134651184,
+    "lux_min_time_utc": "2026-11-02T07:27:41.760970+00:00",
+    "lux_max": 225.8333282470703,
+    "lux_first": 219.16665649414062,
+    "lux_last": 165.8333282470703,
+    "post_cover_max_lux": 225.8333282470703,
+    "radar_state_counts": {
+      "2": 2423,
+      "3": 434
+    },
+    "presence_counts": {
+      "True": 2857
+    },
+    "presence_transitions": [
+      {
+        "time_utc": "2026-11-02T07:24:34.863363+00:00",
+        "presence": true,
+        "distance_cm": 159
+      }
+    ],
+    "radar_reserved_values": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      8,
+      241,
+      242,
+      243,
+      244,
+      248
+    ],
+    "radar_rejected_frames_first": 0,
+    "radar_rejected_frames_last": 0,
+    "usb_dropped_lines_first": 280,
+    "usb_dropped_lines_last": 280,
+    "led_driver_errors": 0,
+    "main_stack_min_free_bytes": 6140,
+    "free_heap_range_bytes": [
+      347580,
+      347580
+    ],
+    "median_received_interval_seconds": 0.209998,
+    "raw_log_path": ".local\\board-test-20261102\\capture-0.2.3-600s\\sensor.jsonl",
+    "raw_log_sha256": "4bcadea58a943689f63fb87a28ace499f1df93d2d8dbb2c76feb487fef70056a",
+    "cli_summary": {
+      "duration_seconds": 600.0,
+      "telemetry": 2857,
+      "healthy": 2857,
+      "sensor_errors": 0,
+      "invalid_packets": 0,
+      "sequence_gaps": 0,
+      "restarts": 0,
+      "physical_result": "unverified",
+      "elapsed_seconds": 600.063,
+      "invalid_lines": 0,
+      "sensor_stream_pass": true,
+      "ten_minute_stream_pass": true
+    }
+  },
+  "user_actions_and_observations": {
+    "bh1750_covered_and_uncovered": "user_confirmed",
+    "lux_response": "pass_observed_in_usb_data",
+    "initial_rgb_color": "user_reported_green_or_yellow_green",
+    "initial_leave_test_condition": "user_later_clarified_they_remained_beside_sensor",
+    "empty_direction": "user_turned_sensor_toward_area_reported_without_people",
+    "calibrated_light_accuracy": "not_tested",
+    "led_optical_interference": "not_tested",
+    "passersby_during_session": "user_later_confirmed_people_passed_at_unspecified_times"
+  },
+  "empty_direction_capture": {
+    "summary": {
+      "duration_seconds": 90.0,
+      "telemetry": 428,
+      "healthy": 428,
+      "sensor_errors": 0,
+      "invalid_packets": 0,
+      "sequence_gaps": 0,
+      "restarts": 0,
+      "physical_result": "unverified",
+      "elapsed_seconds": 90.079,
+      "invalid_lines": 0,
+      "sensor_stream_pass": true,
+      "ten_minute_stream_pass": false
+    },
+    "presence_counts": {
+      "True": 428
+    },
+    "stationary_distance_cm_range": [
+      150,
+      925
+    ],
+    "absence_transition_observed": false,
+    "interpretation": "communication_pass_absence_not_demonstrated_in_uncontrolled_scene",
+    "remaining_checks": [
+      "physical_placement_and_empty_detection_volume",
+      "range_resolution_and_detection_gates",
+      "background_interference_and_thresholds"
+    ]
+  },
+  "serial_manager_real_device_software_reopen": {
+    "pass": true,
+    "attempt_packets": [
+      12,
+      11
+    ],
+    "physical_cable_replug": "not_run"
+  },
+  "normal_mode_after_restoring_engineering": {
+    "pass": true,
+    "packets": 47,
+    "summary": {
+      "duration_seconds": 10.0,
+      "telemetry": 47,
+      "healthy": 47,
+      "sensor_errors": 0,
+      "invalid_packets": 0,
+      "sequence_gaps": 0,
+      "restarts": 0,
+      "physical_result": "unverified",
+      "elapsed_seconds": 10.063,
+      "invalid_lines": 0,
+      "sensor_stream_pass": true,
+      "ten_minute_stream_pass": false
+    }
+  },
+  "commands": {
+    "ping": "pass",
+    "get_status": "pass",
+    "engineering_on": "pass_with_ack",
+    "engineering_off": "pass_with_ack"
+  },
+  "persistent_radar_parameters_changed": false,
+  "automatic_monitor_brightness_or_sleep_commands_sent": false,
+  "still_unverified": [
+    "true_empty_scene_absence_and_redetection",
+    "actual_blue_yellow_red_led_colors",
+    "led_light_bias",
+    "psram_startup",
+    "physical_usb_replug",
+    "end_to_end_auto_monitor_control"
+  ],
+  "packages": [
+    {
+      "profile": "default",
+      "firmware": "0.2.3",
+      "app_bytes": 285728,
+      "app_sha256": "293dcdd9e33addbbfda81e90e3272d28a54d45d3740b35fe749c6e772e20aa2b",
+      "merged_sha256": "572856AC69D739E9C0C668A1C96B3A358F9BED2D4976E67AE0580A115B8D12BA",
+      "zip_sha256": "413baadacf35283807dfe44afeb99dbd96cb989632dc40b633e8446af2c135b7"
+    },
+    {
+      "profile": "psram",
+      "firmware": "0.2.3",
+      "app_bytes": 293408,
+      "app_sha256": "4dcb7ae01da6ba01742d2cd8356554866cf1c5857f34795ac4fa3dba6878596d",
+      "merged_sha256": "0FA806D85DC9487D6AAA960391248855B82E74FD64FC1A0BB3197BA0BF7B8C64",
+      "zip_sha256": "5a7e6b8755a3fda59f056b7cb5e67614824a86fbf5b57053dc2c0a7444c76ddc"
+    }
+  ],
+  "latest_user_requested_status_check": {
+    "checked_at_utc": "2026-11-02T07:42:35.309841+00:00",
+    "packets": 19,
+    "all_healthy": true,
+    "presence": true,
+    "moving": false,
+    "stationary": true,
+    "distance_cm": 156,
+    "stationary_energy": 100
+  }
+}
