@@ -1,0 +1,172 @@
+{
+  "date": "2026-11-02",
+  "source_commit": "fb2cf7c",
+  "display": "Philips 32M2N8900",
+  "display_mode": "SDR",
+  "brightness": {
+    "mode": "two_level",
+    "threshold_lux": 259.2,
+    "on_brightness": 55,
+    "off_brightness": 2,
+    "on_lux": 517.5,
+    "off_lux": 0.8333333134651184,
+    "on_recorded_at": "2026-11-02T14:20:36.858207+00:00",
+    "off_recorded_at": "2026-11-02T14:21:38.988385+00:00",
+    "stable_side_seconds": 1.0,
+    "physical_result": "pass",
+    "user_observation": "켜면 밝아지고 끄면 어두워짐",
+    "events": [
+      {
+        "time": "2026-11-02T14:22:33.423246+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 2,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 4,
+          "id": "bf3671b1960248129d1c224160f4888f"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T14:22:33.423246+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 2,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T14:22:43.933672+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 55,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 4,
+          "id": "b3a770a337424368adbb905473d066fb"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T14:22:43.933672+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 55,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T14:22:48.958980+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 2,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 4,
+          "id": "78f645ee997a448cb18cf9f96f3959dd"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T14:22:48.958980+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 2,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T14:22:56.783563+00:00",
+        "event": "automation_result",
+        "action": {
+          "kind": "brightness",
+          "percent": 55,
+          "monitor_id": "5&11353a37&0&UID8451",
+          "epoch": 4,
+          "id": "b3b21f3c2117431da7ff85e20e88ba48"
+        },
+        "ok": true,
+        "result": {
+          "time": "2026-11-02T14:22:56.783563+00:00",
+          "event": "brightness_requested",
+          "monitor_id": "5&11353a37&0&UID8451",
+          "percent": 55,
+          "physical_result": "unverified"
+        },
+        "error": "",
+        "physical_result": "unverified"
+      }
+    ]
+  },
+  "presence_configuration": {
+    "radar_reported_absence_seconds": 5,
+    "radar_query_ack": {
+      "ver": 1,
+      "type": "ack",
+      "id": "9de9c44d40cf450faba59436256fd089",
+      "cmd": "radar_get_config",
+      "radar": {
+        "resolution_code": 3,
+        "gate_width_cm": 20,
+        "min_gate": 1,
+        "max_gate": 8,
+        "absence_seconds": 5,
+        "out_polarity": 0,
+        "moving_thresholds": [
+          100,
+          100,
+          35,
+          35,
+          35,
+          35,
+          35,
+          35,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100
+        ],
+        "stationary_thresholds": [
+          100,
+          100,
+          25,
+          25,
+          25,
+          25,
+          25,
+          25,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100
+        ],
+        "complete": true
+      },
+      "ok": true,
+      "error": "ESP_OK"
+    },
+    "app_absence_seconds": 20,
+    "recent_input_seconds": 5,
+    "countdown_seconds": 5,
+    "wake_method": "execution_state",
+    "requested_physical_departure_off_seconds_approx": 30,
+    "requested_physical_wake_seconds": [
+      2,
+      3
+    ],
+    "physical_result": "unverified"
+  },
+  "checks": {
+    "windows_suite_passed": 120,
+    "gui_recheck_passed": 13,
+    "korean_ui_render_review": true
+  }
+}
