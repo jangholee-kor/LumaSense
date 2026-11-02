@@ -11,3 +11,9 @@ def helper_command(module, *args):
 
 def process_cwd():
     return Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
+
+
+def application_command(*args):
+    if getattr(sys, "frozen", False):
+        return [sys.executable, *args]
+    return [sys.executable, "-m", "windows.entry", *args]

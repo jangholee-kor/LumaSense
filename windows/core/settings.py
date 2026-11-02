@@ -34,6 +34,14 @@ class Settings:
     production_wake_method: str = "execution_state"
     start_minimized: bool = False
     login_startup: bool = False
+    radar_engineering: bool = False
+    radar_apply_range: bool = False
+    radar_min_gate: int = 0
+    radar_max_gate: int = 1
+    radar_absence_seconds: int = 5
+    radar_apply_thresholds: bool = False
+    radar_moving_thresholds: list = field(default_factory=lambda: [35] * 14)
+    radar_stationary_thresholds: list = field(default_factory=lambda: [35] * 14)
 
     @classmethod
     def load(cls, path: Path):
@@ -57,18 +65,25 @@ class Settings:
         for name in ("serial_port", "serial_number"):
             if not isinstance(getattr(self, name), str) or len(getattr(self, name)) > 256:
                 raise ValueError(f"잘못된 {name}")
-        for name in ("connect_on_start", "auto_brightness", "auto_presence", "use_recent_input", "start_minimized", "login_startup"):
+        for name in ("connect_on_start", "auto_brightness", "auto_presence", "use_recent_input", "start_minimized", "login_startup",
+                     "radar_engineering", "radar_apply_range", "radar_apply_thresholds"):
             if type(getattr(self, name)) is not bool:
                 raise ValueError(f"잘못된 {name}")
         ranges = {"brightness_min": (0, 100), "brightness_max": (0, 100), "brightness_deadband": (1, 20),
                   "manual_pause_seconds": (0, 86400), "absence_seconds": (5, 3600),
-                  "recent_input_seconds": (1, 3600), "max_distance_cm": (1, 900)}
+                  "recent_input_seconds": (1, 3600), "max_distance_cm": (1, 900),
+                  "radar_min_gate": (0, 13), "radar_max_gate": (0, 13), "radar_absence_seconds": (5, 65535)}
         for name, (low, high) in ranges.items():
             value = getattr(self, name)
             if type(value) is not int or not low <= value <= high:
                 raise ValueError(f"{name}: {low}~{high} 정수 필요")
         if self.brightness_min > self.brightness_max:
             raise ValueError("최소 밝기는 최대 밝기 이하여야 합니다.")
+        if self.radar_min_gate > self.radar_max_gate:
+            raise ValueError("레이더 최소 거리문은 최대 거리문 이하여야 합니다.")
+        for values in (self.radar_moving_thresholds, self.radar_stationary_thresholds):
+            if not isinstance(values, list) or len(values) != 14 or any(type(v) is not int or not 0 <= v <= 100 for v in values):
+                raise ValueError("레이더 민감도는 거리문 14개의 0~100 정수 필요")
         for name, low, high in (("transition_seconds", 1, 3), ("ema_alpha", .01, 1), ("brightness_interval", .2, 10),
                                 ("stabilization_seconds", 1, 60), ("sensor_stale_seconds", .5, 15)):
             value = getattr(self, name)

@@ -1,0 +1,218 @@
+import os
+import time
+from types import SimpleNamespace
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+import pytest
+from PySide6.QtWidgets import QApplication, QPushButton
+
+from windows.core.diagnostics import Diagnostics
+from windows.core.display_controller import DisplayController
+from windows.core.settings import Settings
+from windows.core.simulation import SimulatedBackend
+from windows.ui.main_window import MainWindow
+
+
+@pytest.fixture(scope="module")
+def app():
+    return QApplication.instance() or QApplication([])
+
+
+def pump(app, condition, timeout=3):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        app.processEvents()
+        if condition():
+            return True
+        time.sleep(.01)
+    return False
+
+
+@pytest.fixture
+def simulated(app, tmp_path):
+    log = Diagnostics(tmp_path)
+    settings = Settings()
+    view = MainWindow(log, settings, DisplayController(SimpleNamespace(), log), simulation=True)
+    assert pump(app, lambda: bool(view.monitors.currentData()))
+    yield view
+    view.stop_services()
+    view.quitting = True
+    view.close()
+    view.pool.waitForDone(3000)
+    view.power_pool.waitForDone(3000)
+
+
+def test_manual_tray_slider_and_settings_signals(app, simulated):
+    view = simulated
+    assert isinstance(view.backend, SimulatedBackend)
+    view.auto_panel.auto_brightness.setChecked(True)
+    button = next(b for b in view.auto_panel.findChildren(QPushButton) if b.text() == "설정 적용")
+    button.click()
+    assert view.settings.auto_brightness
+    assert Settings.load(view.log.root / "settings.json").auto_brightness
+    view.tray_slider.setValue(33)
+    view.tray_slider.sliderReleased.emit()
+    assert pump(app, lambda: not view.busy)
+    assert view.backend.value == 33
+    assert view.runtime.brightness.pause_until > time.monotonic() + 890
+    view.pause_automation()
+    assert view.runtime.pause_until > time.monotonic() + 890
+    view.resume_automation()
+    assert view.runtime.pause_until == 0
+
+
+def test_profile_round_trip_without_applying_import(app, simulated, monkeypatch, tmp_path):
+    from windows.ui import main_window
+    view = simulated
+    path = tmp_path / "profile.json"
+    view.auto_panel.set_curve([[0, 12], [1000, 80]])
+    view.fallback_delay.setValue(45)
+    monkeypatch.setattr(main_window.QFileDialog, "getSaveFileName", lambda *a: (str(path), ""))
+    view.export_settings()
+    assert Settings.load(path).curve == [[0, 12], [1000, 80]]
+    assert Settings.load(path).fallback_seconds == 45
+    view.auto_panel.set_curve([[0, 20], [1000, 50]])
+    monkeypatch.setattr(main_window.QFileDialog, "getOpenFileName", lambda *a: (str(path), ""))
+    old = view.settings.curve
+    view.import_settings()
+    assert view.auto_panel.collect(view.settings).curve == [[0, 12], [1000, 80]]
+    assert view.settings.curve == old
+    view.apply_automation_settings()
+    assert view.settings.curve == [[0, 12], [1000, 80]]
+
+
+def test_simulation_never_launches_live_backend(simulated, monkeypatch):
+    from windows.ui import main_window
+    view = simulated
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Live output invoked in simulation")
+    monkeypatch.setattr(main_window.subprocess, "Popen", forbidden)
+    monkeypatch.setattr(main_window.TwinkleTrayBackend, "command", forbidden)
+    view.launch_twinkle()
+    assert view.controller.power.off()["simulated"]
+    assert view.controller.power.wake("execution_state")["simulated"]
+    view.configure_radar()
+    assert "시뮬레이션" in view.auto_panel.radar_result.text()
+
+
+def test_gui_simulation_full_auto_off_and_redetection(app, tmp_path):
+    log = Diagnostics(tmp_path)
+    settings = Settings(auto_brightness=True, auto_presence=True, absence_seconds=5, stabilization_seconds=1)
+    view = MainWindow(log, settings, DisplayController(SimpleNamespace(), log), simulation=True)
+    try:
+        view.auto_panel.sim_lux.setValue(500)
+        view.auto_panel.sim_presence.setCurrentIndex(2)
+        assert pump(app, lambda: view.runtime.presence.owns_off, timeout=15)
+        assert view.runtime.brightness.requested is not None
+        assert view.backend.value != 40
+        assert view.runtime.guard is not None
+        view.auto_panel.sim_presence.setCurrentIndex(0)
+        assert pump(app, lambda: not view.runtime.presence.owns_off)
+        assert "wake" in view.runtime.last_action
+        view.auto_panel.sim_error.setChecked(True)
+        assert pump(app, lambda: view.runtime.presence.state.value == "SENSOR_ERROR")
+        assert not view.auto_fault
+    finally:
+        view.stop_services()
+        view.quitting = True
+        view.close()
+        view.pool.waitForDone(3000)
+        view.power_pool.waitForDone(3000)
+
+
+def test_port_edit_and_invalid_curve(simulated):
+    view = simulated
+    view.auto_panel.port.setEditText("COM123")
+    assert view.auto_panel.selected_port() == "COM123"
+    view.auto_panel.curve.insertRow(0)
+    with pytest.raises(ValueError, match="셀"):
+        view.auto_panel.collect(view.settings)
+
+
+def test_radar_request_requires_explicit_persistent_fields(simulated, tmp_path):
+    panel = simulated.auto_panel
+    assert panel.radar_request() == {"cmd": "radar_config", "engineering": False}
+    panel.radar_range.setChecked(True)
+    panel.radar_max.setValue(3)
+    panel.radar_thresholds.setChecked(True)
+    panel.thresholds.cellWidget(4, 2).setValue(56)
+    request = panel.radar_request()
+    assert request["max_gate"] == 3 and request["stationary_thresholds"][4] == 56
+    path = tmp_path / "radar-profile.json"
+    panel.collect(simulated.settings).save(path)
+    restored = Settings.load(path)
+    assert restored.radar_max_gate == 3 and restored.radar_stationary_thresholds[4] == 56
+    panel.radar_min.setValue(5)
+    with pytest.raises(ValueError, match="최소"):
+        panel.radar_request()
+
+
+def test_disable_is_immediate_despite_invalid_draft(simulated):
+    view = simulated
+    view.auto_panel.auto_presence.setChecked(True)
+    view.apply_automation_settings()
+    assert view.settings.auto_presence
+    view.auto_panel.curve.insertRow(0)
+    view.auto_panel.auto_presence.setChecked(False)
+    assert not view.settings.auto_presence and not view.runtime.settings.auto_presence
+    assert not Settings.load(view.log.root / "settings.json").auto_presence
+
+
+def test_real_serial_worker_signals_reconnect_gui(app, tmp_path, monkeypatch):
+    from windows.ui import main_window
+    from windows.core.serial_manager import SerialManager
+    from windows.tests.test_serial_manager import FakeSerial, packet
+    first, second = FakeSerial(), FakeSerial()
+    first.add(packet(lux=111))
+    second.add(packet(lux=222))
+    created = []
+    def factory(**kwargs):
+        device = (first, second)[len(created)]
+        created.append(device)
+        return device
+    def manager(*args, **kwargs):
+        return SerialManager(*args, **kwargs, factory=factory, enumerator=lambda: [], retry_seconds=.05)
+    monkeypatch.setattr(main_window, "SerialManager", manager)
+    log = Diagnostics(tmp_path)
+    view = MainWindow(log, Settings(monitor_id="remember-target"), DisplayController(SimpleNamespace(), log), auto_scan=False)
+    try:
+        view.auto_panel.port.setEditText("COM-test")
+        view.connect_sensor()
+        assert pump(app, lambda: view.runtime.sensors.packet is not None)
+        assert view.runtime.sensors.packet["lux"] == 111
+        assert view.settings.monitor_id == "remember-target"
+        first.broken = True
+        assert pump(app, lambda: view.runtime.sensors.packet is not None and view.runtime.sensors.packet["lux"] == 222)
+        assert "연결됨" in view.auto_panel.connection.text()
+    finally:
+        view.stop_services()
+        view.quitting = True
+        view.close()
+
+
+def test_failed_login_registration_restores_saved_settings(app, tmp_path, monkeypatch):
+    from windows.ui import main_window
+    log = Diagnostics(tmp_path)
+    view = MainWindow(log, Settings(), DisplayController(SimpleNamespace(), log), auto_scan=False)
+    def fail(value):
+        raise OSError("registry unavailable")
+    monkeypatch.setattr(main_window.startup, "set_enabled", fail)
+    try:
+        view.auto_panel.login_start.setChecked(True)
+        view.apply_automation_settings()
+        assert not view.settings.login_startup
+        assert not Settings.load(log.root / "settings.json").login_startup
+    finally:
+        view.stop_services()
+        view.quitting = True
+        view.close()
+
+
+def test_shutdown_power_recovery_runs_outside_gui_thread(simulated, monkeypatch):
+    import threading
+    threads = []
+    monkeypatch.setattr(simulated.runtime, "shutdown", lambda: threads.append(threading.get_ident()))
+    simulated.stop_services()
+    assert simulated.power_pool.waitForDone(3000)
+    assert threads and threads[0] != threading.get_ident()

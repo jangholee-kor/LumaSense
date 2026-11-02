@@ -26,6 +26,7 @@ def window(app, tmp_path):
     controller = DisplayController(SimpleNamespace(off=lambda: calls.append("off")), Diagnostics(tmp_path))
     window = MainWindow(controller.log, Settings(), controller, auto_scan=False)
     yield window, calls
+    window.stop_services()
     window.timer.stop()
     window.tray.hide()
     window.quitting = True

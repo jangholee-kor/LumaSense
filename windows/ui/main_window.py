@@ -2,22 +2,43 @@ import math
 import os
 import subprocess
 import uuid
+import json
+import time
+from dataclasses import replace
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, Signal, Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout, QGroupBox,
                                QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMenu, QPushButton, QSlider,
-                               QSpinBox, QSystemTrayIcon, QTextEdit, QVBoxLayout, QWidget, QScrollArea)
+                               QSpinBox, QSystemTrayIcon, QTextEdit, QVBoxLayout, QWidget, QScrollArea,
+                               QTabWidget, QWidgetAction)
 
 from windows.core.brightness import TwinkleTrayBackend, discover_twinkle
 from windows.core.display_controller import State
-from windows.core.watchdog import recovery_window_seconds
+from windows.core.watchdog import recovery_window_seconds, arm_watchdog
+from windows.core.automation import AutomationRuntime
+from windows.core.serial_manager import SerialManager
+from windows.core.sensor_protocol import ports
+from windows.core.simulation import SimulatedBackend, SimulatedGuard, SimulatedPower, sensor_packet
+from windows.core.windows_session import WindowsSession
+from windows.core.processes import application_command, process_cwd
+from windows.core import startup
+from windows.core.settings import Settings
+from windows.core.sensor_log import SensorRecorder
+from windows.ui.automation_panel import AutomationPanel
+from windows import __version__
 
 
 class Signals(QObject):
     done = Signal(object)
     error = Signal(str)
+
+
+class SerialSignals(QObject):
+    packet = Signal(object)
+    status = Signal(object)
+    command = Signal(object)
 
 
 class Job(QRunnable):
@@ -50,26 +71,55 @@ def app_icon():
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, diagnostics, settings, controller, backend=None, auto_scan=True):
+    def __init__(self, diagnostics, settings, controller, backend=None, auto_scan=True, simulation=False):
         super().__init__()
         self.log, self.settings, self.controller = diagnostics, settings, controller
-        self.backend = backend
+        if simulation:
+            controller.power = SimulatedPower()
+            controller.arm = lambda *values: arm_watchdog(*values, simulate=True)
+        self.backend = SimulatedBackend(diagnostics) if simulation else backend
+        self.simulation = simulation
+        self.session = None if simulation else WindowsSession()
+        self.runtime = AutomationRuntime(settings, diagnostics, controller.power,
+            input_provider=(lambda: 1000) if simulation else self.session.input_age,
+            locked_provider=(lambda: False) if simulation else self.session.locked,
+            **({"guard_factory": SimulatedGuard} if simulation else {}))
+        self.serial_worker = None
+        self.serial_token = 0
+        self.pending_connect = False
+        self.serial_signals = SerialSignals(self)
+        self.serial_signals.packet.connect(self.sensor_packet)
+        self.serial_signals.status.connect(self.sensor_status)
+        self.serial_signals.command.connect(self.sensor_command_result)
+        self.sim_seq = 0
+        self.sim_recorder = SensorRecorder(diagnostics.root) if simulation else None
+        self.services_stopped = False
+        self.auto_fault = False
+        self.notified_countdown = None
+        self.sim_started = time.monotonic()
+        self.sim_timer = QTimer(self)
+        self.sim_timer.setInterval(200)
+        self.sim_timer.timeout.connect(self.simulation_packet)
+        self.queued_manual = None
+        self.power_jobs = set()
+        self.power_pool = QThreadPool(self)
+        self.power_pool.setMaxThreadCount(1)
         self.busy = False
         self.quitting = False
         self.last_test = ""
         self.jobs = set()
         self.pool = QThreadPool(self)
         self.pool.setMaxThreadCount(1)
-        self.setWindowTitle("LumaSense · Smart Monitor Controller")
+        self.setWindowTitle(f"LumaSense {__version__} · Smart Monitor Controller" + (" · 시뮬레이션" if simulation else ""))
         self.setWindowIcon(app_icon())
         self.resize(900, 820)
         self.setStyleSheet("QGroupBox{font-weight:600;margin-top:12px;padding-top:16px} QPushButton{padding:7px 12px} QLineEdit,QComboBox,QSpinBox{padding:5px}")
         body = QWidget()
         layout = QVBoxLayout(body)
-        heading = QLabel("Smart Monitor Controller  /  Phase 1")
+        heading = QLabel("Smart Monitor Controller · 수동 진단")
         heading.setStyleSheet("font-size:22px;font-weight:600")
         layout.addWidget(heading)
-        note = QLabel("수동 모니터 제어 검증 · 센서 자동 제어는 Phase 1 검증 후 연결합니다.\nAPI 응답과 화면의 실제 동작은 별도로 기록합니다.")
+        note = QLabel("선택한 모니터의 밝기와 전체 화면의 절전·복귀 방식을 시험합니다.\nAPI 응답과 화면의 실제 동작은 별도로 기록합니다.")
         layout.addWidget(note)
 
         group = QGroupBox("01  모니터 연결")
@@ -107,6 +157,7 @@ class MainWindow(QMainWindow):
         self.level.setSuffix(" %")
         self.level.setValue(50)
         self.slider.valueChanged.connect(self.level.setValue)
+        self.slider.sliderReleased.connect(lambda: self.set_brightness(self.slider.value()))
         self.level.valueChanged.connect(self.slider.setValue)
         row.addWidget(self.level)
         apply = QPushButton("적용")
@@ -179,6 +230,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(row)
         self.output = QTextEdit()
         self.output.setReadOnly(True)
+        self.output.document().setMaximumBlockCount(500)
         layout.addWidget(self.output, 1)
         footer = QHBoxLayout()
         logs = QPushButton("로그 폴더 열기")
@@ -197,13 +249,44 @@ class MainWindow(QMainWindow):
         root = QWidget()
         root_layout = QVBoxLayout(root)
         root_layout.setContentsMargins(0, 0, 0, 0)
-        root_layout.addWidget(scroll)
+        self.pages = QTabWidget()
+        self.diagnostic_page = scroll
+        self.auto_scroll = QScrollArea()
+        self.auto_scroll.setWidgetResizable(True)
+        self.install_auto_panel(settings)
+        self.pages.addTab(self.auto_scroll, "자동 제어 / 센서")
+        self.pages.addTab(scroll, "수동 모니터 시험")
+        root_layout.addWidget(self.pages)
         root_layout.addLayout(footer)
         self.setCentralWidget(root)
 
         self.tray = QSystemTrayIcon(self.windowIcon(), self)
-        self.tray.setToolTip("Smart Monitor Controller · 수동 검증")
+        self.tray.setToolTip("Smart Monitor Controller" + (" · 시뮬레이션" if simulation else ""))
         menu = QMenu(self)
+        self.tray_auto_brightness = QAction("자동 밝기", self)
+        self.tray_auto_brightness.setCheckable(True)
+        self.tray_auto_brightness.setChecked(settings.auto_brightness)
+        self.tray_auto_brightness.triggered.connect(lambda checked: self.tray_toggle("brightness", checked))
+        menu.addAction(self.tray_auto_brightness)
+        self.tray_auto_presence = QAction("인체 감지 자동 절전", self)
+        self.tray_auto_presence.setCheckable(True)
+        self.tray_auto_presence.setChecked(settings.auto_presence)
+        self.tray_auto_presence.triggered.connect(lambda checked: self.tray_toggle("presence", checked))
+        menu.addAction(self.tray_auto_presence)
+        self.tray_slider = QSlider(Qt.Orientation.Horizontal)
+        self.tray_slider.setRange(0, 100)
+        self.tray_slider.setValue(50)
+        self.tray_slider.sliderReleased.connect(lambda: self.set_brightness(self.tray_slider.value()))
+        slider_action = QWidgetAction(self)
+        slider_action.setDefaultWidget(self.tray_slider)
+        menu.addAction(slider_action)
+        pause_action = QAction("자동 제어 15분 일시 중단", self)
+        pause_action.triggered.connect(self.pause_automation)
+        menu.addAction(pause_action)
+        resume_action = QAction("자동 제어 재개", self)
+        resume_action.triggered.connect(self.resume_automation)
+        menu.addAction(resume_action)
+        menu.addSeparator()
         for label, slot in [("설정 / 시험 창 열기", self.showNormal), ("화면 절전 시험", self.tray_sleep),
                              ("카운트다운 취소", self.cancel_sleep), ("복귀 요청", self.wake_now), ("종료", self.quit_app)]:
             action = QAction(label, self)
@@ -211,6 +294,7 @@ class MainWindow(QMainWindow):
             menu.addAction(action)
         self.tray.setContextMenu(menu)
         self.tray.activated.connect(lambda reason: self.showNormal() if reason == QSystemTrayIcon.ActivationReason.DoubleClick else None)
+        self.tray.messageClicked.connect(self.pause_automation)
         if QSystemTrayIcon.isSystemTrayAvailable():
             self.tray.show()
         self.timer = QTimer(self)
@@ -220,6 +304,8 @@ class MainWindow(QMainWindow):
         self.message(f"로그 위치: {self.log.root}")
         if auto_scan:
             QTimer.singleShot(0, self.scan_monitors)
+        if simulation or settings.connect_on_start:
+            QTimer.singleShot(0, self.connect_sensor)
 
     def message(self, text):
         self.output.append(text)
@@ -258,7 +344,7 @@ class MainWindow(QMainWindow):
 
     def save_settings(self):
         self.settings.twinkle_path = self.path.text().strip()
-        self.settings.monitor_id = self.monitors.currentData() or ""
+        self.settings.monitor_id = self.monitors.currentData() or self.settings.monitor_id
         self.settings.wake_method = self.method.currentData()
         self.settings.recovery_seconds = self.delay.value()
         self.settings.fallback_seconds = self.fallback_delay.value()
@@ -276,6 +362,9 @@ class MainWindow(QMainWindow):
             return
         configured = self.path.text().strip()
         def scan():
+            if self.simulation:
+                backend = self.backend if isinstance(self.backend, SimulatedBackend) else SimulatedBackend(self.log)
+                return "시뮬레이션", backend, backend.monitors()
             exe = discover_twinkle(configured)
             if not exe:
                 raise FileNotFoundError("Twinkle Tray를 찾지 못했습니다. 설치 경로를 지정하세요.")
@@ -300,8 +389,13 @@ class MainWindow(QMainWindow):
         for monitor in getattr(self, "monitor_list", []):
             if monitor.identifier == self.monitors.currentData():
                 self.reported.setText(f"Twinkle Tray 보고 밝기: {monitor.brightness}% (실제 휘도 측정 아님)")
+                self.runtime.set_monitor(monitor.identifier, monitor.brightness)
+                self.auto_panel.target_monitor.setText(f"{monitor.name} · {monitor.identifier}")
 
     def launch_twinkle(self):
+        if self.simulation:
+            self.message("시뮬레이션에서는 실제 Twinkle Tray를 실행하지 않습니다.")
+            return
         exe = discover_twinkle(self.path.text().strip())
         if not exe:
             self.fail("Twinkle Tray를 찾지 못했습니다.")
@@ -313,6 +407,11 @@ class MainWindow(QMainWindow):
     def set_brightness(self, value):
         if self.controller.state != State.IDLE or not self.backend or not self.monitors.currentData():
             self.fail("진행 중인 절전 시험이 끝난 뒤 모니터를 선택하세요.")
+            return
+        self.runtime.manual_brightness(value)
+        if self.busy:
+            self.queued_manual = (self.monitors.currentData(), value)
+            self.message("진행 중인 요청 이후 마지막 수동 밝기를 적용합니다.")
             return
         backend, identifier = self.backend, self.monitors.currentData()
         test_id = uuid.uuid4().hex
@@ -327,13 +426,15 @@ class MainWindow(QMainWindow):
         self.submit(change, done)
 
     def start_sleep(self):
-        if self.busy:
+        if self.busy or self.power_pool.activeThreadCount() or self.runtime.presence.owns_off:
             self.message("진행 중인 명령이 끝난 뒤 다시 시도하세요.")
             return
         try:
             self.save_settings()
             if self.method.currentData() == "mouse_move" and not self.mouse.isChecked():
                 raise ValueError("마우스 이동 복귀를 먼저 허용하세요.")
+            self.runtime.pause()
+            self.runtime.external_block = True
             self.controller.start()
             self.cancel_button.setEnabled(True)
             self.sleep_button.setEnabled(False)
@@ -352,6 +453,7 @@ class MainWindow(QMainWindow):
         if self.controller.cancel():
             self.power_status.setText("절전 시험 취소됨 · 화면 절전 명령 없음")
             self.reset_controls()
+            self.runtime.external_block = False
 
     def reset_controls(self):
         self.cancel_button.setEnabled(False)
@@ -361,6 +463,7 @@ class MainWindow(QMainWindow):
             widget.setEnabled(True)
 
     def tick(self):
+        self.automation_tick()
         if self.controller.state != State.COUNTDOWN:
             return
         remaining = self.controller.deadline - self.controller.clock()
@@ -384,9 +487,14 @@ class MainWindow(QMainWindow):
         self.controller.finish()
         self.reset_controls()
         self.timer.start()
+        self.runtime.external_block = False
         self.power_status.setText("복귀 시도 시간 경과 · 화면 상태는 관찰 후 기록하세요.")
 
     def wake_now(self):
+        self.runtime.pause()
+        if self.runtime.presence.owns_off or self.power_pool.activeThreadCount():
+            self.message("자동 절전 복귀를 요청했습니다. 진행 중인 전원 요청 후 처리합니다.")
+            return
         if self.controller.state != State.IDLE:
             self.message("예약된 복귀 프로세스가 실행 중입니다.")
             return
@@ -415,8 +523,316 @@ class MainWindow(QMainWindow):
         else:
             self.message("트레이가 없거나 절전 시험 중이므로 창을 유지합니다.")
 
+    def install_auto_panel(self, settings):
+        panel = AutomationPanel(settings, self.simulation)
+        for signal, method in ((panel.connect_requested, self.connect_sensor), (panel.disconnect_requested, self.disconnect_sensor),
+                (panel.refresh_requested, self.refresh_ports), (panel.apply_requested, self.apply_automation_settings),
+                (panel.pause_requested, self.pause_automation), (panel.resume_requested, self.resume_automation),
+                (panel.export_requested, self.export_settings), (panel.import_requested, self.import_settings),
+                (panel.simulation_requested, self.open_simulation), (panel.radar_requested, self.configure_radar)):
+            signal.connect(method)
+        panel.monitor_requested.connect(lambda: self.pages.setCurrentWidget(self.diagnostic_page))
+        panel.auto_brightness.toggled.connect(lambda checked: self.disable_automation("brightness") if not checked else None)
+        panel.auto_presence.toggled.connect(lambda checked: self.disable_automation("presence") if not checked else None)
+        if self.simulation:
+            panel.login_start.setEnabled(False)
+        self.auto_panel = panel
+        self.auto_scroll.setWidget(panel)
+
+    def disable_automation(self, kind):
+        # Turning a control off must work even if a different draft field is invalid.
+        field = "auto_brightness" if kind == "brightness" else "auto_presence"
+        if not getattr(self.settings, field):
+            return
+        with self.runtime.lock:
+            setattr(self.settings, field, False)
+            setattr(self.runtime.settings, field, False)
+            self.runtime.epoch += 1
+            if kind == "presence":
+                self.runtime.presence.cancel(time.monotonic())
+        if hasattr(self, "tray_auto_brightness"):
+            (self.tray_auto_brightness if kind == "brightness" else self.tray_auto_presence).setChecked(False)
+        try:
+            self.save_settings()
+        except Exception as error:
+            self.fail(str(error))
+
+    def refresh_ports(self):
+        if self.simulation:
+            self.auto_panel.set_ports([])
+        else:
+            self.submit(ports, self.auto_panel.set_ports)
+
+    def connect_sensor(self):
+        if self.simulation:
+            self.sim_timer.start()
+            self.auto_panel.connection.setText("가상 센서 연결됨 · 실제 USB 미사용")
+            self.runtime.sensor_status({"connected": False, "message": "시뮬레이션 시작"})
+            self.simulation_packet(new_session=True)
+            return
+        if self.serial_worker and self.serial_worker.thread and self.serial_worker.thread.is_alive():
+            if self.serial_worker.stop_event.is_set():
+                self.pending_connect = True
+                self.auto_panel.connection.setText("기존 포트 종료 후 다시 연결합니다.")
+            else:
+                self.message("시리얼 작업이 이미 실행 중입니다.")
+            return
+        port = self.auto_panel.selected_port()
+        number = self.auto_panel.serial_number.text().strip()
+        try:
+            self.settings.serial_port, self.settings.serial_number = port, number
+            self.save_settings()
+            self.serial_token += 1
+            token = self.serial_token
+            self.serial_worker = SerialManager(self.log,
+                lambda event: self.serial_signals.packet.emit({**event, "token": token}),
+                lambda event: self.serial_signals.status.emit({**event, "token": token}),
+                lambda event: self.serial_signals.command.emit({**event, "token": token}),
+                port=port, serial_number=number, stale_seconds=self.settings.sensor_stale_seconds)
+            self.serial_worker.start()
+        except Exception as error:
+            self.fail(str(error))
+
+    def disconnect_sensor(self):
+        self.pending_connect = False
+        self.sim_timer.stop()
+        if self.serial_worker:
+            self.serial_worker.stop()
+        self.runtime.sensor_status({"connected": False, "message": "연결 종료"})
+        self.auto_panel.connection.setText("연결 종료 요청 · 포트가 닫힌 뒤 플래시할 수 있습니다.")
+
+    def sensor_packet(self, event):
+        if event.get("token", self.serial_token) != self.serial_token:
+            return
+        try:
+            self.runtime.ingest(event)
+        except ValueError as error:
+            self.fail(str(error))
+
+    def sensor_status(self, event):
+        if event.get("token") != self.serial_token:
+            return
+        self.runtime.sensor_status(event)
+        self.auto_panel.connection.setText(f"{event.get('port', '')} · {event['message']}")
+
+    def sensor_command_result(self, event):
+        if event.get("token") != self.serial_token:
+            return
+        self.auto_panel.radar_result.setText("설정 ACK 성공 · 실제 감지 결과는 확인이 필요합니다." if event["ok"] else f"설정 실패: {event['error']}")
+
+    def simulation_packet(self, new_session=False):
+        if not self.simulation:
+            return
+        now = time.monotonic()
+        self.sim_seq += 1
+        panel = self.auto_panel
+        packet = sensor_packet(self.sim_seq, int((now - self.sim_started) * 1000), panel.sim_lux.value(),
+                               panel.sim_presence.currentData(), panel.sim_error.isChecked())
+        self.sim_recorder.write(packet, now, simulated=True)
+        self.sensor_packet({"packet": packet, "received_at": now, "new_session": new_session})
+
+    def collect_settings(self):
+        candidate = self.auto_panel.collect(replace(self.settings, allow_mouse=self.mouse.isChecked()))
+        candidate.twinkle_path = self.path.text().strip() if not self.simulation else self.settings.twinkle_path
+        candidate.monitor_id = self.monitors.currentData() or self.settings.monitor_id
+        candidate.wake_method = self.method.currentData()
+        candidate.recovery_seconds = self.delay.value()
+        candidate.fallback_seconds = self.fallback_delay.value()
+        candidate.allow_mouse = self.mouse.isChecked()
+        return candidate.validate()
+
+    def apply_automation_settings(self):
+        try:
+            candidate = self.collect_settings()
+            if self.simulation:
+                candidate.login_startup = False
+            candidate.validate()
+            candidate.save(self.log.root / "settings.json")
+            if not self.simulation and candidate.login_startup != self.settings.login_startup:
+                try:
+                    startup.set_enabled(candidate.login_startup)
+                except Exception:
+                    self.settings.save(self.log.root / "settings.json")
+                    raise
+            reconnect = candidate.serial_port != self.settings.serial_port or candidate.serial_number != self.settings.serial_number
+            active = bool(self.serial_worker and self.serial_worker.thread and self.serial_worker.thread.is_alive())
+            self.settings = candidate
+            self.runtime.apply_settings(candidate)
+            self.runtime.external_block = self.controller.state != State.IDLE
+            self.runtime.set_monitor(candidate.monitor_id,
+                                     next((m.brightness for m in getattr(self, "monitor_list", []) if m.identifier == candidate.monitor_id), None))
+            self.auto_fault = False
+            if self.serial_worker:
+                self.serial_worker.stale_seconds = candidate.sensor_stale_seconds
+            if reconnect and active:
+                self.disconnect_sensor()
+                self.pending_connect = True
+            self.tray_auto_brightness.setChecked(candidate.auto_brightness)
+            self.tray_auto_presence.setChecked(candidate.auto_presence)
+            self.auto_panel.pause_status.setText("설정을 적용했습니다.")
+            self.message("자동 제어 설정을 적용했습니다. 센서 안정화 후 제어합니다.")
+            self.log.event("automation_settings_applied", auto_brightness=candidate.auto_brightness, auto_presence=candidate.auto_presence,
+                           simulated=self.simulation)
+        except Exception as error:
+            self.fail(str(error))
+
+    def pause_automation(self):
+        self.runtime.pause(900)
+        self.cancel_sleep()
+        self.message("자동 제어를 15분 중단합니다.")
+
+    def resume_automation(self):
+        self.runtime.resume()
+        self.runtime.sensors.invalidate("수동 재개 후 안정화")
+        self.runtime.external_block = self.controller.state != State.IDLE
+        self.auto_fault = False
+        self.message("자동 제어를 재개합니다.")
+
+    def tray_toggle(self, kind, checked):
+        widget = self.auto_panel.auto_brightness if kind == "brightness" else self.auto_panel.auto_presence
+        widget.setChecked(checked)
+        self.apply_automation_settings()
+        self.tray_auto_brightness.setChecked(self.settings.auto_brightness)
+        self.tray_auto_presence.setChecked(self.settings.auto_presence)
+
+    def export_settings(self):
+        filename, _ = QFileDialog.getSaveFileName(self, "설정과 밝기 프로필 저장", "monitor-profile.json", "JSON (*.json)")
+        if filename:
+            try:
+                self.collect_settings().save(Path(filename))
+                self.message("설정과 밝기 프로필을 저장했습니다.")
+            except Exception as error:
+                self.fail(str(error))
+
+    def import_settings(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "설정과 밝기 프로필 열기", "", "JSON (*.json)")
+        if filename:
+            try:
+                candidate = Settings.load(Path(filename))
+                self.path.setText(candidate.twinkle_path)
+                self.method.setCurrentIndex(self.method.findData(candidate.wake_method))
+                self.delay.setValue(candidate.recovery_seconds)
+                self.fallback_delay.setValue(candidate.fallback_seconds)
+                self.mouse.setChecked(candidate.allow_mouse)
+                index = self.monitors.findData(candidate.monitor_id)
+                if index >= 0:
+                    self.monitors.setCurrentIndex(index)
+                self.install_auto_panel(candidate)
+                self.message("설정을 불러왔습니다. 내용을 확인하고 설정 적용을 누르세요.")
+            except Exception as error:
+                self.fail(str(error))
+
+    def open_simulation(self):
+        subprocess.Popen(application_command("--simulate"), cwd=process_cwd(), creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+
+    def configure_radar(self):
+        try:
+            if self.simulation:
+                self.auto_panel.radar_result.setText("시뮬레이션: 실제 레이더 설정은 전송하지 않습니다.")
+                return
+            if not self.serial_worker:
+                raise RuntimeError("센서 연결이 필요합니다.")
+            request = self.auto_panel.radar_request()
+            request_id = self.serial_worker.command(request)
+            self.auto_panel.radar_result.setText(f"ACK 대기: {request_id}")
+        except Exception as error:
+            self.fail(str(error))
+
+    def submit_power_action(self, action):
+        job = Job(lambda: self.runtime.perform(action))
+        self.power_jobs.add(job)
+        def done(result):
+            self.power_jobs.discard(job)
+            self.message(f"자동 {action['kind']}: {result['ok']} · 실제 화면 상태는 관찰 필요")
+        def failed(error):
+            self.power_jobs.discard(job)
+            self.runtime.presence.completed(action["kind"], False, time.monotonic())
+            self.fail(error)
+        job.signals.done.connect(done)
+        job.signals.error.connect(failed)
+        self.power_pool.start(job)
+
+    def automation_tick(self):
+        if self.services_stopped:
+            return
+        try:
+            if self.pending_connect and (not self.serial_worker or not self.serial_worker.thread.is_alive()):
+                self.pending_connect = False
+                self.connect_sensor()
+            if self.queued_manual and not self.busy:
+                identifier, percent = self.queued_manual
+                self.queued_manual = None
+                if identifier == self.monitors.currentData():
+                    self.set_brightness(percent)
+            now = time.monotonic()
+            if not self.auto_fault:
+                age = 1000 if self.simulation else self.session.input_age()
+                locked = False if self.simulation else self.session.locked()
+                actions = self.runtime.tick(now, age, locked, bool(self.backend and not self.busy))
+                for action in actions:
+                    if action["kind"] == "brightness":
+                        backend = self.backend
+                        if not self.submit(lambda item=action: self.runtime.perform(item, backend),
+                                           lambda result: self.message(f"자동 밝기: {result['ok']}")):
+                            self.runtime.brightness_pending = False
+                    else:
+                        self.submit_power_action(action)
+            snapshot = self.runtime.sensors.snapshot(now)
+            packet = snapshot.packet or {}
+            previous = " (이전 값)" if not snapshot.valid and packet else ""
+            def text(value):
+                return "미확인" if value is None else str(value)
+            def detection(value):
+                return "미확인 / 오류" if value is None else ("감지" if value else "미감지")
+            labels = self.auto_panel.labels
+            labels["lux"].setText(f"{text(packet.get('lux'))} lux{previous}")
+            labels["presence"].setText(f"{detection(packet.get('presence'))}{previous}")
+            labels["motion"].setText(f"{detection(packet.get('moving'))} / {detection(packet.get('stationary'))}{previous}")
+            labels["distance"].setText(f"{text(packet.get('distance_cm'))} cm{previous}")
+            ready = self.runtime.sensors.ready(now)
+            labels["sensor"].setText(f"{snapshot.reason} · {'안정화 완료' if ready else '자동 절전 보류'}")
+            labels["brightness"].setText(f"{text(self.runtime.brightness.target)} / {text(self.runtime.brightness.requested)} %")
+            state = self.runtime.presence
+            countdown = f" · 절전까지 {max(0, math.ceil(state.countdown_until - now))}초" if state.countdown_until is not None and not state.owns_off else ""
+            if countdown:
+                self.tray.setToolTip(f"LumaSense{countdown} · 알림을 누르면 취소")
+                if self.notified_countdown != state.countdown_until:
+                    self.notified_countdown = state.countdown_until
+                    if not self.simulation:
+                        self.tray.showMessage("5초 후 화면 절전", "이 알림을 누르면 자동 제어를 15분 중단하고 절전을 취소합니다.",
+                                              QSystemTrayIcon.MessageIcon.Information, 5000)
+            else:
+                self.tray.setToolTip("Smart Monitor Controller" + (" · 시뮬레이션" if self.simulation else ""))
+            labels["power"].setText(f"{state.state.value} · {state.reason}{countdown}")
+            labels["last"].setText(self.runtime.last_action)
+            remaining = max(0, math.ceil(self.runtime.pause_until - now))
+            manual = max(0, math.ceil(self.runtime.brightness.pause_until - now))
+            self.auto_panel.pause_status.setText(f"자동 밝기 {'ON' if self.settings.auto_brightness else 'OFF'} · 자동 절전 {'ON' if self.settings.auto_presence else 'OFF'}\n"
+                                                f"전체 중단 {remaining}초 · 수동 밝기 보호 {manual}초")
+        except Exception as error:
+            self.auto_fault = True
+            self.runtime.external_block = True
+            self.fail(f"자동 제어 중단: {error}")
+
+    def stop_services(self):
+        if self.services_stopped:
+            return
+        self.services_stopped = True
+        self.timer.stop()
+        self.sim_timer.stop()
+        if self.serial_worker:
+            self.serial_worker.stop()
+            if not self.serial_worker.wait(2):
+                self.log.event("serial_shutdown_pending")
+        self.runtime.external_block = True
+        self.shutdown_job = Job(self.runtime.shutdown)
+        self.power_pool.start(self.shutdown_job)
+        if self.sim_recorder:
+            self.sim_recorder.close()
+
     def quit_app(self):
         self.cancel_sleep()
+        self.stop_services()
         try:
             self.save_settings()
         except Exception as error:
