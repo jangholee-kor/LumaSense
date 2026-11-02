@@ -34,3 +34,4 @@ powershell -ExecutionPolicy Bypass -File scripts\build_firmware.ps1 -EnablePsram
 `-EnablePsram`은 MCN16R8의 octal PSRAM 초기화와 메모리 검사를 포함하며 실제 기동 확인이 필요하다.
 파서 테스트는 ESP-IDF 펌웨어와 같은 C 소스를 PC의 GCC로 컴파일해 실행한다.
 실제 센서 전원·신호 레벨은 [하드웨어 문서](../docs/hardware.md), USB 통신은 [프로토콜 문서](../docs/protocol.md)를 참고한다.
+플래시·리셋·10분 센서 로그와 명령 실행은 [펌웨어 시험 안내](../docs/firmware-testing.md)에 정리한다.

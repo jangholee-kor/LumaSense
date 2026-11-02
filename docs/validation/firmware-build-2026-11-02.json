@@ -1,0 +1,49 @@
+{
+  "date": "2026-11-02",
+  "firmware": "0.2.0",
+  "target": "esp32s3",
+  "module_user_report": "MCN16R8",
+  "idf_version": "5.5.4",
+  "idf_commit": "735507283d5b2f9fb363a1901172dbd9e847945d",
+  "flash_size_bytes": 16777216,
+  "example_gpio": {
+    "sda": 8,
+    "scl": 9,
+    "radar_rx": 16,
+    "radar_tx": 17
+  },
+  "profiles": [
+    {
+      "profile": "default",
+      "app_bytes": 264160,
+      "merged_bytes": 329696,
+      "merged_sha256": "D5A828B7786756C3CB2A1D01C4A74AA9BCE0B011AB6B80948B64B9BB7DE331D0",
+      "psram_configured": false
+    },
+    {
+      "profile": "psram",
+      "app_bytes": 271632,
+      "merged_bytes": 337168,
+      "merged_sha256": "3BC1B01C25E20C1FD148A3C0ED82EFF42B4309372F7151C41DF552C5FB1C33AD",
+      "psram_configured": true
+    }
+  ],
+  "checks": {
+    "idf_build_default": "pass",
+    "idf_build_psram": "pass",
+    "native_c_parser": "pass",
+    "python_tests": {
+      "passed": 53
+    },
+    "package_hash_zip": "pass",
+    "pip_check": "pass",
+    "gui_smoke": "pass"
+  },
+  "physical_checks": {
+    "board_flash": "not_run",
+    "sensor_reading": "not_run",
+    "ld2412_config_ack": "not_run",
+    "ten_minute_stream": "not_run",
+    "psram_initialization": "not_run"
+  }
+}

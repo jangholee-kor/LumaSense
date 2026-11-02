@@ -48,6 +48,12 @@ powershell -ExecutionPolicy Bypass -File scripts\check_phase1.ps1
 Phase 2의 ESP-IDF 펌웨어 배선과 메모리 설정은 [하드웨어 확인 항목](docs/hardware.md)을 참고한다.
 Phase 3부터 USB 통신, 자동 밝기, 인체 감지 제어를 독립 모듈로 연결한다.
 
+## ESP32-S3 펌웨어
+
+[펌웨어 프로젝트](firmware/README.md)는 BH1750·LD2412 센서 수집과 양방향 USB 통신을 제공한다.
+MCN16R8 기준으로 기본·PSRAM 프로필을 빌드하고 [펌웨어 시험 안내](docs/firmware-testing.md)에 따라 플래시·센서 로그를 확인한다.
+GPIO 기본값은 배선 예시이며 실제 연결에 맞춰 변경한다.
+
 ## 구성
 
 - `windows/core`: 밝기 백엔드, 설정, 진단, Windows 전원 API
@@ -55,4 +61,4 @@ Phase 3부터 USB 통신, 자동 밝기, 인체 감지 제어를 독립 모듈�
 - `windows/tests`: 실제 장치를 제어하지 않는 자동 테스트
 - `scripts`: 설치, 실행, 테스트와 실기 시험
 - `docs`: 사용법, 개발 기록과 Phase별 검증 결과
-- `firmware`: Phase 2 진입 전 하드웨어 검토 자료
+- `firmware`: ESP32-S3 센서 펌웨어와 native 파서 테스트
