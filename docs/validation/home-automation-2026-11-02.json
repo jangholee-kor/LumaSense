@@ -1426,5 +1426,14 @@
       }
     },
     "interpretation": "Intentional removal caused serial errors and MCU restart; automatic off was suppressed until reconnection and stabilization."
+  },
+  "cleanup": {
+    "auto_brightness": false,
+    "auto_presence": false,
+    "production_wake_method": "execution_state",
+    "manual_wake_method": "execution_state",
+    "brightness_restore_requested": 56,
+    "brightness_restore_reported": 56.0,
+    "serial_connection_left_running": true
   }
 }

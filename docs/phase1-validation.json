@@ -10,10 +10,10 @@
   },
   "display_off": "pass",
   "wake_methods": {
-    "monitor_power": "unverified",
+    "monitor_power": "fail",
     "execution_state": "pass",
     "mouse_move": "unverified"
   },
-  "evidence": "docs/validation/home-2026-11-02.json; brightness 031bc198e7364801aa3c6081b0a13970; sleep d48ef19056a94779bb94146715c2da0d; docs/validation/home-remaining-2026-11-02.json; execution_state 7a50e7010c984e0fad1045a9955dffa6; quiet execution_state 1471cce18fd94545bba71d08c0718c4e",
-  "notes": "집 32M2N8900 SDR에서 밝기 20·50·80% 변화와 화면 절전을 확인했다. 질문 알림 영향을 제외한 execution_state 재시험에서 사용자가 질문 전 10초 조금 지난 자동 복귀를 확인했다. 추가 요청은 70초로 분리했다. monitor_power는 질문 알림 영향 의심으로 단독 실물 복귀를 미검증으로 유지한다."
+  "evidence": "docs/validation/home-2026-11-02.json; brightness 031bc198e7364801aa3c6081b0a13970; sleep d48ef19056a94779bb94146715c2da0d; docs/validation/home-remaining-2026-11-02.json; execution_state 7a50e7010c984e0fad1045a9955dffa6; quiet execution_state 1471cce18fd94545bba71d08c0718c4e; quiet monitor_power 84eaf479d04e41aea320869f9068185e",
+  "notes": "집 32M2N8900 SDR에서 밝기·화면 절전을 확인했다. 질문 알림을 배제한 execution_state 재시험에서 10초 조금 지난 실제 복귀를 사용자 확인했다. monitor_power 재시험은 질문 전 약 50초 동안 화면이 꺼져 있어 단독 복귀 실패로 기록했다. 자동 복귀는 execution_state를 사용한다."
 }

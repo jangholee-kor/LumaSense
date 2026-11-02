@@ -533,5 +533,110 @@
         "physical_result": "unverified"
       }
     ]
+  },
+  "monitor_power_quiet_retest": {
+    "test_id": "84eaf479d04e41aea320869f9068185e",
+    "physical_result": "fail",
+    "user_observation": "질문 전에는 꺼져 있었음",
+    "question_delay_after_start_seconds": 55,
+    "off_observation_window_seconds_approx": 50,
+    "primary_seconds": 10,
+    "fallback_seconds": 60,
+    "first_fallback_after_seconds": 70,
+    "api_accepted": true,
+    "interpretation": "No physical wake before the delayed question; API success alone does not establish screen wake. The later fallback is not used to pass monitor_power.",
+    "events": [
+      {
+        "time": "2026-11-02T14:00:05.304637+00:00",
+        "event": "sleep_countdown",
+        "test_id": "84eaf479d04e41aea320869f9068185e",
+        "seconds": 5,
+        "affects": "all_displays"
+      },
+      {
+        "time": "2026-11-02T14:00:10.429706+00:00",
+        "event": "watchdog_ready",
+        "test_id": "84eaf479d04e41aea320869f9068185e",
+        "seconds": 10,
+        "method": "monitor_power",
+        "fallback_seconds": 60,
+        "first_fallback_after_seconds": 70
+      },
+      {
+        "time": "2026-11-02T14:00:10.459534+00:00",
+        "event": "recovery_armed",
+        "test_id": "84eaf479d04e41aea320869f9068185e",
+        "pid": 50496,
+        "method": "monitor_power",
+        "seconds": 10,
+        "fallback_seconds": 60,
+        "first_fallback_after_seconds": 70
+      },
+      {
+        "time": "2026-11-02T14:00:10.775996+00:00",
+        "event": "display_off_requested",
+        "test_id": "84eaf479d04e41aea320869f9068185e",
+        "result": {
+          "api": "SC_MONITORPOWER",
+          "value": 2,
+          "accepted": true,
+          "physical_result": "unverified"
+        }
+      },
+      {
+        "time": "2026-11-02T14:00:20.430892+00:00",
+        "event": "wake_request_started",
+        "test_id": "84eaf479d04e41aea320869f9068185e",
+        "stage": "primary",
+        "method": "monitor_power",
+        "fallback_seconds": 60
+      },
+      {
+        "time": "2026-11-02T14:00:20.453296+00:00",
+        "event": "wake_attempt",
+        "test_id": "84eaf479d04e41aea320869f9068185e",
+        "stage": "primary",
+        "method": "monitor_power",
+        "result": {
+          "api": "SC_MONITORPOWER",
+          "value": -1,
+          "accepted": true,
+          "physical_result": "unverified"
+        }
+      },
+      {
+        "time": "2026-11-02T14:01:20.454667+00:00",
+        "event": "wake_request_started",
+        "test_id": "84eaf479d04e41aea320869f9068185e",
+        "stage": "fallback",
+        "method": "execution_state",
+        "fallback_seconds": 60
+      },
+      {
+        "time": "2026-11-02T14:01:20.455179+00:00",
+        "event": "wake_attempt",
+        "test_id": "84eaf479d04e41aea320869f9068185e",
+        "stage": "fallback",
+        "method": "execution_state",
+        "result": {
+          "api": "execution_state",
+          "accepted": true,
+          "physical_result": "unverified"
+        }
+      },
+      {
+        "time": "2026-11-02T14:01:20.455179+00:00",
+        "event": "recovery_finished",
+        "test_id": "84eaf479d04e41aea320869f9068185e",
+        "physical_result": "unverified"
+      },
+      {
+        "time": "2026-11-02T14:02:23.758095+00:00",
+        "event": "user_observation",
+        "test_id": "84eaf479d04e41aea320869f9068185e",
+        "result": "fail",
+        "notes": "질문을 55초간 보내지 않은 시험에서 사용자가 질문 전에는 화면이 꺼져 있었다고 확인했다. monitor_power 1차 API는 정상 반환했으나 70초 추가 요청 전 약 50초의 화면 꺼짐 구간에서 실제 복귀하지 않았다."
+      }
+    ]
   }
 }

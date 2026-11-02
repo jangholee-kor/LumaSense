@@ -54,7 +54,7 @@
       "lock_logon_and_hdr_sdr": "not_run",
       "physical_completion_criterion": "partial",
       "actual_radar_off_wake": "pass_home_one_cycle_execution_state",
-      "stationary_30_minutes": "not_run",
+      "stationary_30_minutes": "deferred_by_user_2026-11-02",
       "home_evidence": "home-automation-2026-11-02.json"
     },
     {
