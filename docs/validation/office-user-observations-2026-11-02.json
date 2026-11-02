@@ -1,0 +1,19 @@
+{
+  "reported_on": "2026-11-02",
+  "source": "user_report_in_chat",
+  "primary_monitor": "Q27U2G5R4-",
+  "secondary_monitor": "27B2H2",
+  "manual_slider_brightness": {
+    "Q27U2G5R4-": "pass",
+    "27B2H2": "pass"
+  },
+  "specific_20_50_80_observations": "unverified",
+  "display_mode": "unrecorded",
+  "display_off": "unverified",
+  "wake_methods": {
+    "monitor_power": "unverified",
+    "execution_state": "unverified",
+    "mouse_move": "unverified"
+  },
+  "user_report": "Q27~가 메인 모니터임. 두 모니터 다 직접 슬라이드로 제어 시 잘 동작하는 것을 확인함. 절전/복귀 시험 방법 안내 요청."
+}
