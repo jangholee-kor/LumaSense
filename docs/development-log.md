@@ -111,3 +111,14 @@ execution_state가 화면 복귀에 기여했을 가능성을 뒷받침하지만
 monitor_power의 개별 성공은 미확정으로 유지하며 다음 시험에서 execution_state를 1차 방식으로 선택한다.
 이번 보고의 모니터별 복귀 시각과 입력 개입 여부는 기록되지 않았다.
 해당 실행 이벤트는 [추가 간격 시험 로그](validation/office-delayed-fallback-2026-11-02.json)에 보관했다.
+
+## 2026-11-02 · execution_state 1차 복귀 성공 확인
+
+사용자가 SetThreadExecutionState를 1차 방식으로 선택하고 복귀 지연 5초, 추가 간격 30초, 마우스 이동 해제 설정으로 시험했다.
+화면이 꺼진 시점부터 주 모니터 Q27U2G5R4-는 6.86초, 보조 모니터 27B2H2는 8.81초에 켜졌다고 보고했다.
+시험 ID는 `bc4591b033c646d9befec1e84718ccad`이다.
+한국 시간 12:56:42 절전 요청이 기록됐고 12:56:46에 execution_state 1차 요청, 12:57:16에 monitor_power 추가 요청을 시작했다.
+두 화면 모두 추가 API를 호출하기 전에 켜져 이번 회사 환경의 SetThreadExecutionState 복귀를 실기 성공으로 기록했다.
+5초로 설정한 값은 API 요청 지연이며 실제 화면이 켜질 때까지는 모니터와 연결 경로의 지연이 포함된다.
+관찰과 실행 이벤트는 [execution_state 1차 시험 로그](validation/office-execution-state-2026-11-02.json)에 보관했다.
+회사 환경에서는 execution_state를 우선 사용할 근거를 확보했으며 monitor_power 단독 성공 여부와 집 Philips 32M2N8900 검증은 미확정으로 유지한다.

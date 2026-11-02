@@ -42,11 +42,26 @@
       "automatic_wake": "pass",
       "inference": "wake_after_execution_state_fallback; individual_api_causality_not_confirmed",
       "user_report": "38초에 깨어남"
+    },
+    {
+      "test_id": "bc4591b033c646d9befec1e84718ccad",
+      "primary_method": "execution_state",
+      "recovery_delay_seconds": 5,
+      "fallback_seconds": 30,
+      "fallback_method": "monitor_power",
+      "allow_mouse": false,
+      "reported_wake_latency_seconds": {"Q27U2G5R4-": 6.86, "27B2H2": 8.81},
+      "timing_reference": "screen_off_per_ongoing_test_instructions",
+      "input_intervention": "unrecorded",
+      "automatic_wake": "pass",
+      "individual_primary_api_result": "pass_in_office_trial",
+      "evidence_basis": "user_observed_both_displays_awake_before_fallback_api_request",
+      "user_report": "메인 6.86초, 서브 8.81초"
     }
   ],
   "wake_methods": {
     "monitor_power": "unverified_individually",
-    "execution_state": "unverified",
+    "execution_state": "pass_in_office_trial",
     "mouse_move": "unverified"
   },
   "user_report": "주 모니터는 Q27U2G5R4-. 두 모니터의 수동 슬라이더 밝기 제어를 확인했다. 정밀 재시험에서 화면이 꺼지자마자 시간을 재어 Q27은 12.3초, 보조 모니터는 14.88초에 켜지는 것을 확인했다."
