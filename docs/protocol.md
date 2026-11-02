@@ -54,17 +54,34 @@ ACK는 같은 id와 cmd, 성공 여부 `ok`, ESP-IDF 오류 이름 `error`를 �
 | `get_status` | 없음 | 장치·펌웨어 버전, 전송 주기, 실제 GPIO 설정 반환 |
 | `set_reporting` | `interval_ms`: 100~5000 정수 | RAM의 전송 주기 변경, 재부팅하면 빌드 기본값 |
 | `radar_config` | 아래 항목 중 하나 이상 | 제조사 ACK를 기다리며 설정 적용 |
+| `radar_get_config` | 없음 | 저장된 거리 해상도·범위·부재 유지 시간·OUT 극성·두 감도 배열 조회 |
 
 `radar_config`의 `engineering`은 boolean이며 전원 재투입 시 레이더의 기본 모드로 돌아간다.<br>
 기본 감지 설정은 `min_gate`, `max_gate`, `absence_seconds` 세 항목을 함께 지정한다.<br>
-거리문은 원시 프로토콜 인덱스 0~13이고 최소 인덱스는 최대 인덱스 이하여야 한다.<br>
+기본 설정 쓰기의 `min_gate`, `max_gate` 입력은 현재 0~13이며 최소 값은 최대 값 이하여야 한다.<br>
+에너지 배열은 인덱스 0~13의 14개 값이며, 기본 설정의 최대 거리문 값과 배열의 마지막 인덱스를 같은 값으로 해석하지 않는다.<br>
+ESPHome의 LD2412 구현은 기본 설정의 `max_gate`를 배열 인덱스보다 1 크게 송신한다.<br>
+따라서 해상도 20cm와 원시 `max_gate=8`은 마지막 배열 인덱스 7까지의 약 1.6m 구간으로 해석하되, 경계의 실제 감지는 설치 후 확인한다.<br>
 `absence_seconds`는 제조사 문서에 따라 5~65535 정수로 제한한다.<br>
 거리문의 실제 길이는 레이더에 저장된 해상도 설정에 따라 달라지므로 이 펌웨어는 임의의 미터 값을 원시 인덱스로 변환하지 않는다.<br>
+0.2.4부터 `resolution_cm`에 20·50·75 중 하나를 지정할 수 있으며 다른 설정 항목과 함께 보내면 거부한다.<br>
+거리 해상도 변경은 레이더 재시작을 동반하며 기존 범위·유지 시간·감도가 바뀔 수 있다.<br>
+해상도 변경 후 약 3초 동안 새 보고를 기다리고, 범위·감도 설정을 별도 명령으로 적용한 뒤 `radar_get_config`로 저장값을 대조한다.<br>
+재시작 직전의 감지값은 무효 처리하며 새 보고가 들어오기 전에는 정상 감지로 사용하지 않는다.<br>
 `moving_thresholds`와 `stationary_thresholds`는 각각 0~100 정수 14개의 배열이다.<br>
 모듈의 기본 감지 범위·유지 시간·문별 민감도는 비휘발 설정이므로 명시적인 호스트 명령으로만 변경한다.<br>
 여러 항목은 순서대로 적용되며 중간 실패 시 이미 적용된 항목이 있을 수 있다.<br>
-실패 응답의 `configuration_may_be_partial`을 확인하고 제조사 도구로 설정을 다시 읽어 검증한다.<br>
+실패 응답의 `configuration_may_be_partial`을 확인하고 `radar_get_config`로 설정을 다시 읽어 검증한다.<br>
 부팅 시 자동으로 범위·민감도를 덮어쓰지 않는다.
+
+조회 응답의 `radar` 객체는 `resolution_code`, `gate_width_cm`, `min_gate`, `max_gate`, `absence_seconds`, `out_polarity`, `moving_thresholds`, `stationary_thresholds`, `complete`를 담는다.<br>
+조회는 비휘발 설정을 변경하지 않으며 `ok=true`와 `complete=true`를 모두 확인한다.<br>
+공학 모드는 별도 설정이며 조회 결과에 포함하지 않는다.<br>
+조회 도중 실패하면 일부 필드만 포함될 수 있으므로 이를 완전한 설정으로 저장하지 않는다.<br>
+감도 배열의 임계값이 높을수록 감지가 둔해지며 100은 해당 구간을 비활성화하는 값이다.<br>
+거리 설정은 측정 구간을 제한하며 사람과 물건의 구분이나 감지 경계의 정확도를 보장하지 않는다.
+
+거리문 번호 변환과 재시작 순서는 [ESPHome LD2412 구현](https://github.com/esphome/esphome/blob/dev/esphome/components/ld2412/ld2412.cpp)을 함께 참고한다.
 
 ## LD2412 내부 프레임 검증
 

@@ -86,7 +86,7 @@ static void telemetry(void) {
     cJSON_AddNumberToObject(root, "ver", 1);
     cJSON_AddStringToObject(root, "type", "telemetry");
     cJSON_AddStringToObject(root, "device", "smart-monitor-s3");
-    cJSON_AddStringToObject(root, "firmware", "0.2.3");
+    cJSON_AddStringToObject(root, "firmware", "0.2.4");
     cJSON_AddNumberToObject(root, "seq", sequence++);
     cJSON_AddNumberToObject(root, "uptime_ms", (double)(now / 1000));
     if (lux_ok) cJSON_AddNumberToObject(root, "lux", lux); else cJSON_AddNullToObject(root, "lux");
@@ -146,10 +146,18 @@ static esp_err_t radar_configure(cJSON *request) {
     cJSON *minimum = cJSON_GetObjectItemCaseSensitive(request, "min_gate");
     cJSON *moving = cJSON_GetObjectItemCaseSensitive(request, "moving_thresholds");
     cJSON *stationary = cJSON_GetObjectItemCaseSensitive(request, "stationary_thresholds");
+    cJSON *resolution = cJSON_GetObjectItemCaseSensitive(request, "resolution_cm");
     bool basic = minimum || cJSON_HasObjectItem(request, "max_gate") || cJSON_HasObjectItem(request, "absence_seconds");
     int min_gate = 0, max_gate = 0, absence = 0;
+    int resolution_cm = 0;
     uint8_t move_values[14], still_values[14];
     if (engineering && !cJSON_IsBool(engineering)) return ESP_ERR_INVALID_ARG;
+    if (resolution && (!integer_field(request, "resolution_cm", 20, 75, &resolution_cm) ||
+                       (resolution_cm != 20 && resolution_cm != 50 && resolution_cm != 75)))
+        return ESP_ERR_INVALID_ARG;
+    /* A resolution restart can reset the module's basic/threshold settings.
+       Require separate commands so the host can read back before proceeding. */
+    if (resolution && (engineering || basic || moving || stationary)) return ESP_ERR_INVALID_ARG;
     if (basic && (!integer_field(request, "min_gate", 0, 13, &min_gate) ||
                   !integer_field(request, "max_gate", min_gate, 13, &max_gate) ||
                   !integer_field(request, "absence_seconds", 5, 65535, &absence))) return ESP_ERR_INVALID_ARG;
@@ -165,7 +173,7 @@ static esp_err_t radar_configure(cJSON *request) {
             values[j][i] = v->valueint;
         }
     }
-    if (!engineering && !basic && !moving && !stationary) return ESP_ERR_INVALID_ARG;
+    if (!engineering && !basic && !moving && !stationary && !resolution) return ESP_ERR_INVALID_ARG;
     /* Only explicit host commands alter persistent radar settings; never at boot. */
     const uint8_t enable[] = {1, 0};
     esp_err_t result = ld2412_command(&radar, 0x00ff, enable, sizeof(enable));
@@ -174,6 +182,10 @@ static esp_err_t radar_configure(cJSON *request) {
         return result;
     }
     if (engineering) result = ld2412_command(&radar, cJSON_IsTrue(engineering) ? 0x62 : 0x63, NULL, 0);
+    if (resolution && result == ESP_OK) {
+        uint8_t payload[] = {resolution_cm == 20 ? 3 : resolution_cm == 50 ? 1 : 0, 0, 0, 0, 0, 0};
+        result = ld2412_command(&radar, 0x0001, payload, sizeof(payload));
+    }
     if (basic && result == ESP_OK) {
         uint8_t payload[] = {min_gate, max_gate, absence & 0xff, absence >> 8, 0};
         result = ld2412_command(&radar, 0x0002, payload, sizeof(payload));
@@ -181,7 +193,59 @@ static esp_err_t radar_configure(cJSON *request) {
     if (moving && result == ESP_OK) result = ld2412_command(&radar, 0x0003, move_values, 14);
     if (stationary && result == ESP_OK) result = ld2412_command(&radar, 0x0004, still_values, 14);
     esp_err_t end = ld2412_command(&radar, 0x00fe, NULL, 0);
-    return result == ESP_OK ? end : result;
+    if (result == ESP_OK) result = end;
+    if (resolution && result == ESP_OK) {
+        /* V1.06: resolution takes effect only after the radar restarts. */
+        vTaskDelay(pdMS_TO_TICKS(200));
+        result = ld2412_command(&radar, 0x00ff, enable, sizeof(enable));
+        if (result == ESP_OK) result = ld2412_command(&radar, 0x00a3, NULL, 0);
+        if (result != ESP_OK) ld2412_command(&radar, 0x00fe, NULL, 0);
+        /* Do not publish a pre-restart observation as the new configuration. */
+        radar.last_data_us = 0;
+        radar.latest.sensor_ok = false;
+    }
+    return result;
+}
+
+static esp_err_t radar_query(uint16_t cmd, size_t expected_length) {
+    esp_err_t result = ld2412_command(&radar, cmd, NULL, 0);
+    if (result == ESP_OK && radar.ack_data_length != expected_length) return ESP_ERR_INVALID_SIZE;
+    return result;
+}
+
+static esp_err_t radar_get_config(cJSON *reply) {
+    cJSON *config = cJSON_AddObjectToObject(reply, "radar");
+    const uint8_t enable[] = {1, 0};
+    esp_err_t result = ld2412_command(&radar, 0x00ff, enable, sizeof(enable));
+    if (result == ESP_OK) result = radar_query(0x0011, 6);
+    if (result == ESP_OK) {
+        uint8_t resolution = radar.ack_data[0];
+        int width_cm = resolution == 0 ? 75 : resolution == 1 ? 50 : resolution == 3 ? 20 : 0;
+        cJSON_AddNumberToObject(config, "resolution_code", resolution);
+        cJSON_AddNumberToObject(config, "gate_width_cm", width_cm);
+        if (!width_cm) result = ESP_ERR_INVALID_RESPONSE;
+    }
+    if (result == ESP_OK) result = radar_query(0x0012, 5);
+    if (result == ESP_OK) {
+        cJSON_AddNumberToObject(config, "min_gate", radar.ack_data[0]);
+        cJSON_AddNumberToObject(config, "max_gate", radar.ack_data[1]);
+        cJSON_AddNumberToObject(config, "absence_seconds", radar.ack_data[2] | ((uint16_t)radar.ack_data[3] << 8));
+        cJSON_AddNumberToObject(config, "out_polarity", radar.ack_data[4]);
+    }
+    const uint16_t commands[] = {0x0013, 0x0014};
+    const char *names[] = {"moving_thresholds", "stationary_thresholds"};
+    for (int i = 0; i < 2 && result == ESP_OK; ++i) {
+        result = radar_query(commands[i], 14);
+        if (result == ESP_OK) {
+            cJSON *values = cJSON_AddArrayToObject(config, names[i]);
+            for (int j = 0; j < 14; ++j) cJSON_AddItemToArray(values, cJSON_CreateNumber(radar.ack_data[j]));
+        }
+    }
+    /* Exit configuration even on failed reads; never alter persistent values. */
+    esp_err_t end = ld2412_command(&radar, 0x00fe, NULL, 0);
+    if (result == ESP_OK) result = end;
+    cJSON_AddBoolToObject(config, "complete", result == ESP_OK);
+    return result;
 }
 
 static void command(const char *line) {
@@ -202,7 +266,7 @@ static void command(const char *line) {
         else if (!strcmp(name->valuestring, "get_status")) {
             result = ESP_OK;
             cJSON_AddStringToObject(reply, "device", "smart-monitor-s3");
-            cJSON_AddStringToObject(reply, "firmware", "0.2.3");
+            cJSON_AddStringToObject(reply, "firmware", "0.2.4");
             cJSON_AddNumberToObject(reply, "report_ms", report_ms);
             cJSON_AddNumberToObject(reply, "sda_gpio", CONFIG_SMC_I2C_SDA);
             cJSON_AddNumberToObject(reply, "scl_gpio", CONFIG_SMC_I2C_SCL);
@@ -216,6 +280,7 @@ static void command(const char *line) {
                 result = ESP_OK;
             }
         } else if (!strcmp(name->valuestring, "radar_config")) result = radar_configure(request);
+        else if (!strcmp(name->valuestring, "radar_get_config")) result = radar_get_config(reply);
     }
     cJSON_AddBoolToObject(reply, "ok", result == ESP_OK);
     cJSON_AddStringToObject(reply, "error", esp_err_to_name(result));

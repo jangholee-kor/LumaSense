@@ -63,6 +63,8 @@ void ld2412_parser_feed(ld2412_parser_t *p, const uint8_t *bytes, size_t size,
                 event.kind = LD2412_ACK;
                 event.command = le16(p->buffer + 6);
                 event.status = le16(p->buffer + 8);
+                event.ack_data_length = length - 4;
+                memcpy(event.ack_data, p->buffer + 10, event.ack_data_length);
                 valid = (event.command & 0x0100) != 0;
             } else if (valid) {
                 event.kind = LD2412_DATA;

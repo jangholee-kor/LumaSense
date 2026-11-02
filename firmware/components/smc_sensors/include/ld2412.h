@@ -10,6 +10,8 @@ typedef struct {
     uint32_t ack_sequence;
     uint16_t ack_command;
     uint16_t ack_status;
+    uint16_t ack_data_length;
+    uint8_t ack_data[LD2412_ACK_DATA_CAPACITY];
     bool installed;
 } ld2412_t;
 

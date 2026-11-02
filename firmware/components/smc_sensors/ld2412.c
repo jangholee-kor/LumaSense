@@ -12,6 +12,8 @@ static void receive_event(const ld2412_event_t *event, void *context) {
         ++radar->ack_sequence;
         radar->ack_command = event->command;
         radar->ack_status = event->status;
+        radar->ack_data_length = event->ack_data_length;
+        memcpy(radar->ack_data, event->ack_data, event->ack_data_length);
     }
 }
 

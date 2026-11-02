@@ -78,6 +78,21 @@ int main(void) {
     feed(&parser, ack, sizeof(ack)); feed(&parser, normal, sizeof(normal));
     assert(count == 2 && events[0].kind == LD2412_ACK && events[0].command == 0x1ff);
     assert(events[0].status == 0);
+    assert(events[0].ack_data_length == 4 && events[0].ack_data[0] == 1);
+    /* Readback payload must survive fragmented ACKs and the following report. */
+    const uint8_t read_basic[] = {0xfd,0xfc,0xfb,0xfa,9,0,0x12,1,0,0,0,2,5,0,0,4,3,2,1};
+    reset(&parser);
+    for (size_t i = 0; i < sizeof(read_basic); ++i) feed(&parser, read_basic+i, 1);
+    feed(&parser, normal, sizeof(normal));
+    assert(count == 2 && events[0].command == 0x112 && events[0].ack_data_length == 5);
+    assert(!memcmp(events[0].ack_data, (uint8_t[]){0,2,5,0,0}, 5));
+    /* Maximum legal ACK payload fills the bounded storage exactly. */
+    uint8_t largest[LD2412_FRAME_CAPACITY] = {0xfd,0xfc,0xfb,0xfa,246,0,0x13,1,0,0};
+    for (size_t i = 0; i < LD2412_ACK_DATA_CAPACITY; ++i) largest[10+i] = (uint8_t)i;
+    memcpy(largest + sizeof(largest) - 4, (uint8_t[]){4,3,2,1}, 4);
+    reset(&parser); feed(&parser, largest, sizeof(largest));
+    assert(count == 1 && events[0].ack_data_length == LD2412_ACK_DATA_CAPACITY);
+    assert(!memcmp(events[0].ack_data, largest+10, LD2412_ACK_DATA_CAPACITY));
     uint8_t out[256]; const uint8_t payload[] = {1,0};
     assert(ld2412_encode_command(0xff,payload,2,out,sizeof(out)) == 14);
     const uint8_t expected[] = {0xfd,0xfc,0xfb,0xfa,4,0,0xff,0,1,0,4,3,2,1};

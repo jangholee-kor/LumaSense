@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define LD2412_FRAME_CAPACITY 256
+#define LD2412_ACK_DATA_CAPACITY (LD2412_FRAME_CAPACITY - 14)
 #define LD2412_GATE_COUNT 14
 
 typedef struct {
@@ -28,6 +29,8 @@ typedef struct {
     ld2412_data_t data;
     uint16_t command;
     uint16_t status;
+    uint16_t ack_data_length;
+    uint8_t ack_data[LD2412_ACK_DATA_CAPACITY];
 } ld2412_event_t;
 typedef void (*ld2412_callback_t)(const ld2412_event_t *, void *);
 typedef struct {
