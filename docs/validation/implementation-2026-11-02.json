@@ -1,0 +1,49 @@
+{
+  "version": "0.3.0",
+  "date": "2026-11-02",
+  "scope": "implementation_and_host_validation",
+  "module_marking_user_confirmed": "MCN16R8",
+  "gpio_assignment": "configurable_example_not_physically_confirmed",
+  "phases": [
+    {"phase": 1, "implementation": "complete", "host_checks": "pass", "office_manual_brightness": "user_confirmed_two_monitors", "office_wake_execution_state": "user_confirmed_before_fallback", "philips_32m2n8900": "not_run", "physical_completion_criterion": "pending"},
+    {"phase": 2, "implementation": "complete", "default_and_psram_builds": "pass", "native_parser": "pass", "flash_and_sensors": "not_run", "ten_minute_receive": "not_run", "physical_completion_criterion": "pending"},
+    {"phase": 3, "implementation": "complete", "fake_serial_worker_and_qt_reconnect": "pass", "physical_usb_reconnect": "not_run", "physical_completion_criterion": "pending"},
+    {"phase": 4, "implementation": "complete", "mapping_filter_ramp_rate_manual_profile": "pass", "qt_simulated_brightness": "pass", "lighting_and_actual_monitor_response": "not_run", "physical_completion_criterion": "pending"},
+    {"phase": 5, "implementation": "complete", "absence_input_error_countdown_crash_guard": "pass", "qt_off_redetection_error_simulation": "pass", "actual_radar_off_wake_and_stationary_30_minutes": "not_run", "lock_logon_and_hdr_sdr": "not_run", "physical_completion_criterion": "pending"},
+    {"phase": 6, "implementation": "complete", "exe_and_helpers": "pass_simulated", "real_24h_run": "not_run", "real_24h_simulation": "not_run", "physical_completion_criterion": "pending"}
+  ],
+  "automated_tests": {"passed": 93, "failed": 0, "physical_io": false},
+  "exe": {
+    "sha256": "fe842512af2f68b855906a4913816daf37eb227c928a1f62dab15af4c2f9f0e8",
+    "mode": "onedir_windowed",
+    "gui_smoke": "pass",
+    "independent_watchdog": "pass_simulated",
+    "independent_lease_guard": "pass_simulated",
+    "icu_path_collision": "fixed_by_system32_first_during_build"
+  },
+  "accelerated_model_soak": {
+    "simulated_hours": 24,
+    "samples": 432000,
+    "wall_seconds": 57.484,
+    "python_alloc_growth_bytes": 26712,
+    "python_peak_bytes": 40826,
+    "brightness_actions": 2315,
+    "off_actions": 144,
+    "wake_actions": 144,
+    "scope": "control_models_only",
+    "pass": true
+  },
+  "real_time_gui_resource_probe": {
+    "requested_seconds": 30,
+    "wall_seconds": 31.015,
+    "cpu_seconds": 0.40625,
+    "average_cpu_one_core_percent": 1.31,
+    "peak_rss_bytes": 61628416,
+    "scope": "exe_simulation_only",
+    "pass": true
+  },
+  "other_checks": ["pip_check", "compileall", "powershell_syntax", "korean_ui_tab_render_review"],
+  "hardware_mutations_this_stage": [],
+  "physical_observations": ["office-user-observations-2026-11-02.json", "office-execution-state-2026-11-02.json"],
+  "firmware_build_evidence": "firmware-build-2026-11-02.json"
+}

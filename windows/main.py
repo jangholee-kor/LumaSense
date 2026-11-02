@@ -25,9 +25,12 @@ def main():
     parser.add_argument("--screenshot", help="UI PNG 저장 경로 (smoke-test 전용)")
     parser.add_argument("--simulate", action="store_true", help="가상 센서와 제어 백엔드로 실행")
     parser.add_argument("--minimized", action="store_true", help="트레이로 시작")
+    parser.add_argument("--simulation-seconds", type=int, help="시뮬레이션을 지정 초 동안 실행 후 종료 (1~259200)")
     args = parser.parse_args()
     if args.screenshot and not args.smoke_test:
         parser.error("--screenshot은 --smoke-test와 함께 사용하세요.")
+    if args.simulation_seconds is not None and (not args.simulate or not 1 <= args.simulation_seconds <= 259200):
+        parser.error("--simulation-seconds는 --simulate와 함께 1~259200초로 지정하세요.")
     app = QApplication(sys.argv[:1])
     # Explicit Korean font also makes offscreen render checks reproducible.
     font = Path("C:/Windows/Fonts/malgun.ttf")
@@ -75,6 +78,8 @@ def main():
             window.quitting = True
             app.quit()
         QTimer.singleShot(700, finish)
+    elif args.simulation_seconds:
+        QTimer.singleShot(args.simulation_seconds * 1000, window.quit_app)
     result = app.exec()
     log.event("app_stopped", code=result)
     return result
