@@ -34,13 +34,15 @@ class DisplayController:
             return True
         return False
 
-    def execute(self, method, seconds, allow_mouse):
+    def execute(self, method, seconds, allow_mouse, fallback_seconds=30):
         if self.state != State.COUNTDOWN or self.clock() < self.deadline:
             raise RuntimeError("5초 카운트다운이 끝나지 않았습니다.")
         self.state = State.RECOVERING
         try:
-            pid = self.arm(self.log.root, self.test_id, method, seconds, allow_mouse)
-            self.log.event("recovery_armed", test_id=self.test_id, pid=pid, method=method)
+            pid = self.arm(self.log.root, self.test_id, method, seconds, allow_mouse, fallback_seconds)
+            self.log.event("recovery_armed", test_id=self.test_id, pid=pid, method=method,
+                           seconds=seconds, fallback_seconds=fallback_seconds,
+                           first_fallback_after_seconds=seconds + fallback_seconds)
             result = self.power.off()
             self.log.event("display_off_requested", test_id=self.test_id, result=result)
             return result

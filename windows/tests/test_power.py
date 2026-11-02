@@ -6,7 +6,7 @@ import pytest
 from windows.core.diagnostics import Diagnostics
 from windows.core.display_controller import DisplayController, State
 from windows.core.settings import Settings
-from windows.core.watchdog import recovery_sequence
+from windows.core.watchdog import recovery_sequence, recovery_window_seconds, validate_timing
 
 
 def test_countdown_cancel_and_duplicate(tmp_path):
@@ -71,3 +71,43 @@ def test_settings_round_trip_and_invalid(tmp_path):
     path.write_text('{"recovery_seconds": -1}', encoding="utf-8")
     with pytest.raises(ValueError):
         Settings.load(path)
+
+
+@pytest.mark.parametrize("interval", [5, 30, 60])
+def test_fallback_waits_configured_interval(tmp_path, interval):
+    timeline = []
+    power = SimpleNamespace(wake=lambda method, allow: timeline.append(method))
+    recovery_sequence(power, Diagnostics(tmp_path), "interval-test", "monitor_power", True,
+                      lambda seconds: timeline.append(seconds), fallback_seconds=interval)
+    assert timeline == ["monitor_power", interval, "execution_state", interval, "mouse_move"]
+    assert recovery_window_seconds("monitor_power", 5, True, interval) == 5 + 2 * interval + 15
+
+
+@pytest.mark.parametrize("bad", [0, 4, 61, 30.0, "30", True])
+def test_invalid_interval(bad):
+    with pytest.raises(ValueError):
+        validate_timing(5, bad)
+
+
+def test_settings_migration_and_interval_validation(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text('{"monitor_id":"old-id", "recovery_seconds":5}', encoding="utf-8")
+    assert Settings.load(path).fallback_seconds == 30
+    settings = Settings.load(path)
+    settings.fallback_seconds = 60
+    settings.save(path)
+    assert Settings.load(path).fallback_seconds == 60
+    path.write_text('{"fallback_seconds":61}', encoding="utf-8")
+    with pytest.raises(ValueError):
+        Settings.load(path)
+
+
+def test_controller_forwards_interval_and_arms_before_off(tmp_path):
+    calls = []
+    controller = DisplayController(SimpleNamespace(off=lambda: calls.append("off")), Diagnostics(tmp_path),
+                                   lambda: 0, lambda *args: calls.append(args[-1]))
+    controller.start()
+    controller.clock = lambda: 5
+    controller.execute("monitor_power", 5, False, 45)
+    assert calls == [45, "off"]
+    assert recovery_window_seconds("monitor_power", 5, False, 45) == 65

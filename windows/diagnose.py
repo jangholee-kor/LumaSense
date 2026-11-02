@@ -9,6 +9,7 @@ from windows.core.brightness import TwinkleTrayBackend, discover_twinkle
 from windows.core.diagnostics import Diagnostics
 from windows.core.display_controller import DisplayController
 from windows.core.power import WAKE_METHODS, WindowsPower
+from windows.core.watchdog import recovery_window_seconds, validate_timing
 
 
 def brightness_sweep(backend, monitor, log, sleep=time.sleep):
@@ -47,6 +48,7 @@ def main():
     actions.add_argument("--record", choices=("pass", "fail", "unverified"))
     parser.add_argument("--method", choices=WAKE_METHODS, default="monitor_power")
     parser.add_argument("--seconds", type=int, default=10)
+    parser.add_argument("--fallback-seconds", type=int, default=30, help="1차 요청 이후 추가 복귀 간격, 5~60초")
     parser.add_argument("--allow-mouse", action="store_true")
     parser.add_argument("--test-id", default="")
     parser.add_argument("--notes", default="")
@@ -58,8 +60,7 @@ def main():
                 raise ValueError("--test-id 필요")
             log.event("user_observation", test_id=args.test_id, result=args.record, notes=args.notes)
         elif args.sleep_test or args.wake_only:
-            if not 5 <= args.seconds <= 30:
-                raise ValueError("--seconds는 5~30")
+            validate_timing(args.seconds, args.fallback_seconds)
             if args.method == "mouse_move" and not args.allow_mouse:
                 raise ValueError("--allow-mouse 필요")
             power = WindowsPower()
@@ -77,10 +78,10 @@ def main():
                     controller.cancel()
                     print("절전 시험 취소")
                     return 0
-                print(f"시험 ID: {controller.test_id} / {args.seconds}초 후 1차 복귀 요청", flush=True)
-                controller.execute(args.method, args.seconds, args.allow_mouse)
+                print(f"시험 ID: {controller.test_id} / 약 {args.seconds}초에 1차, 약 {args.seconds + args.fallback_seconds}초에 추가 복귀 요청", flush=True)
+                controller.execute(args.method, args.seconds, args.allow_mouse, args.fallback_seconds)
                 # Only waits for the independent helper's bounded request window.
-                time.sleep(args.seconds + 16)
+                time.sleep(recovery_window_seconds(args.method, args.seconds, args.allow_mouse, args.fallback_seconds))
                 controller.finish()
                 print("복귀 시도 시간 경과. 화면의 실제 결과는 별도로 기록하세요.", flush=True)
         else:

@@ -51,6 +51,41 @@ def test_mouse_opt_in(window):
     assert not calls
 
 
+def test_fallback_preview_persistence_and_countdown_lock(window):
+    view, _ = window
+    view.delay.setValue(5)
+    view.fallback_delay.setValue(30)
+    assert "1차 약 5초" in view.schedule.text()
+    assert "첫 추가 요청 약 35초" in view.schedule.text()
+    view.start_sleep()
+    assert not view.fallback_delay.isEnabled()
+    assert Settings.load(view.log.root / "settings.json").fallback_seconds == 30
+    view.cancel_sleep()
+    assert view.fallback_delay.isEnabled()
+
+
+def test_ui_passes_interval_and_waits_for_all_recovery_attempts(window, monkeypatch):
+    from windows.ui import main_window
+    view, calls = window
+    intervals, timers = [], []
+    view.controller.clock = lambda: 0
+    view.controller.arm = lambda *args: intervals.append(args[-1])
+    view.delay.setValue(5)
+    view.fallback_delay.setValue(30)
+    view.start_sleep()
+    view.controller.clock = lambda: 5
+    monkeypatch.setattr(main_window, "QTimer", SimpleNamespace(singleShot=lambda milliseconds, callback: timers.append(milliseconds)))
+    monkeypatch.setattr(view, "submit", lambda function, done: done(function()))
+    view.tick()
+    assert calls == ["off"]
+    assert intervals == [30]
+    assert timers == [50000]
+    assert view.controller.state == State.RECOVERING
+    assert not view.sleep_button.isEnabled()
+    view.finish_sleep()
+    assert view.sleep_button.isEnabled()
+
+
 def test_worker_does_not_block_ui_and_delivers_on_main_thread(app, window):
     view, _ = window
     received = []

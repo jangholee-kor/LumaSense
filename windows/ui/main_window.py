@@ -8,10 +8,11 @@ from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, Signal, Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout, QGroupBox,
                                QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMenu, QPushButton, QSlider,
-                               QSpinBox, QSystemTrayIcon, QTextEdit, QVBoxLayout, QWidget)
+                               QSpinBox, QSystemTrayIcon, QTextEdit, QVBoxLayout, QWidget, QScrollArea)
 
 from windows.core.brightness import TwinkleTrayBackend, discover_twinkle
 from windows.core.display_controller import State
+from windows.core.watchdog import recovery_window_seconds
 
 
 class Signals(QObject):
@@ -131,10 +132,23 @@ class MainWindow(QMainWindow):
         self.delay.setValue(settings.recovery_seconds)
         self.delay.setSuffix(" 초 후 복귀")
         form.addRow("절전 후 복귀", self.delay)
+        self.fallback_delay = QSpinBox()
+        self.fallback_delay.setRange(5, 60)
+        self.fallback_delay.setValue(settings.fallback_seconds)
+        self.fallback_delay.setSuffix(" 초 간격")
+        self.fallback_delay.setToolTip("1차 복귀 API 요청 후 다음 복귀 API까지 기다리는 시간입니다.")
+        form.addRow("추가 복귀 간격", self.fallback_delay)
         self.mouse = QCheckBox("마우스 이동 복귀 허용 (포인터 위치에 잠시 영향을 줄 수 있음)")
         self.mouse.setChecked(settings.allow_mouse)
         form.addRow(self.mouse)
-        form.addRow(QLabel("1차 요청 5초 후 다른 API로 추가 복귀를 시도합니다.\n로그의 primary / fallback 시각으로 각 방식의 결과를 구분하세요."))
+        self.schedule = QLabel()
+        self.schedule.setWordWrap(True)
+        self.delay.valueChanged.connect(self.update_schedule)
+        self.fallback_delay.valueChanged.connect(self.update_schedule)
+        self.method.currentIndexChanged.connect(self.update_schedule)
+        self.mouse.toggled.connect(self.update_schedule)
+        self.update_schedule()
+        form.addRow(self.schedule)
         row = QHBoxLayout()
         self.sleep_button = QPushButton("5초 후 화면 절전 시험")
         self.sleep_button.clicked.connect(self.start_sleep)
@@ -148,6 +162,7 @@ class MainWindow(QMainWindow):
         row.addWidget(self.wake_button)
         form.addRow(row)
         self.power_status = QLabel("화면 상태 미확인 · 마지막 절전/복귀 요청 없음")
+        self.power_status.setWordWrap(True)
         form.addRow(self.power_status)
         layout.addWidget(group)
 
@@ -176,8 +191,15 @@ class MainWindow(QMainWindow):
         quit_button = QPushButton("종료")
         quit_button.clicked.connect(self.quit_app)
         footer.addWidget(quit_button)
-        layout.addLayout(footer)
-        self.setCentralWidget(body)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(body)
+        root = QWidget()
+        root_layout = QVBoxLayout(root)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.addWidget(scroll)
+        root_layout.addLayout(footer)
+        self.setCentralWidget(root)
 
         self.tray = QSystemTrayIcon(self.windowIcon(), self)
         self.tray.setToolTip("Smart Monitor Controller · 수동 검증")
@@ -239,8 +261,15 @@ class MainWindow(QMainWindow):
         self.settings.monitor_id = self.monitors.currentData() or ""
         self.settings.wake_method = self.method.currentData()
         self.settings.recovery_seconds = self.delay.value()
+        self.settings.fallback_seconds = self.fallback_delay.value()
         self.settings.allow_mouse = self.mouse.isChecked()
         self.settings.save(self.log.root / "settings.json")
+
+    def update_schedule(self):
+        first, interval = self.delay.value(), self.fallback_delay.value()
+        extra = f" · 다음 추가 요청 약 {first + interval * 2}초" if self.mouse.isChecked() else ""
+        self.schedule.setText(f"절전 요청 직전 기준: 1차 약 {first}초 · 첫 추가 요청 약 {first + interval}초{extra}\n"
+                              "추가 요청 전에 켜지는지 확인하세요. 실제 화면 켜짐에는 모니터 자체 지연이 더해집니다.")
 
     def scan_monitors(self):
         if self.controller.state != State.IDLE:
@@ -309,7 +338,7 @@ class MainWindow(QMainWindow):
             self.cancel_button.setEnabled(True)
             self.sleep_button.setEnabled(False)
             self.wake_button.setEnabled(False)
-            for widget in (self.method, self.delay, self.mouse):
+            for widget in (self.method, self.delay, self.fallback_delay, self.mouse):
                 widget.setEnabled(False)
         except Exception as error:
             self.fail(str(error))
@@ -328,7 +357,7 @@ class MainWindow(QMainWindow):
         self.cancel_button.setEnabled(False)
         self.sleep_button.setEnabled(True)
         self.wake_button.setEnabled(True)
-        for widget in (self.method, self.delay, self.mouse):
+        for widget in (self.method, self.delay, self.fallback_delay, self.mouse):
             widget.setEnabled(True)
 
     def tick(self):
@@ -339,14 +368,17 @@ class MainWindow(QMainWindow):
         if remaining <= 0 and not self.busy:
             self.cancel_button.setEnabled(False)
             method, seconds, allow = self.method.currentData(), self.delay.value(), self.mouse.isChecked()
+            interval = self.fallback_delay.value()
             # Move out of COUNTDOWN before the next event-loop tick submits again.
             self.timer.stop()
             self.last_test = self.controller.test_id
             self.observation.setCurrentIndex(0)
-            self.power_status.setText(f"절전 요청 진행 · {seconds}초 후 {method} 복귀 요청 예정")
-            self.submit(lambda: self.controller.execute(method, seconds, allow), lambda result: self.message(str(result)))
+            self.power_status.setText(f"시험 {self.last_test} · 1차 약 {seconds}초 / 추가 약 {seconds + interval}초")
+            self.message(f"시험 {self.last_test} · 1차 {method}, 지연 {seconds}초, 추가 복귀 간격 {interval}초")
+            self.submit(lambda: self.controller.execute(method, seconds, allow, interval), lambda result: self.message(str(result)))
             # The detached helper performs recovery even if this timer/GUI fails.
-            QTimer.singleShot((seconds + 16) * 1000, self.finish_sleep)
+            window_seconds = recovery_window_seconds(method, seconds, allow, interval)
+            QTimer.singleShot(window_seconds * 1000, self.finish_sleep)
 
     def finish_sleep(self):
         self.controller.finish()

@@ -26,8 +26,8 @@ Twinkle Tray는 별도 설치하고 실행한다.
 powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1
 # 지정 모니터의 20/50/80% 시험 후 기존 보고 밝기로 복원
 powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1 --brightness-sweep --monitor-name 27B2H2
-# 5초 카운트다운 후 절전, 10초 후 지정 방식으로 복귀 요청
-powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1 --sleep-test --method monitor_power --seconds 10
+# 5초 카운트다운 후 절전, 약 5초에 1차 요청, 약 35초에 추가 요청
+powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1 --sleep-test --method monitor_power --seconds 5 --fallback-seconds 30
 ```
 
 설정과 실행 로그는 `%LOCALAPPDATA%\SmartMonitorController`에 저장된다.
