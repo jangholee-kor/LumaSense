@@ -17,6 +17,15 @@ class Settings:
     connect_on_start: bool = False
     auto_brightness: bool = False
     auto_presence: bool = False
+    brightness_mode: str = "curve"
+    light_threshold_lux: float = 100.0
+    light_on_brightness: int = 55
+    light_off_brightness: int = 2
+    light_switch_seconds: float = 1.0
+    light_on_lux: float | None = None
+    light_off_lux: float | None = None
+    light_on_recorded_at: str = ""
+    light_off_recorded_at: str = ""
     curve: list = field(default_factory=lambda: [[0, 10], [5, 15], [30, 25], [100, 40], [300, 60], [500, 75], [1000, 85]])
     brightness_min: int = 10
     brightness_max: int = 85
@@ -70,6 +79,7 @@ class Settings:
             if type(getattr(self, name)) is not bool:
                 raise ValueError(f"잘못된 {name}")
         ranges = {"brightness_min": (0, 100), "brightness_max": (0, 100), "brightness_deadband": (1, 20),
+                  "light_on_brightness": (0, 100), "light_off_brightness": (0, 100),
                   "manual_pause_seconds": (0, 86400), "absence_seconds": (5, 3600),
                   "recent_input_seconds": (1, 3600), "max_distance_cm": (1, 900),
                   "radar_min_gate": (0, 13), "radar_max_gate": (0, 13), "radar_absence_seconds": (5, 65535)}
@@ -79,12 +89,22 @@ class Settings:
                 raise ValueError(f"{name}: {low}~{high} 정수 필요")
         if self.brightness_min > self.brightness_max:
             raise ValueError("최소 밝기는 최대 밝기 이하여야 합니다.")
+        if self.brightness_mode not in ("curve", "two_level"):
+            raise ValueError("지원하지 않는 밝기 방식")
+        for name in ("light_on_lux", "light_off_lux"):
+            value = getattr(self, name)
+            if value is not None and (type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 65535):
+                raise ValueError(f"{name}: 0~65535 lux 또는 미기록 값 필요")
+        for name in ("light_on_recorded_at", "light_off_recorded_at"):
+            if not isinstance(getattr(self, name), str) or len(getattr(self, name)) > 64:
+                raise ValueError(f"잘못된 {name}")
         if self.radar_min_gate > self.radar_max_gate:
             raise ValueError("레이더 최소 거리문은 최대 거리문 이하여야 합니다.")
         for values in (self.radar_moving_thresholds, self.radar_stationary_thresholds):
             if not isinstance(values, list) or len(values) != 14 or any(type(v) is not int or not 0 <= v <= 100 for v in values):
                 raise ValueError("레이더 민감도는 거리문 14개의 0~100 정수 필요")
         for name, low, high in (("transition_seconds", 1, 3), ("ema_alpha", .01, 1), ("brightness_interval", .2, 10),
+                                ("light_threshold_lux", 0, 65535), ("light_switch_seconds", 0, 10),
                                 ("stabilization_seconds", 1, 60), ("sensor_stale_seconds", .5, 15)):
             value = getattr(self, name)
             if type(value) not in (int, float) or not math.isfinite(value) or not low <= value <= high:

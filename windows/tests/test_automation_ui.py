@@ -216,3 +216,51 @@ def test_shutdown_power_recovery_runs_outside_gui_thread(simulated, monkeypatch)
     simulated.stop_services()
     assert simulated.power_pool.waitForDone(3000)
     assert threads and threads[0] != threading.get_ident()
+
+
+def test_two_level_profile_samples_threshold_and_exact_values(simulated):
+    view = simulated
+    panel = view.auto_panel
+    panel.brightness_mode.setCurrentIndex(panel.brightness_mode.findData("two_level"))
+    panel.fields["light_on_brightness"].setValue(55)
+    panel.fields["light_off_brightness"].setValue(2)
+    panel.set_light_sample("on", 500, "2026-11-02T14:00:00+00:00")
+    assert not panel.midpoint_button.isEnabled()
+    panel.set_light_sample("off", 4, "2026-11-02T14:01:00+00:00")
+    panel.midpoint_button.click()
+    panel.curve.insertRow(0)
+    view.apply_automation_settings()
+    saved = Settings.load(view.log.root / "settings.json")
+    assert saved.brightness_mode == "two_level" and saved.light_threshold_lux == 252
+    assert saved.light_on_brightness == 55 and saved.light_off_brightness == 2
+    assert saved.brightness_min == 10
+    assert saved.light_on_lux == 500 and saved.light_off_lux == 4
+    assert saved.light_off_recorded_at == "2026-11-02T14:01:00+00:00"
+    panel.set_light_sample("off", 600, "2026-11-02T14:02:00+00:00")
+    assert not panel.midpoint_button.isEnabled()
+
+
+def test_light_capture_rejects_expired_data_without_overwriting_sample(simulated):
+    view = simulated
+    view.auto_panel.sim_lux.setValue(333)
+    view.simulation_packet()
+    view.record_light_sample("on")
+    assert view.auto_panel.light_samples["on"][0] == 333
+    view.runtime.sensors.received_at = time.monotonic() - 10
+    view.record_light_sample("off")
+    assert view.auto_panel.light_samples["off"][0] is None
+    assert "최신 정상 조도" in view.output.toPlainText()
+
+
+def test_two_level_preview_routes_each_preset_through_manual_worker(app, simulated):
+    panel = simulated.auto_panel
+    buttons = [b for b in panel.two_level_group.findChildren(QPushButton) if b.text() == "이 밝기 미리보기"]
+    panel.fields["light_on_brightness"].setValue(55)
+    panel.fields["light_off_brightness"].setValue(2)
+    buttons[0].click()
+    assert pump(app, lambda: not simulated.busy)
+    assert simulated.backend.value == 55
+    buttons[1].click()
+    assert pump(app, lambda: not simulated.busy)
+    assert simulated.backend.value == 2
+    assert simulated.runtime.brightness.pause_until > time.monotonic() + 890

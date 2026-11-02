@@ -19,6 +19,8 @@ class AutomationPanel(QWidget):
     simulation_requested = Signal()
     radar_requested = Signal()
     monitor_requested = Signal()
+    light_sample_requested = Signal(str)
+    light_preview_requested = Signal(int)
 
     def __init__(self, settings, simulation=False):
         super().__init__()
@@ -64,7 +66,7 @@ class AutomationPanel(QWidget):
         live = QGroupBox("현재 상태")
         status = QFormLayout(live)
         self.labels = {}
-        for name, caption in (("lux", "조도"), ("brightness", "목표 / 요청 밝기"), ("presence", "인체 감지"),
+        for name, caption in (("lux", "조도"), ("lighting", "조도 기준 판정"), ("brightness", "목표 / 요청 밝기"), ("presence", "인체 감지"),
                               ("motion", "움직임 / 정지"), ("distance", "감지 거리"), ("sensor", "센서 유효성"),
                               ("power", "존재 상태 / 화면 요청"), ("last", "마지막 제어")):
             label = QLabel("미확인")
@@ -128,6 +130,11 @@ class AutomationPanel(QWidget):
                 widget.setValue(getattr(settings, name))
                 form.addRow(label, widget)
                 self.fields[name] = widget
+            if title == "존재 감지":
+                timing = QLabel("화면이 꺼지기까지 레이더의 부재 유지 시간과 앱의 연속 부재 시간, 5초 취소 카운트다운이 더해집니다.\n"
+                                "재감지하면 별도 복귀 지연 없이 즉시 복귀를 요청합니다.")
+                timing.setWordWrap(True)
+                form.addRow(timing)
             controls_layout.addWidget(group)
         self.use_input = QCheckBox("최근 Windows 키보드·마우스 입력 우선 (확인 실패 시 절전 보류)")
         self.use_input.setChecked(settings.use_recent_input)
@@ -145,11 +152,60 @@ class AutomationPanel(QWidget):
 
         curve_page = QWidget()
         curve_layout = QVBoxLayout(curve_page)
-        curve_layout.addWidget(QLabel("Lux 오름차순으로 지정한 점 사이를 선형 보간합니다."))
+        self.brightness_mode = QComboBox()
+        self.brightness_mode.addItem("조명 ON/OFF · 두 가지 밝기", "two_level")
+        self.brightness_mode.addItem("조도 곡선 · 연속 밝기", "curve")
+        self.brightness_mode.setCurrentIndex(self.brightness_mode.findData(settings.brightness_mode))
+        curve_layout.addWidget(self.brightness_mode)
+        self.two_level_group = QGroupBox("형광등 ON / 불 끔 밝기")
+        light_form = QFormLayout(self.two_level_group)
+        self.fields["light_threshold_lux"] = QDoubleSpinBox()
+        self.fields["light_threshold_lux"].setRange(0, 65535)
+        self.fields["light_threshold_lux"].setDecimals(1)
+        self.fields["light_threshold_lux"].setValue(settings.light_threshold_lux)
+        light_form.addRow("기준 조도 (lux)", self.fields["light_threshold_lux"])
+        self.light_samples = {state: (getattr(settings, f"light_{state}_lux"), getattr(settings, f"light_{state}_recorded_at"))
+                              for state in ("on", "off")}
+        self.light_sample_labels = {}
+        for state, caption in (("on", "형광등 ON"), ("off", "불 끔")):
+            row = QHBoxLayout()
+            spin = QSpinBox()
+            spin.setRange(0, 100)
+            spin.setSuffix(" %")
+            spin.setValue(getattr(settings, f"light_{state}_brightness"))
+            self.fields[f"light_{state}_brightness"] = spin
+            row.addWidget(spin)
+            preview = QPushButton("이 밝기 미리보기")
+            preview.clicked.connect(lambda checked=False, key=state:
+                                    self.light_preview_requested.emit(self.fields[f"light_{key}_brightness"].value()))
+            row.addWidget(preview)
+            light_form.addRow(f"{caption} 밝기", row)
+            row = QHBoxLayout()
+            label = QLabel()
+            label.setWordWrap(True)
+            self.light_sample_labels[state] = label
+            row.addWidget(label, 1)
+            capture = QPushButton(f"{caption} 현재 조도 기록")
+            capture.clicked.connect(lambda checked=False, key=state: self.light_sample_requested.emit(key))
+            row.addWidget(capture)
+            light_form.addRow(row)
+        self.midpoint_button = QPushButton("두 조도 기록의 중간값을 기준으로 사용")
+        self.midpoint_button.clicked.connect(self.use_light_midpoint)
+        light_form.addRow(self.midpoint_button)
+        note = QLabel("기준 이상이면 ON 밝기, 기준 미만이면 불 끔 밝기를 사용합니다.\n"
+                      f"조도가 기준의 같은 쪽에서 {settings.light_switch_seconds:g}초 유지되면 전환합니다.\n"
+                      "두 밝기 모드는 지정한 값을 그대로 사용하며 곡선의 최소·최대 밝기, EMA, 전환 보간을 사용하지 않습니다.\n"
+                      "조도 기록과 밝기는 아래 설정 적용을 누르면 저장됩니다. 미리보기 후에는 자동 밝기가 일시 중단됩니다.")
+        note.setWordWrap(True)
+        light_form.addRow(note)
+        curve_layout.addWidget(self.two_level_group)
+        self.curve_group = QGroupBox("조도 곡선")
+        curve_fields = QVBoxLayout(self.curve_group)
+        curve_fields.addWidget(QLabel("Lux 오름차순으로 지정한 점 사이를 선형 보간합니다."))
         self.curve = QTableWidget(0, 2)
         self.curve.setHorizontalHeaderLabels(["조도 (lux)", "목표 밝기 (%)"])
         self.set_curve(settings.curve)
-        curve_layout.addWidget(self.curve)
+        curve_fields.addWidget(self.curve)
         row = QHBoxLayout()
         add = QPushButton("점 추가")
         add.clicked.connect(lambda: self.curve.insertRow(self.curve.rowCount()) if self.curve.rowCount() < 32 else None)
@@ -159,11 +215,16 @@ class AutomationPanel(QWidget):
         reset.clicked.connect(lambda: self.set_curve(Settings().curve))
         for button in (add, remove, reset):
             row.addWidget(button)
-        curve_layout.addLayout(row)
-        apply_curve = QPushButton("곡선과 설정 적용")
+        curve_fields.addLayout(row)
+        curve_layout.addWidget(self.curve_group)
+        apply_curve = QPushButton("밝기 설정 적용")
         apply_curve.clicked.connect(self.apply_requested.emit)
         curve_layout.addWidget(apply_curve)
-        self.tabs.addTab(curve_page, "밝기 곡선 / 프로필")
+        curve_layout.addStretch()
+        self.brightness_mode.currentIndexChanged.connect(self.update_brightness_mode)
+        self.update_brightness_mode()
+        self.update_light_samples()
+        self.tabs.addTab(curve_page, "밝기 설정 / 프로필")
 
         system = QWidget()
         system_layout = QVBoxLayout(system)
@@ -234,6 +295,26 @@ class AutomationPanel(QWidget):
             for col, value in enumerate(point):
                 self.curve.setItem(row, col, QTableWidgetItem(str(value)))
 
+    def update_brightness_mode(self):
+        two_level = self.brightness_mode.currentData() == "two_level"
+        self.two_level_group.setVisible(two_level)
+        self.curve_group.setVisible(not two_level)
+
+    def set_light_sample(self, state, lux, recorded_at):
+        self.light_samples[state] = (lux, recorded_at)
+        self.update_light_samples()
+
+    def update_light_samples(self):
+        for state, (lux, recorded_at) in self.light_samples.items():
+            self.light_sample_labels[state].setText("조도 미기록" if lux is None else f"{lux:.1f} lux · {recorded_at}")
+        on, off = self.light_samples["on"][0], self.light_samples["off"][0]
+        self.midpoint_button.setEnabled(on is not None and off is not None and on > off)
+
+    def use_light_midpoint(self):
+        on, off = self.light_samples["on"][0], self.light_samples["off"][0]
+        if on is not None and off is not None and on > off:
+            self.fields["light_threshold_lux"].setValue((on + off) / 2)
+
     def set_ports(self, values):
         selected = self.selected_port()
         self.port.clear()
@@ -258,6 +339,10 @@ class AutomationPanel(QWidget):
         result.serial_number = self.serial_number.text().strip()
         result.auto_brightness = self.auto_brightness.isChecked()
         result.auto_presence = self.auto_presence.isChecked()
+        result.brightness_mode = self.brightness_mode.currentData()
+        for state, (lux, recorded_at) in self.light_samples.items():
+            setattr(result, f"light_{state}_lux", lux)
+            setattr(result, f"light_{state}_recorded_at", recorded_at)
         for name, widget in self.fields.items():
             setattr(result, name, widget.value())
         result.use_recent_input = self.use_input.isChecked()
@@ -273,10 +358,11 @@ class AutomationPanel(QWidget):
         result.radar_apply_thresholds = self.radar_thresholds.isChecked()
         result.radar_moving_thresholds = [self.thresholds.cellWidget(i, 1).value() for i in range(14)]
         result.radar_stationary_thresholds = [self.thresholds.cellWidget(i, 2).value() for i in range(14)]
-        try:
-            result.curve = [[float(self.curve.item(row, col).text()) for col in range(2)] for row in range(self.curve.rowCount())]
-        except (AttributeError, ValueError):
-            raise ValueError("곡선의 모든 셀에 숫자를 입력하세요.") from None
+        if result.brightness_mode == "curve":
+            try:
+                result.curve = [[float(self.curve.item(row, col).text()) for col in range(2)] for row in range(self.curve.rowCount())]
+            except (AttributeError, ValueError):
+                raise ValueError("곡선의 모든 셀에 숫자를 입력하세요.") from None
         result.validate()
         return result
 

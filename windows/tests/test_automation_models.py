@@ -55,6 +55,58 @@ def test_small_lux_noise_does_not_churn_brightness():
     assert model.target == 85
 
 
+def test_two_level_uses_exact_presets_below_curve_minimum_and_at_threshold():
+    model = BrightnessController(Settings(brightness_mode="two_level", light_threshold_lux=100))
+    model.seed(56, 0)
+    assert model.observe(100, 0) == 55
+    assert model.propose(0) == 55
+    model.sent(55, 0)
+    assert model.observe(99, .2) == 55
+    assert model.observe(2, 1.3) == 2
+    assert model.propose(1.3) == 2
+    model.sent(2, 1.3)
+    assert model.propose(2.5) is None
+    model.observe(100, 3)
+    assert model.observe(100, 4) == 55
+    assert model.propose(4) == 55
+
+
+def test_two_level_noise_manual_pause_and_one_percent_presets():
+    model = BrightnessController(Settings(brightness_mode="two_level", light_on_brightness=3,
+                                           light_off_brightness=2, manual_pause_seconds=10))
+    model.seed(3, 0)
+    model.observe(150, 0)
+    for t, lux in ((.1, 99), (.5, 101), (.9, 99), (1.2, 101)):
+        assert model.observe(lux, t) == 3
+    model.manual(40, 2)
+    model.observe(0, 3)
+    model.observe(0, 4)
+    assert model.propose(11.9) is None
+    assert model.propose(12) == 2
+
+
+def test_two_level_profile_round_trip_and_legacy_mode(tmp_path):
+    path = tmp_path / "settings.json"
+    Settings(brightness_mode="two_level", light_on_lux=500, light_off_lux=3.5,
+             light_on_recorded_at="2026-11-02T14:00:00+00:00").save(path)
+    saved = Settings.load(path)
+    assert saved.brightness_mode == "two_level" and saved.light_off_brightness == 2
+    assert saved.light_on_lux == 500 and saved.light_off_lux == 3.5
+    path.write_text('{"curve": [[0, 10], [100, 80]]}', encoding="utf-8")
+    assert Settings.load(path).brightness_mode == "curve"
+
+
+@pytest.mark.parametrize("changes", [
+    {"brightness_mode": "unknown"}, {"light_on_brightness": 101}, {"light_off_brightness": True},
+    {"light_threshold_lux": float("nan")}, {"light_threshold_lux": -1},
+    {"light_on_lux": float("inf")}, {"light_off_lux": -1}, {"light_switch_seconds": 11},
+    {"light_on_recorded_at": None},
+])
+def test_invalid_two_level_settings(changes):
+    with pytest.raises(ValueError):
+        Settings(**changes).validate()
+
+
 def test_presence_off_only_after_continuous_absence_and_countdown():
     model = PresenceController(Settings(absence_seconds=30))
     assert tick(model, 0) is None
@@ -71,6 +123,16 @@ def test_presence_off_only_after_continuous_absence_and_countdown():
     assert tick(model, 38.1, True) is None
     model.completed("wake", True, 38.2)
     assert tick(model, 39, True) is None
+
+
+def test_home_timing_includes_five_second_radar_hold_and_immediate_wake():
+    model = PresenceController(Settings(absence_seconds=20, recent_input_seconds=5))
+    for second in range(30):
+        assert model.tick(second, snapshot(second < 5), True, enabled=True, input_age=second) is None
+    assert model.countdown_until == 30
+    assert model.tick(30, snapshot(False), True, enabled=True, input_age=30) == "off"
+    model.completed("off", True, 30)
+    assert model.tick(30.2, snapshot(True), True, enabled=True, input_age=30.2) == "wake"
 
 
 def test_brief_absence_stationary_presence_and_recent_input():

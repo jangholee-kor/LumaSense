@@ -4,6 +4,7 @@ import subprocess
 import uuid
 import json
 import time
+from datetime import datetime, timezone
 from dataclasses import replace
 from pathlib import Path
 
@@ -532,12 +533,30 @@ class MainWindow(QMainWindow):
                 (panel.simulation_requested, self.open_simulation), (panel.radar_requested, self.configure_radar)):
             signal.connect(method)
         panel.monitor_requested.connect(lambda: self.pages.setCurrentWidget(self.diagnostic_page))
+        panel.light_sample_requested.connect(self.record_light_sample)
+        panel.light_preview_requested.connect(self.set_brightness)
         panel.auto_brightness.toggled.connect(lambda checked: self.disable_automation("brightness") if not checked else None)
         panel.auto_presence.toggled.connect(lambda checked: self.disable_automation("presence") if not checked else None)
         if self.simulation:
             panel.login_start.setEnabled(False)
         self.auto_panel = panel
         self.auto_scroll.setWidget(panel)
+
+    def record_light_sample(self, state):
+        try:
+            if state not in ("on", "off"):
+                raise ValueError("ON/OFF 조도 기록 대상 필요")
+            snapshot = self.runtime.sensors.snapshot(time.monotonic())
+            if not snapshot.valid or not snapshot.packet or not snapshot.packet["light_ok"]:
+                raise ValueError("최신 정상 조도 데이터가 필요합니다.")
+            lux = snapshot.packet["lux"]
+            recorded_at = datetime.now(timezone.utc).isoformat()
+            self.auto_panel.set_light_sample(state, lux, recorded_at)
+            self.log.event("lighting_sample_captured", state=state, lux=lux, recorded_at=recorded_at,
+                           simulated=self.simulation)
+            self.message(f"{state.upper()} 조도 {lux:.1f} lux를 기록했습니다. 밝기 설정 적용을 누르면 저장됩니다.")
+        except Exception as error:
+            self.fail(str(error))
 
     def disable_automation(self, kind):
         # Turning a control off must work even if a different draft field is invalid.
@@ -792,6 +811,12 @@ class MainWindow(QMainWindow):
             ready = self.runtime.sensors.ready(now)
             labels["sensor"].setText(f"{snapshot.reason} · {'안정화 완료' if ready else '자동 절전 보류'}")
             labels["brightness"].setText(f"{text(self.runtime.brightness.target)} / {text(self.runtime.brightness.requested)} %")
+            light_on = self.runtime.brightness.light_on
+            lighting = "조도 곡선"
+            if self.settings.brightness_mode == "two_level":
+                lighting = "미확인" if not snapshot.valid or not packet.get("light_ok") or light_on is None else (
+                    "기준 이상 · 형광등 ON 밝기" if light_on else "기준 미만 · 불 끔 밝기")
+            labels["lighting"].setText(lighting)
             state = self.runtime.presence
             countdown = f" · 절전까지 {max(0, math.ceil(state.countdown_until - now))}초" if state.countdown_until is not None and not state.owns_off else ""
             if countdown:
