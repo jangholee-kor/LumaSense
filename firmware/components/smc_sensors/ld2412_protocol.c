@@ -15,13 +15,15 @@ static void discard(ld2412_parser_t *p, size_t n) {
 void ld2412_parser_init(ld2412_parser_t *p) { memset(p, 0, sizeof(*p)); }
 
 static bool decode_data(const uint8_t *b, size_t n, ld2412_data_t *out) {
-    if (n < 11 || (b[0] != 1 && b[0] != 2) || b[1] != 0xaa || b[n - 2] != 0x55 || b[n - 1] != 0)
+    if (n < 11 || (b[0] != 1 && b[0] != 2) || b[1] != 0xaa || b[n - 2] != 0x55)
         return false;
     if (b[0] == 2 && n != 11) return false;
     if (b[2] > 6) return false;
     memset(out, 0, sizeof(*out));
     out->engineering = b[0] == 1;
     out->state = b[2];
+    /* V1.06 table 11 calls the last byte reserved, without a fixed value. */
+    out->reserved = b[n - 1];
     /* Calibration/status states 4..6 are not an absence observation. */
     out->sensor_ok = b[2] <= 3;
     out->moving_cm = le16(b + 3);

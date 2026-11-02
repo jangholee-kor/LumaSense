@@ -8,7 +8,7 @@ ESP32-S3는 J1 ESP USB의 USB Serial/JTAG CDC로 UTF-8 JSON Lines를 전송한�
 ## 센서 데이터
 
 ```json
-{"ver":1,"type":"telemetry","device":"smart-monitor-s3","firmware":"0.2.2","seq":1234,"uptime_ms":258000,"lux":125.5,"light_ok":true,"radar_ok":true,"sensor_ok":true,"presence":true,"moving":false,"stationary":true,"distance_cm":67,"radar_state":2,"moving_distance_cm":0,"stationary_distance_cm":67,"moving_energy":0,"stationary_energy":59,"engineering":false,"errors":[]}
+{"ver":1,"type":"telemetry","device":"smart-monitor-s3","firmware":"0.2.3","seq":1234,"uptime_ms":258000,"lux":125.5,"light_ok":true,"radar_ok":true,"sensor_ok":true,"presence":true,"moving":false,"stationary":true,"distance_cm":67,"radar_state":2,"radar_reserved":248,"moving_distance_cm":0,"stationary_distance_cm":67,"moving_energy":0,"stationary_energy":59,"engineering":false,"errors":[]}
 ```
 
 `seq`는 부팅 후 전송마다 증가하며 재부팅 시 다시 0부터 시작한다.<br>
@@ -18,6 +18,7 @@ ESP32-S3는 J1 ESP USB의 USB Serial/JTAG CDC로 UTF-8 JSON Lines를 전송한�
 정상 레이더가 무인 상태를 보고했을 때만 `presence: false`가 된다.<br>
 `distance_cm`은 현재 감지 상태에 해당하는 유효한 거리 중 가까운 값이며 제공할 거리가 없으면 null이다.<br>
 원시 움직임·정지 거리와 에너지는 별도 필드로 보존한다.<br>
+0.2.3부터 `radar_reserved`는 제조사 표 11의 마지막 예약 바이트를 원시 값으로 보존하며 물리적 의미를 해석하지 않는다.<br>
 공학 모드에서는 `moving_gate_energy`, `stationary_gate_energy` 배열에 실제 프레임이 제공한 거리문 수만큼 기록한다.<br>
 추가 진단 필드는 `radar_rejected_frames`, `usb_dropped_lines`, `light_error`, `radar_init_error`, `free_heap`이다.<br>
 0.2.2부터 `main_stack_min_free_bytes`는 메인 작업이 부팅 이후 기록한 최소 스택 여유량을 바이트로 나타낸다.<br>
@@ -69,6 +70,7 @@ ACK는 같은 id와 cmd, 성공 여부 `ok`, ESP-IDF 오류 이름 `error`를 �
 
 [제조사 V1.06 프로토콜](https://r0.hlktech.com/download/HLK-LD2412-24G/1/LD2412%20%E4%B8%B2%E5%8F%A3%E9%80%9A%E4%BF%A1%E5%8D%8F%E8%AE%AE%20V1.06%20241105.pdf)에 따라 리틀 엔디언 길이, 보고 헤더 F4 F3 F2 F1, 꼬리 F8 F7 F6 F5와 내부 AA/55 표식을 검사한다.<br>
 설정 ACK는 FD FC FB FA와 04 03 02 01 표식, 명령 번호 및 ACK 상태로 확인한다.<br>
+보고 데이터의 마지막 예약 바이트는 값이 고정돼 있지 않으므로 0만 허용하는 검사를 하지 않는다.<br>
 이 프로토콜에는 체크섬 필드가 정의되어 있지 않아 별도의 CRC 검사를 수행한다고 주장하지 않는다.<br>
 마커와 길이가 유효한 채 데이터 비트만 바뀐 경우까지 검출할 수 있다는 보장은 없다.<br>
 보고 상태 4~6은 보정 상태로 처리해 인체 부재로 변환하지 않는다.<br>

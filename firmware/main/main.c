@@ -86,7 +86,7 @@ static void telemetry(void) {
     cJSON_AddNumberToObject(root, "ver", 1);
     cJSON_AddStringToObject(root, "type", "telemetry");
     cJSON_AddStringToObject(root, "device", "smart-monitor-s3");
-    cJSON_AddStringToObject(root, "firmware", "0.2.2");
+    cJSON_AddStringToObject(root, "firmware", "0.2.3");
     cJSON_AddNumberToObject(root, "seq", sequence++);
     cJSON_AddNumberToObject(root, "uptime_ms", (double)(now / 1000));
     if (lux_ok) cJSON_AddNumberToObject(root, "lux", lux); else cJSON_AddNullToObject(root, "lux");
@@ -98,6 +98,7 @@ static void telemetry(void) {
     nullable_bool(root, "stationary", radar_ok, (radar.latest.state & 2) != 0);
     if (radar_ok) {
         cJSON_AddNumberToObject(root, "radar_state", radar.latest.state);
+        cJSON_AddNumberToObject(root, "radar_reserved", radar.latest.reserved);
         cJSON_AddNumberToObject(root, "moving_distance_cm", radar.latest.moving_cm);
         cJSON_AddNumberToObject(root, "stationary_distance_cm", radar.latest.stationary_cm);
         cJSON_AddNumberToObject(root, "moving_energy", radar.latest.moving_energy);
@@ -201,7 +202,7 @@ static void command(const char *line) {
         else if (!strcmp(name->valuestring, "get_status")) {
             result = ESP_OK;
             cJSON_AddStringToObject(reply, "device", "smart-monitor-s3");
-            cJSON_AddStringToObject(reply, "firmware", "0.2.2");
+            cJSON_AddStringToObject(reply, "firmware", "0.2.3");
             cJSON_AddNumberToObject(reply, "report_ms", report_ms);
             cJSON_AddNumberToObject(reply, "sda_gpio", CONFIG_SMC_I2C_SDA);
             cJSON_AddNumberToObject(reply, "scl_gpio", CONFIG_SMC_I2C_SCL);

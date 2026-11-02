@@ -19,6 +19,7 @@ typedef struct {
     uint8_t moving_gates[LD2412_GATE_COUNT];
     uint8_t stationary_gates[LD2412_GATE_COUNT];
     uint8_t light;
+    uint8_t reserved;
 } ld2412_data_t;
 
 typedef enum { LD2412_DATA, LD2412_ACK } ld2412_kind_t;

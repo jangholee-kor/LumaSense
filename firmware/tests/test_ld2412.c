@@ -35,6 +35,19 @@ int main(void) {
     assert(events[0].data.moving_gate_count == 14 && events[0].data.light == 0xe3);
     assert(events[0].data.stationary_gates[3] == 0x7e);
 
+    /* The final byte is reserved, not a zero marker/checksum (V1.06 table 11). */
+    for (unsigned reserved = 0; reserved <= 255; ++reserved) {
+        uint8_t frame[sizeof(normal)]; memcpy(frame, normal, sizeof(frame));
+        frame[sizeof(frame) - 5] = reserved;
+        reset(&parser); feed(&parser, frame, sizeof(frame));
+        assert(count == 1 && events[0].data.reserved == reserved && !parser.rejected);
+    }
+    uint8_t varied_engineering[sizeof(engineering)];
+    memcpy(varied_engineering, engineering, sizeof(engineering));
+    varied_engineering[sizeof(varied_engineering) - 5] = 0xa5;
+    reset(&parser); feed(&parser, varied_engineering, sizeof(varied_engineering));
+    assert(count == 1 && events[0].data.engineering && events[0].data.reserved == 0xa5);
+
     /* Every split point, noise prefix, and consecutive frames. */
     for (size_t split = 0; split <= sizeof(normal); ++split) {
         reset(&parser);
@@ -53,7 +66,7 @@ int main(void) {
         assert(count == 1 && events[0].data.sensor_ok == (state <= 3));
     }
     /* Corrupt headers, bounds, marker, state, and footer must resynchronize. */
-    const size_t corrupt_offsets[] = {0,4,7,8,15,16,20};
+    const size_t corrupt_offsets[] = {0,4,7,8,15,20};
     for (size_t i = 0; i < sizeof(corrupt_offsets)/sizeof(corrupt_offsets[0]); ++i) {
         uint8_t frame[sizeof(normal)]; memcpy(frame, normal, sizeof(frame));
         frame[corrupt_offsets[i]] = 0xff;
@@ -77,6 +90,6 @@ int main(void) {
     reset(&parser);
     uint8_t noise[8192]; memset(noise,0xff,sizeof(noise)); feed(&parser,noise,sizeof(noise));
     feed(&parser,normal,sizeof(normal)); assert(count == 1 && parser.used < 256);
-    puts("LD2412 native tests PASS: reference frames, fragmentation, bounds, corruption, ACK, calibration");
+    puts("LD2412 native tests PASS: reference frames, fragmentation, bounds, corruption, ACK, calibration, all reserved byte values");
     return 0;
 }
