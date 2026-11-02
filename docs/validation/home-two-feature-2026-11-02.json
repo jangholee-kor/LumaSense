@@ -162,11 +162,672 @@
       2,
       3
     ],
-    "physical_result": "unverified"
+    "physical_result": "fail",
+    "failure": "Radar kept reporting occupied while the user confirmed the range was empty and they remained over 3m away. No 30-second automatic off was observed.",
+    "physical_wake_2_to_3_seconds": "unverified",
+    "user_confirmed_empty": true,
+    "user_confirmed_distance_over_3m_after_restart": true
   },
   "checks": {
     "windows_suite_passed": 120,
     "gui_recheck_passed": 13,
-    "korean_ui_render_review": true
+    "korean_ui_render_review": true,
+    "exe": {
+      "sha256": "12a9be4e2e17e7d4b390a40c90bc4dfd7de4eb916dd9b607344d1116023e03f8",
+      "checks": [
+        {
+          "case": "gui",
+          "pass": true
+        },
+        {
+          "case": "watchdog",
+          "pass": true,
+          "simulated": true
+        },
+        {
+          "case": "lease_guard",
+          "pass": true,
+          "simulated": true
+        }
+      ],
+      "physical_validation": "not_run"
+    }
+  },
+  "radar_diagnostics": {
+    "calibration_active_then_inactive": true,
+    "calibration_active_elapsed_seconds": 48.9,
+    "configuration_unchanged_after_calibration": true,
+    "before_samples": [
+      {
+        "ver": 1,
+        "type": "telemetry",
+        "device": "smart-monitor-s3",
+        "firmware": "0.2.5",
+        "radar_calibration_pending": false,
+        "seq": 9729,
+        "uptime_ms": 2107367,
+        "lux": 523.3333129882812,
+        "light_ok": true,
+        "radar_ok": true,
+        "sensor_ok": true,
+        "presence": true,
+        "moving": true,
+        "stationary": true,
+        "radar_state": 3,
+        "radar_reserved": 3,
+        "moving_distance_cm": 60,
+        "stationary_distance_cm": 0,
+        "moving_energy": 69,
+        "stationary_energy": 0,
+        "distance_cm": 60,
+        "engineering": false,
+        "errors": [],
+        "radar_rejected_frames": 0,
+        "usb_dropped_lines": 570,
+        "light_error": "ESP_OK",
+        "radar_init_error": "ESP_OK",
+        "free_heap": 348616,
+        "main_stack_min_free_bytes": 6132,
+        "status_led": {
+          "enabled": true,
+          "gpio": 38,
+          "brightness": 4,
+          "driver_ok": true,
+          "error": "ESP_OK",
+          "state": "present",
+          "updates": 7,
+          "requested_rgb": [
+            0,
+            4,
+            0
+          ]
+        }
+      },
+      {
+        "ver": 1,
+        "type": "telemetry",
+        "device": "smart-monitor-s3",
+        "firmware": "0.2.5",
+        "radar_calibration_pending": false,
+        "seq": 9743,
+        "uptime_ms": 2110307,
+        "lux": 525.8333129882812,
+        "light_ok": true,
+        "radar_ok": true,
+        "sensor_ok": true,
+        "presence": true,
+        "moving": false,
+        "stationary": true,
+        "radar_state": 2,
+        "radar_reserved": 0,
+        "moving_distance_cm": 0,
+        "stationary_distance_cm": 0,
+        "moving_energy": 0,
+        "stationary_energy": 0,
+        "distance_cm": null,
+        "engineering": true,
+        "moving_gate_energy": [
+          0,
+          0,
+          7,
+          2,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "stationary_gate_energy": [
+          0,
+          12,
+          1,
+          0,
+          1,
+          1,
+          0,
+          2,
+          2,
+          8,
+          9,
+          9,
+          32,
+          1
+        ],
+        "errors": [],
+        "radar_rejected_frames": 0,
+        "usb_dropped_lines": 570,
+        "light_error": "ESP_OK",
+        "radar_init_error": "ESP_OK",
+        "free_heap": 347244,
+        "main_stack_min_free_bytes": 6132,
+        "status_led": {
+          "enabled": true,
+          "gpio": 38,
+          "brightness": 4,
+          "driver_ok": true,
+          "error": "ESP_OK",
+          "state": "present",
+          "updates": 7,
+          "requested_rgb": [
+            0,
+            4,
+            0
+          ]
+        }
+      }
+    ],
+    "after_calibration_healthy_presence": {
+      "True": 39
+    },
+    "after_calibration_capture": {
+      "duration_seconds": 10,
+      "telemetry": 48,
+      "healthy": 39,
+      "sensor_errors": 9,
+      "invalid_packets": 0,
+      "sequence_gaps": 0,
+      "restarts": 0,
+      "physical_result": "unverified",
+      "elapsed_seconds": 10.078,
+      "invalid_lines": 0,
+      "sensor_stream_pass": false,
+      "ten_minute_stream_pass": false
+    },
+    "after_calibration_samples": [
+      {
+        "ver": 1,
+        "type": "telemetry",
+        "device": "smart-monitor-s3",
+        "firmware": "0.2.5",
+        "radar_calibration_pending": false,
+        "seq": 9969,
+        "uptime_ms": 2159667,
+        "lux": 524.1666259765625,
+        "light_ok": true,
+        "radar_ok": false,
+        "sensor_ok": false,
+        "presence": null,
+        "moving": null,
+        "stationary": null,
+        "distance_cm": null,
+        "errors": [
+          "ld2412_unavailable_or_calibrating"
+        ],
+        "radar_rejected_frames": 0,
+        "usb_dropped_lines": 570,
+        "light_error": "ESP_OK",
+        "radar_init_error": "ESP_OK",
+        "free_heap": 349000,
+        "main_stack_min_free_bytes": 6132,
+        "status_led": {
+          "enabled": true,
+          "gpio": 38,
+          "brightness": 4,
+          "driver_ok": true,
+          "error": "ESP_OK",
+          "state": "sensor_error",
+          "updates": 107,
+          "requested_rgb": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "ver": 1,
+        "type": "telemetry",
+        "device": "smart-monitor-s3",
+        "firmware": "0.2.5",
+        "radar_calibration_pending": false,
+        "seq": 10016,
+        "uptime_ms": 2169537,
+        "lux": 521.6666259765625,
+        "light_ok": true,
+        "radar_ok": true,
+        "sensor_ok": true,
+        "presence": true,
+        "moving": false,
+        "stationary": true,
+        "radar_state": 2,
+        "radar_reserved": 0,
+        "moving_distance_cm": 0,
+        "stationary_distance_cm": 0,
+        "moving_energy": 0,
+        "stationary_energy": 0,
+        "distance_cm": null,
+        "engineering": false,
+        "errors": [],
+        "radar_rejected_frames": 0,
+        "usb_dropped_lines": 570,
+        "light_error": "ESP_OK",
+        "radar_init_error": "ESP_OK",
+        "free_heap": 348616,
+        "main_stack_min_free_bytes": 6132,
+        "status_led": {
+          "enabled": true,
+          "gpio": 38,
+          "brightness": 4,
+          "driver_ok": true,
+          "error": "ESP_OK",
+          "state": "present",
+          "updates": 111,
+          "requested_rgb": [
+            0,
+            4,
+            0
+          ]
+        }
+      }
+    ],
+    "restart_method": "Set the existing 20cm resolution to restart, then explicitly restore and read back the original basic and threshold configuration.",
+    "restart_configuration_restored": true,
+    "after_restart_presence": {
+      "True": 48
+    },
+    "after_restart_capture": {
+      "duration_seconds": 10,
+      "telemetry": 48,
+      "healthy": 48,
+      "sensor_errors": 0,
+      "invalid_packets": 0,
+      "sequence_gaps": 0,
+      "restarts": 0,
+      "physical_result": "unverified",
+      "elapsed_seconds": 10.094,
+      "invalid_lines": 0,
+      "sensor_stream_pass": true,
+      "ten_minute_stream_pass": false
+    },
+    "after_restart_samples": [
+      {
+        "ver": 1,
+        "type": "telemetry",
+        "device": "smart-monitor-s3",
+        "firmware": "0.2.5",
+        "radar_calibration_pending": false,
+        "seq": 10419,
+        "uptime_ms": 2298278,
+        "lux": 523.3333129882812,
+        "light_ok": true,
+        "radar_ok": true,
+        "sensor_ok": true,
+        "presence": true,
+        "moving": false,
+        "stationary": true,
+        "radar_state": 2,
+        "radar_reserved": 0,
+        "moving_distance_cm": 0,
+        "stationary_distance_cm": 0,
+        "moving_energy": 0,
+        "stationary_energy": 0,
+        "distance_cm": null,
+        "engineering": false,
+        "errors": [],
+        "radar_rejected_frames": 0,
+        "usb_dropped_lines": 948,
+        "light_error": "ESP_OK",
+        "radar_init_error": "ESP_OK",
+        "free_heap": 348616,
+        "main_stack_min_free_bytes": 6132,
+        "status_led": {
+          "enabled": true,
+          "gpio": 38,
+          "brightness": 4,
+          "driver_ok": true,
+          "error": "ESP_OK",
+          "state": "present",
+          "updates": 119,
+          "requested_rgb": [
+            0,
+            4,
+            0
+          ]
+        }
+      },
+      {
+        "ver": 1,
+        "type": "telemetry",
+        "device": "smart-monitor-s3",
+        "firmware": "0.2.5",
+        "radar_calibration_pending": false,
+        "seq": 10466,
+        "uptime_ms": 2308147,
+        "lux": 520,
+        "light_ok": true,
+        "radar_ok": true,
+        "sensor_ok": true,
+        "presence": true,
+        "moving": true,
+        "stationary": true,
+        "radar_state": 3,
+        "radar_reserved": 245,
+        "moving_distance_cm": 58,
+        "stationary_distance_cm": 0,
+        "moving_energy": 57,
+        "stationary_energy": 0,
+        "distance_cm": 58,
+        "engineering": false,
+        "errors": [],
+        "radar_rejected_frames": 0,
+        "usb_dropped_lines": 948,
+        "light_error": "ESP_OK",
+        "radar_init_error": "ESP_OK",
+        "free_heap": 348616,
+        "main_stack_min_free_bytes": 6132,
+        "status_led": {
+          "enabled": true,
+          "gpio": 38,
+          "brightness": 4,
+          "driver_ok": true,
+          "error": "ESP_OK",
+          "state": "present",
+          "updates": 119,
+          "requested_rgb": [
+            0,
+            4,
+            0
+          ]
+        }
+      }
+    ],
+    "restart_commands": [
+      {
+        "time": "2026-11-02T14:33:50.456643+00:00",
+        "request": {
+          "cmd": "radar_get_config"
+        },
+        "response": {
+          "ver": 1,
+          "type": "ack",
+          "id": "0379b477ed9e484a9c3bbbf2ea04b874",
+          "cmd": "radar_get_config",
+          "radar": {
+            "resolution_code": 3,
+            "gate_width_cm": 20,
+            "min_gate": 1,
+            "max_gate": 8,
+            "absence_seconds": 5,
+            "out_polarity": 0,
+            "moving_thresholds": [
+              100,
+              100,
+              35,
+              35,
+              35,
+              35,
+              35,
+              35,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "stationary_thresholds": [
+              100,
+              100,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "complete": true
+          },
+          "ok": true,
+          "error": "ESP_OK"
+        }
+      },
+      {
+        "time": "2026-11-02T14:33:50.826059+00:00",
+        "request": {
+          "cmd": "radar_config",
+          "resolution_cm": 20
+        },
+        "response": {
+          "ver": 1,
+          "type": "ack",
+          "id": "8b158ec0b2fb498d81ef32854c157cd7",
+          "cmd": "radar_config",
+          "ok": true,
+          "error": "ESP_OK"
+        }
+      },
+      {
+        "time": "2026-11-02T14:33:52.957117+00:00",
+        "request": {
+          "cmd": "radar_get_config"
+        },
+        "response": {
+          "ver": 1,
+          "type": "ack",
+          "id": "2d73c16bfa054faeae85f649a1059e4d",
+          "cmd": "radar_get_config",
+          "radar": {
+            "resolution_code": 3,
+            "gate_width_cm": 20,
+            "min_gate": 1,
+            "max_gate": 8,
+            "absence_seconds": 5,
+            "out_polarity": 0,
+            "moving_thresholds": [
+              100,
+              100,
+              35,
+              35,
+              35,
+              35,
+              35,
+              35,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "stationary_thresholds": [
+              100,
+              100,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "complete": true
+          },
+          "ok": true,
+          "error": "ESP_OK"
+        }
+      },
+      {
+        "time": "2026-11-02T14:33:53.115855+00:00",
+        "request": {
+          "cmd": "radar_config",
+          "engineering": false,
+          "min_gate": 1,
+          "max_gate": 8,
+          "absence_seconds": 5,
+          "moving_thresholds": [
+            100,
+            100,
+            35,
+            35,
+            35,
+            35,
+            35,
+            35,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100
+          ],
+          "stationary_thresholds": [
+            100,
+            100,
+            25,
+            25,
+            25,
+            25,
+            25,
+            25,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100
+          ]
+        },
+        "response": {
+          "ver": 1,
+          "type": "ack",
+          "id": "018923f9f0b245528b2987ba03d3e984",
+          "cmd": "radar_config",
+          "ok": true,
+          "error": "ESP_OK"
+        }
+      },
+      {
+        "time": "2026-11-02T14:33:53.247033+00:00",
+        "request": {
+          "cmd": "radar_get_config"
+        },
+        "response": {
+          "ver": 1,
+          "type": "ack",
+          "id": "99a57a96ed8b4aa294f418fc23b88679",
+          "cmd": "radar_get_config",
+          "radar": {
+            "resolution_code": 3,
+            "gate_width_cm": 20,
+            "min_gate": 1,
+            "max_gate": 8,
+            "absence_seconds": 5,
+            "out_polarity": 0,
+            "moving_thresholds": [
+              100,
+              100,
+              35,
+              35,
+              35,
+              35,
+              35,
+              35,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "stationary_thresholds": [
+              100,
+              100,
+              25,
+              25,
+              25,
+              25,
+              25,
+              25,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "complete": true
+          },
+          "ok": true,
+          "error": "ESP_OK"
+        }
+      }
+    ],
+    "firmware_flashed": false
+  },
+  "current_configuration": {
+    "auto_brightness": true,
+    "auto_presence": false,
+    "brightness_mode": "two_level",
+    "light_threshold_lux": 259.2,
+    "on_brightness": 55,
+    "off_brightness": 2,
+    "production_wake_method": "execution_state",
+    "serial_port": "COM3"
+  },
+  "next_hardware_comparison": "User intends to try a ToF sensor tomorrow; model, interface and wiring have not been specified.",
+  "connection_restored_sample": {
+    "received_at": "2026-11-02T14:37:42.246791+00:00",
+    "received_monotonic": 77977.015,
+    "packet": {
+      "ver": 1,
+      "type": "telemetry",
+      "device": "smart-monitor-s3",
+      "firmware": "0.2.5",
+      "radar_calibration_pending": false,
+      "seq": 11250,
+      "uptime_ms": 2527247,
+      "lux": 524.1666259765625,
+      "light_ok": true,
+      "radar_ok": true,
+      "sensor_ok": true,
+      "presence": true,
+      "moving": true,
+      "stationary": true,
+      "radar_state": 3,
+      "radar_reserved": 245,
+      "moving_distance_cm": 59,
+      "stationary_distance_cm": 0,
+      "moving_energy": 78,
+      "stationary_energy": 0,
+      "distance_cm": 59,
+      "engineering": false,
+      "errors": [],
+      "radar_rejected_frames": 0,
+      "usb_dropped_lines": 1421,
+      "light_error": "ESP_OK",
+      "radar_init_error": "ESP_OK",
+      "free_heap": 348616,
+      "main_stack_min_free_bytes": 6132,
+      "status_led": {
+        "enabled": true,
+        "gpio": 38,
+        "brightness": 4,
+        "driver_ok": true,
+        "error": "ESP_OK",
+        "state": "present",
+        "updates": 119,
+        "requested_rgb": [
+          0,
+          4,
+          0
+        ]
+      }
+    }
   }
 }

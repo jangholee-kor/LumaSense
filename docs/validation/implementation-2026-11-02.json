@@ -26,7 +26,8 @@
       "physical_completion_criterion": "pass",
       "absence_classification": "single_empty_occupied_cycle_pass_after_background_calibration",
       "current_firmware": "0.2.5_default_profile",
-      "radar_tuning_evidence": "radar-tuning-2026-11-02.json"
+      "radar_tuning_evidence": "radar-tuning-2026-11-02.json",
+      "home_absence_classification": "fail_persistent_occupied_with_user_over_3m_after_calibration_and_restart"
     },
     {
       "phase": 3,
@@ -43,19 +44,21 @@
       "qt_simulated_brightness": "pass",
       "lighting_and_actual_monitor_response": "pass_home_BH1750_cover_uncover_user_observed",
       "physical_completion_criterion": "pass",
-      "home_evidence": "home-automation-2026-11-02.json"
+      "home_evidence": "home-automation-2026-11-02.json",
+      "home_two_level_brightness": "pass_on_55_off_2_threshold_259.2_lux"
     },
     {
       "phase": 5,
       "implementation": "complete",
       "absence_input_error_countdown_crash_guard": "pass",
       "qt_off_redetection_error_simulation": "pass",
-      "actual_radar_off_wake_and_stationary_30_minutes": "partial_off_wake_pass_one_cycle_stationary_30_minutes_not_run",
+      "actual_radar_off_wake_and_stationary_30_minutes": "partial_prior_cycle_pass_latest_empty_failure_stationary_deferred",
       "lock_logon_and_hdr_sdr": "not_run",
       "physical_completion_criterion": "partial",
-      "actual_radar_off_wake": "pass_home_one_cycle_execution_state",
+      "actual_radar_off_wake": "prior_single_cycle_pass_latest_empty_detection_failed",
       "stationary_30_minutes": "deferred_by_user_2026-11-02",
-      "home_evidence": "home-automation-2026-11-02.json"
+      "home_evidence": "home-automation-2026-11-02.json",
+      "latest_home_evidence": "home-two-feature-2026-11-02.json"
     },
     {
       "phase": 6,
@@ -112,13 +115,15 @@
     "office-execution-state-2026-11-02.json",
     "home-2026-11-02.json",
     "home-remaining-2026-11-02.json",
-    "home-automation-2026-11-02.json"
+    "home-automation-2026-11-02.json",
+    "home-two-feature-2026-11-02.json"
   ],
   "firmware_build_evidence": "firmware-build-2026-11-02.json",
   "latest_windows_automated_tests": {
-    "passed": 104,
+    "passed": 120,
     "failed": 0,
     "physical_io": false,
-    "source_commit": "f4a11ad"
+    "source_commit": "fb2cf7c",
+    "gui_recheck_passed": 13
   }
 }
