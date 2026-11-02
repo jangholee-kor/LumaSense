@@ -11,9 +11,9 @@
   "display_off": "pass",
   "wake_methods": {
     "monitor_power": "unverified",
-    "execution_state": "unverified",
+    "execution_state": "pass",
     "mouse_move": "unverified"
   },
-  "evidence": "docs/validation/home-2026-11-02.json; brightness 031bc198e7364801aa3c6081b0a13970; sleep d48ef19056a94779bb94146715c2da0d",
-  "notes": "집 32M2N8900 SDR에서 사용자가 밝기 변화와 자동 꺼짐·켜짐을 확인했다. 실제 복귀 시각을 확인하지 못해 개별 복귀 방식은 미검증이다. Mi TV는 실제 모니터가 아닌 원격 접속용 가상 HDMI 장치이다."
+  "evidence": "docs/validation/home-2026-11-02.json; brightness 031bc198e7364801aa3c6081b0a13970; sleep d48ef19056a94779bb94146715c2da0d; docs/validation/home-remaining-2026-11-02.json; execution_state 7a50e7010c984e0fad1045a9955dffa6",
+  "notes": "집 32M2N8900 SDR에서 밝기 20·50·80% 변화와 화면 절전, execution_state 요청 후 약 10초의 자동 복귀를 사용자가 확인했다. 첫 추가 요청 전 복귀이며 직접 입력으로 깨우지 않았다. monitor_power와 mouse_move의 단독 실물 복귀는 미검증이다."
 }
