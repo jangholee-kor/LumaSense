@@ -9,9 +9,22 @@
   },
   "specific_20_50_80_observations": "unverified",
   "display_mode": "unrecorded",
-  "display_off": "unverified",
+  "display_off": "pass",
+  "automatic_wake": "pass",
+  "sleep_trial": {
+    "status": "preliminary_user_observation",
+    "countdown_seconds": 5,
+    "primary_method": "monitor_power",
+    "recovery_delay_seconds": 5,
+    "allow_mouse": false,
+    "reported_wake_latency_seconds_approx": 5,
+    "method_attribution": "monitor_power_supported_by_approximate_user_timing",
+    "per_monitor_sleep_wake_results": "unrecorded",
+    "precise_retest": "pending_user_report",
+    "matching_completed_log_test_id": "0ba39fe1ed82432a80cad05ee057547d"
+  },
   "wake_methods": {
-    "monitor_power": "unverified",
+    "monitor_power": "preliminary_pass",
     "execution_state": "unverified",
     "mouse_move": "unverified"
   },
