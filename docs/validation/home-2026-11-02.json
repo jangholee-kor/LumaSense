@@ -1,0 +1,376 @@
+{
+  "date": "2026-11-02",
+  "environment": {
+    "os": "Windows 11 Pro 10.0.26300",
+    "python": "3.12.10",
+    "app": "0.3.0",
+    "source_commit": "f4a11ad",
+    "location": "home"
+  },
+  "displays": [
+    {
+      "name": "32M2N8900",
+      "identifier": "5&11353a37&0&UID8451",
+      "kind": "ddcci",
+      "physical": true,
+      "display_mode": "SDR"
+    },
+    {
+      "name": "Mi TV",
+      "kind": "none",
+      "physical": false,
+      "role": "virtual HDMI device for remote access without a physical monitor",
+      "source": "user"
+    }
+  ],
+  "sensor": {
+    "port": "COM3",
+    "firmware": "0.2.5",
+    "summary": {
+      "duration_seconds": 20.0,
+      "telemetry": 95,
+      "healthy": 95,
+      "sensor_errors": 0,
+      "invalid_packets": 0,
+      "sequence_gaps": 0,
+      "restarts": 0,
+      "physical_result": "unverified",
+      "elapsed_seconds": 20.047,
+      "invalid_lines": 0,
+      "sensor_stream_pass": true,
+      "ten_minute_stream_pass": false
+    },
+    "lux_min_max": [
+      206.66665649414062,
+      209.99998474121094
+    ],
+    "presence_counts": {
+      "True": 95
+    },
+    "distance_cm_min_max": [
+      40,
+      60
+    ],
+    "usb_dropped_lines_first_last": [
+      1010,
+      1010
+    ],
+    "sample": {
+      "ver": 1,
+      "type": "telemetry",
+      "device": "smart-monitor-s3",
+      "firmware": "0.2.5",
+      "radar_calibration_pending": false,
+      "seq": 1128,
+      "uptime_ms": 347677,
+      "lux": 209.99998474121094,
+      "light_ok": true,
+      "radar_ok": true,
+      "sensor_ok": true,
+      "presence": true,
+      "moving": true,
+      "stationary": true,
+      "radar_state": 3,
+      "radar_reserved": 1,
+      "moving_distance_cm": 60,
+      "stationary_distance_cm": 40,
+      "moving_energy": 100,
+      "stationary_energy": 100,
+      "distance_cm": 40,
+      "engineering": false,
+      "errors": [],
+      "radar_rejected_frames": 0,
+      "usb_dropped_lines": 1010,
+      "light_error": "ESP_OK",
+      "radar_init_error": "ESP_OK",
+      "free_heap": 348616,
+      "main_stack_min_free_bytes": 6132,
+      "status_led": {
+        "enabled": true,
+        "gpio": 38,
+        "brightness": 4,
+        "driver_ok": true,
+        "error": "ESP_OK",
+        "state": "present",
+        "updates": 3,
+        "requested_rgb": [
+          0,
+          4,
+          0
+        ]
+      }
+    },
+    "serial_events_during_sleep": [
+      {
+        "time": "2026-11-02T13:35:29.093270+00:00",
+        "event": "serial_status",
+        "state": "error",
+        "message": "센서 데이터 수신 중단",
+        "port": "COM3",
+        "connected": false
+      },
+      {
+        "time": "2026-11-02T13:35:31.124645+00:00",
+        "event": "serial_status",
+        "state": "connecting",
+        "message": "펌웨어 확인 중",
+        "port": "COM3",
+        "connected": false
+      },
+      {
+        "time": "2026-11-02T13:35:31.151362+00:00",
+        "event": "serial_status",
+        "state": "connected",
+        "message": "센서 연결됨",
+        "port": "COM3",
+        "connected": true
+      }
+    ],
+    "post_sleep_latest_sample": {
+      "received_at": "2026-11-02T13:37:12.765807+00:00",
+      "received_monotonic": 74347.546,
+      "packet": {
+        "ver": 1,
+        "type": "telemetry",
+        "device": "smart-monitor-s3",
+        "firmware": "0.2.5",
+        "radar_calibration_pending": false,
+        "seq": 2331,
+        "uptime_ms": 643457,
+        "lux": 303.33331298828125,
+        "light_ok": true,
+        "radar_ok": true,
+        "sensor_ok": true,
+        "presence": true,
+        "moving": true,
+        "stationary": true,
+        "radar_state": 3,
+        "radar_reserved": 245,
+        "moving_distance_cm": 59,
+        "stationary_distance_cm": 40,
+        "moving_energy": 100,
+        "stationary_energy": 100,
+        "distance_cm": 40,
+        "engineering": false,
+        "errors": [],
+        "radar_rejected_frames": 0,
+        "usb_dropped_lines": 1388,
+        "light_error": "ESP_OK",
+        "radar_init_error": "ESP_OK",
+        "free_heap": 348616,
+        "main_stack_min_free_bytes": 6132,
+        "status_led": {
+          "enabled": true,
+          "gpio": 38,
+          "brightness": 4,
+          "driver_ok": true,
+          "error": "ESP_OK",
+          "state": "present",
+          "updates": 3,
+          "requested_rgb": [
+            0,
+            4,
+            0
+          ]
+        }
+      }
+    }
+  },
+  "brightness": {
+    "test_id": "031bc198e7364801aa3c6081b0a13970",
+    "original_reported": 56.00000000000001,
+    "requested_levels": [
+      20,
+      50,
+      80
+    ],
+    "reported_levels": [
+      20,
+      50,
+      80
+    ],
+    "restore_requested": 56,
+    "restore_reported": 56,
+    "user_observation": "밝기 변화 확인",
+    "physical_result": "pass",
+    "display_mode": "SDR"
+  },
+  "sleep": {
+    "test_id": "d48ef19056a94779bb94146715c2da0d",
+    "method": "monitor_power",
+    "seconds": 10,
+    "fallback_seconds": 30,
+    "physical_result": "pass",
+    "display_off_physical_result": "pass",
+    "user_observation": "자동으로 꺼짐·켜짐 확인",
+    "display_mode": "SDR",
+    "observed_wake_seconds": null,
+    "physical_input_used": null,
+    "wake_methods": {
+      "monitor_power": "unverified",
+      "execution_state": "unverified",
+      "mouse_move": "unverified"
+    },
+    "interpretation": "User confirmed the automatic off/wake cycle; individual wake API attribution requires physical timing.",
+    "primary_call_elapsed_seconds": 32.945,
+    "fallback_after_off_accepted_seconds": 72.592
+  },
+  "checks": {
+    "windows_tests_pass": 104,
+    "live_gui_sensor_connected": true,
+    "live_gui_sensor_stabilized": true,
+    "live_gui_target_selected": true
+  },
+  "auto_brightness_enabled": false,
+  "auto_presence_enabled": false,
+  "firmware_flashed": false,
+  "events": [
+    {
+      "time": "2026-11-02T13:32:42.535751+00:00",
+      "event": "sweep_started",
+      "test_id": "031bc198e7364801aa3c6081b0a13970",
+      "monitor": {
+        "identifier": "5&11353a37&0&UID8451",
+        "name": "32M2N8900",
+        "brightness": 56.00000000000001,
+        "kind": "ddcci"
+      }
+    },
+    {
+      "time": "2026-11-02T13:32:45.091174+00:00",
+      "event": "sweep_sample",
+      "test_id": "031bc198e7364801aa3c6081b0a13970",
+      "requested": 20,
+      "reported": 20.0,
+      "physical_result": "unverified"
+    },
+    {
+      "time": "2026-11-02T13:32:47.652248+00:00",
+      "event": "sweep_sample",
+      "test_id": "031bc198e7364801aa3c6081b0a13970",
+      "requested": 50,
+      "reported": 50.0,
+      "physical_result": "unverified"
+    },
+    {
+      "time": "2026-11-02T13:32:50.203953+00:00",
+      "event": "sweep_sample",
+      "test_id": "031bc198e7364801aa3c6081b0a13970",
+      "requested": 80,
+      "reported": 80.0,
+      "physical_result": "unverified"
+    },
+    {
+      "time": "2026-11-02T13:32:52.792444+00:00",
+      "event": "brightness_restored",
+      "test_id": "031bc198e7364801aa3c6081b0a13970",
+      "requested": 56,
+      "reported": 56.0
+    },
+    {
+      "time": "2026-11-02T13:34:41.550266+00:00",
+      "event": "sleep_countdown",
+      "test_id": "d48ef19056a94779bb94146715c2da0d",
+      "seconds": 5,
+      "affects": "all_displays"
+    },
+    {
+      "time": "2026-11-02T13:34:46.683635+00:00",
+      "event": "watchdog_ready",
+      "test_id": "d48ef19056a94779bb94146715c2da0d",
+      "seconds": 10,
+      "method": "monitor_power",
+      "fallback_seconds": 30,
+      "first_fallback_after_seconds": 40
+    },
+    {
+      "time": "2026-11-02T13:34:46.699131+00:00",
+      "event": "recovery_armed",
+      "test_id": "d48ef19056a94779bb94146715c2da0d",
+      "pid": 27672,
+      "method": "monitor_power",
+      "seconds": 10,
+      "fallback_seconds": 30,
+      "first_fallback_after_seconds": 40
+    },
+    {
+      "time": "2026-11-02T13:34:47.038705+00:00",
+      "event": "display_off_requested",
+      "test_id": "d48ef19056a94779bb94146715c2da0d",
+      "result": {
+        "api": "SC_MONITORPOWER",
+        "value": 2,
+        "accepted": true,
+        "physical_result": "unverified"
+      }
+    },
+    {
+      "time": "2026-11-02T13:34:48.502396+00:00",
+      "event": "user_observation",
+      "test_id": "031bc198e7364801aa3c6081b0a13970",
+      "result": "pass",
+      "notes": "사용자가 32M2N8900의 20% → 50% → 80% 실제 밝기 변화를 확인했다. Twinkle Tray는 기존 56% 복원을 보고했다. HDR/SDR 상태는 미확인이다."
+    },
+    {
+      "time": "2026-11-02T13:34:56.684699+00:00",
+      "event": "wake_request_started",
+      "test_id": "d48ef19056a94779bb94146715c2da0d",
+      "stage": "primary",
+      "method": "monitor_power",
+      "fallback_seconds": 30
+    },
+    {
+      "time": "2026-11-02T13:35:29.629412+00:00",
+      "event": "wake_attempt",
+      "test_id": "d48ef19056a94779bb94146715c2da0d",
+      "stage": "primary",
+      "method": "monitor_power",
+      "result": {
+        "api": "SC_MONITORPOWER",
+        "value": -1,
+        "accepted": true,
+        "physical_result": "unverified"
+      }
+    },
+    {
+      "time": "2026-11-02T13:35:59.630438+00:00",
+      "event": "wake_request_started",
+      "test_id": "d48ef19056a94779bb94146715c2da0d",
+      "stage": "fallback",
+      "method": "execution_state",
+      "fallback_seconds": 30
+    },
+    {
+      "time": "2026-11-02T13:35:59.630438+00:00",
+      "event": "wake_attempt",
+      "test_id": "d48ef19056a94779bb94146715c2da0d",
+      "stage": "fallback",
+      "method": "execution_state",
+      "result": {
+        "api": "execution_state",
+        "accepted": true,
+        "physical_result": "unverified"
+      }
+    },
+    {
+      "time": "2026-11-02T13:35:59.630438+00:00",
+      "event": "recovery_finished",
+      "test_id": "d48ef19056a94779bb94146715c2da0d",
+      "physical_result": "unverified"
+    },
+    {
+      "time": "2026-11-02T13:37:12.708542+00:00",
+      "event": "user_observation",
+      "test_id": "d48ef19056a94779bb94146715c2da0d",
+      "result": "pass",
+      "notes": "사용자가 SDR에서 화면의 자동 꺼짐·켜짐을 확인했다. 실제 복귀 시각과 시험 중 입력 여부는 별도로 답하지 않아 개별 API 성공으로 확정하지 않는다."
+    }
+  ],
+  "limitations": [
+    "A 20-second sensor stream does not replace a ten-minute stability test in the home setup.",
+    "No empty-room calibration or absent/present comparison performed in the home setup.",
+    "The primary monitor_power API call took about 33 seconds; the fallback was delayed until about 73 seconds after off acceptance.",
+    "Serial telemetry expired once during the manual screen test and reconnected; the cause is unverified.",
+    "Individual wake API results remain unverified because the physical wake time is unknown."
+  ]
+}

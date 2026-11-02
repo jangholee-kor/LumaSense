@@ -1,11 +1,19 @@
 {
   "target_model": "Philips 32M2N8900",
-  "observed_by": "",
-  "observed_at": "",
-  "display_mode": "",
-  "brightness": {"20": "unverified", "50": "unverified", "80": "unverified"},
-  "display_off": "unverified",
-  "wake_methods": {"monitor_power": "unverified", "execution_state": "unverified", "mouse_move": "unverified"},
-  "evidence": "",
-  "notes": "회사 27B2H2 초기 API 시험은 development-log.md 참고. 최종 대상의 실제 화면 관찰 기록 대기."
+  "observed_by": "사용자",
+  "observed_at": "2026-11-02",
+  "display_mode": "SDR",
+  "brightness": {
+    "20": "pass",
+    "50": "pass",
+    "80": "pass"
+  },
+  "display_off": "pass",
+  "wake_methods": {
+    "monitor_power": "unverified",
+    "execution_state": "unverified",
+    "mouse_move": "unverified"
+  },
+  "evidence": "docs/validation/home-2026-11-02.json; brightness 031bc198e7364801aa3c6081b0a13970; sleep d48ef19056a94779bb94146715c2da0d",
+  "notes": "집 32M2N8900 SDR에서 사용자가 밝기 변화와 자동 꺼짐·켜짐을 확인했다. 실제 복귀 시각을 확인하지 못해 개별 복귀 방식은 미검증이다. Mi TV는 실제 모니터가 아닌 원격 접속용 가상 HDMI 장치이다."
 }
