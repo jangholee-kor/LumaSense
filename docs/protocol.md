@@ -55,6 +55,8 @@ ACK는 같은 id와 cmd, 성공 여부 `ok`, ESP-IDF 오류 이름 `error`를 �
 | `set_reporting` | `interval_ms`: 100~5000 정수 | RAM의 전송 주기 변경, 재부팅하면 빌드 기본값 |
 | `radar_config` | 아래 항목 중 하나 이상 | 제조사 ACK를 기다리며 설정 적용 |
 | `radar_get_config` | 없음 | 저장된 거리 해상도·범위·부재 유지 시간·OUT 극성·두 감도 배열 조회 |
+| `radar_calibrate_background` | `empty_confirmed: true` 필수 | 빈 환경을 확인한 뒤 동적 배경 보정 시작 |
+| `radar_calibration_status` | 없음 | 제조사 보정 진행 상태 `active`와 펌웨어 대기 상태 `calibration_pending` 조회 |
 
 `radar_config`의 `engineering`은 boolean이며 전원 재투입 시 레이더의 기본 모드로 돌아간다.<br>
 기본 감지 설정은 `min_gate`, `max_gate`, `absence_seconds` 세 항목을 함께 지정한다.<br>
@@ -82,6 +84,16 @@ ESPHome의 LD2412 구현은 기본 설정의 `max_gate`를 배열 인덱스보�
 거리 설정은 측정 구간을 제한하며 사람과 물건의 구분이나 감지 경계의 정확도를 보장하지 않는다.
 
 거리문 번호 변환과 재시작 순서는 [ESPHome LD2412 구현](https://github.com/esphome/esphome/blob/dev/esphome/components/ld2412/ld2412.cpp)을 함께 참고한다.
+
+배경 보정은 센서·의자·책상을 실제 사용할 위치에 고정하고 감지 범위에 사람이 없을 때 시작한다.<br>
+제조사 프로토콜의 명령 0x000B는 접수 후 약 10초 뒤 보정을 시작하고 결과를 모듈에 저장한다.<br>
+시작 ACK는 보정 완료를 뜻하지 않는다.<br>
+호스트는 0x001B에 해당하는 `radar_calibration_status`를 주기적으로 조회해 `active=true` 이후 `active=false` 전환을 확인한다.<br>
+펌웨어는 이 전환을 확인할 때까지 `radar_calibration_pending=true`로 유지하고 감지값을 무효 처리한다.<br>
+보정 중 설정 변경·중복 시작은 거부하며, 보정 종료 직전 보고도 무효 처리해 새 보고를 기다린다.<br>
+시작 명령의 ACK가 유실돼도 보정이 시작됐을 수 있으므로 대기 상태를 유지한다.<br>
+시작·종료 전환을 확인하지 못한 경우 완료로 처리하지 않고 상태 조회와 원본 로그로 원인을 확인한다.<br>
+배경 보정 후 저장 설정과 실제 빈자리·착석 감지를 다시 확인한다.
 
 ## LD2412 내부 프레임 검증
 

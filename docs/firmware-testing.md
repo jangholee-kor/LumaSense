@@ -64,6 +64,40 @@ JSON 명령 파일은 UTF-8이며 PowerShell의 인용부호 전달 차이를 �
 범위·민감도 변경은 [프로토콜 문서](protocol.md)에 따라 별도 명령 파일로 지정한다.<br>
 레이더 설정 중 ACK를 기다리므로 USB 전송이 잠시 늦어질 수 있고 부분 적용 오류가 나면 설정을 다시 확인한다.
 
+## 책상 앞 감지 범위와 배경 보정
+
+`radar-resolution-20cm.json`은 거리 해상도만 변경하고 레이더를 재시작한다.<br>
+이미 20cm로 설정돼 있으면 해상도 명령을 생략하고 현재 설정을 먼저 조회한다.<br>
+해상도 변경 후 약 3초 동안 기다린 뒤 `radar-near-desk.json`으로 범위·감도를 적용한다.<br>
+이 프로필은 원시 최소 1·최대 8, 부재 유지 5초이며 20cm 해상도에서 약 1.6m 구간을 대상으로 한다.<br>
+배열 인덱스 0·1과 8~13은 임계값 100으로 비활성화하고 2~7은 움직임 35·정지 25로 지정한다.<br>
+가까운 구간 일부를 비활성화하므로 몸을 센서에 아주 가까이 대는 자세도 별도로 확인한다.<br>
+감지 경계와 안정성은 설치 환경에서 검증한다.
+
+```powershell
+.venv\Scripts\python.exe -m tools.sensor_cli command --port COM번호 --request-file config\firmware\radar-get-config.json
+# 해상도를 바꿀 때만 실행하고 약 3초 뒤 범위 설정을 적용한다.
+.venv\Scripts\python.exe -m tools.sensor_cli command --port COM번호 --request-file config\firmware\radar-resolution-20cm.json
+.venv\Scripts\python.exe -m tools.sensor_cli command --port COM번호 --request-file config\firmware\radar-near-desk.json
+.venv\Scripts\python.exe -m tools.sensor_cli command --port COM번호 --request-file config\firmware\radar-get-config.json
+```
+
+조회 결과의 `gate_width_cm=20`, 최소·최대 거리문, 부재 유지 시간과 두 배열을 명령 파일과 대조한다.<br>
+배경 보정은 주변을 비운 뒤 아래 명령으로 시작한다.<br>
+보정 중에는 센서와 가구를 움직이지 않고 감지 범위에 사람이 들어오지 않게 한다.
+
+```powershell
+.venv\Scripts\python.exe -m tools.sensor_cli command --port COM번호 --request-file config\firmware\radar-calibrate-empty-confirmed.json
+# 약 2초 간격으로 반복 조회해 active=true 이후 false 전환과 pending=false를 확인한다.
+.venv\Scripts\python.exe -m tools.sensor_cli command --port COM번호 --request-file config\firmware\radar-calibration-status.json
+.venv\Scripts\python.exe -m tools.sensor_cli command --port COM번호 --request-file config\firmware\radar-get-config.json
+.venv\Scripts\python.exe -m tools.sensor_cli record --port COM번호 --duration 60
+```
+
+보정 상태의 센서 무효 보고와 보정 완료 후 정상 보고를 분리해 확인한다.<br>
+빈자리에서 미감지가 유지되는지 확인한 다음 평소 자리에 앉아 정지 상태를 30초 이상 기록한다.<br>
+센서 감지 검증 중에는 Windows 자동 밝기·절전 제어를 끈다.
+
 ## 10분 센서 데이터 검증
 
 ```powershell

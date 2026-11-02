@@ -1,0 +1,8 @@
+{
+  "cmd": "radar_config",
+  "min_gate": 1,
+  "max_gate": 8,
+  "absence_seconds": 5,
+  "moving_thresholds": [100, 100, 35, 35, 35, 35, 35, 35, 100, 100, 100, 100, 100, 100],
+  "stationary_thresholds": [100, 100, 25, 25, 25, 25, 25, 25, 100, 100, 100, 100, 100, 100]
+}

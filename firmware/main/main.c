@@ -31,6 +31,8 @@ static uint32_t usb_dropped;
 static esp_err_t light_error = ESP_ERR_INVALID_STATE;
 static esp_err_t radar_error = ESP_ERR_INVALID_STATE;
 static int64_t last_light_us;
+static bool radar_calibration_pending;
+static bool radar_calibration_seen_active;
 
 static void send_json(cJSON *root) {
     if (!root) return;
@@ -55,7 +57,7 @@ static void nullable_bool(cJSON *root, const char *name, bool valid, bool value)
 }
 
 static bool radar_valid(int64_t now) {
-    return radar.installed && radar.last_data_us > 0 && radar.latest.sensor_ok &&
+    return !radar_calibration_pending && radar.installed && radar.last_data_us > 0 && radar.latest.sensor_ok &&
            now - radar.last_data_us <= (int64_t)CONFIG_SMC_RADAR_STALE_MS * 1000;
 }
 
@@ -86,7 +88,8 @@ static void telemetry(void) {
     cJSON_AddNumberToObject(root, "ver", 1);
     cJSON_AddStringToObject(root, "type", "telemetry");
     cJSON_AddStringToObject(root, "device", "smart-monitor-s3");
-    cJSON_AddStringToObject(root, "firmware", "0.2.4");
+    cJSON_AddStringToObject(root, "firmware", "0.2.5");
+    cJSON_AddBoolToObject(root, "radar_calibration_pending", radar_calibration_pending);
     cJSON_AddNumberToObject(root, "seq", sequence++);
     cJSON_AddNumberToObject(root, "uptime_ms", (double)(now / 1000));
     if (lux_ok) cJSON_AddNumberToObject(root, "lux", lux); else cJSON_AddNullToObject(root, "lux");
@@ -142,6 +145,7 @@ static bool integer_field(cJSON *root, const char *name, int low, int high, int 
 }
 
 static esp_err_t radar_configure(cJSON *request) {
+    if (radar_calibration_pending) return ESP_ERR_INVALID_STATE;
     cJSON *engineering = cJSON_GetObjectItemCaseSensitive(request, "engineering");
     cJSON *minimum = cJSON_GetObjectItemCaseSensitive(request, "min_gate");
     cJSON *moving = cJSON_GetObjectItemCaseSensitive(request, "moving_thresholds");
@@ -248,6 +252,34 @@ static esp_err_t radar_get_config(cJSON *reply) {
     return result;
 }
 
+static esp_err_t radar_calibration(cJSON *request, cJSON *reply, bool start) {
+    if (start && (!cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(request, "empty_confirmed")) ||
+                  radar_calibration_pending)) return ESP_ERR_INVALID_STATE;
+    const uint8_t enable[] = {1, 0};
+    esp_err_t result = ld2412_command(&radar, 0x00ff, enable, sizeof(enable));
+    if (result == ESP_OK && start) {
+        /* An ACK timeout can still mean the module received the start command. */
+        radar_calibration_pending = true;
+        radar_calibration_seen_active = false;
+        radar.last_data_us = 0;
+        result = ld2412_command(&radar, 0x000b, NULL, 0);
+    } else if (result == ESP_OK) {
+        result = radar_query(0x001b, 2);
+        if (result == ESP_OK) {
+            bool active = radar.ack_data[0] != 0;
+            cJSON_AddBoolToObject(reply, "active", active);
+            if (active) radar_calibration_seen_active = true;
+            if (!active && radar_calibration_pending && radar_calibration_seen_active) {
+                radar_calibration_pending = false;
+                radar.last_data_us = 0;
+            }
+        }
+    }
+    esp_err_t end = ld2412_command(&radar, 0x00fe, NULL, 0);
+    cJSON_AddBoolToObject(reply, "calibration_pending", radar_calibration_pending);
+    return result == ESP_OK ? end : result;
+}
+
 static void command(const char *line) {
     cJSON *request = cJSON_ParseWithOpts(line, NULL, true);
     cJSON *reply = cJSON_CreateObject();
@@ -266,7 +298,7 @@ static void command(const char *line) {
         else if (!strcmp(name->valuestring, "get_status")) {
             result = ESP_OK;
             cJSON_AddStringToObject(reply, "device", "smart-monitor-s3");
-            cJSON_AddStringToObject(reply, "firmware", "0.2.4");
+            cJSON_AddStringToObject(reply, "firmware", "0.2.5");
             cJSON_AddNumberToObject(reply, "report_ms", report_ms);
             cJSON_AddNumberToObject(reply, "sda_gpio", CONFIG_SMC_I2C_SDA);
             cJSON_AddNumberToObject(reply, "scl_gpio", CONFIG_SMC_I2C_SCL);
@@ -281,10 +313,13 @@ static void command(const char *line) {
             }
         } else if (!strcmp(name->valuestring, "radar_config")) result = radar_configure(request);
         else if (!strcmp(name->valuestring, "radar_get_config")) result = radar_get_config(reply);
+        else if (!strcmp(name->valuestring, "radar_calibrate_background")) result = radar_calibration(request, reply, true);
+        else if (!strcmp(name->valuestring, "radar_calibration_status")) result = radar_calibration(request, reply, false);
     }
     cJSON_AddBoolToObject(reply, "ok", result == ESP_OK);
     cJSON_AddStringToObject(reply, "error", esp_err_to_name(result));
-    if (cJSON_IsString(name) && !strcmp(name->valuestring, "radar_config") && result != ESP_OK)
+    if (cJSON_IsString(name) && (!strcmp(name->valuestring, "radar_config") ||
+        !strcmp(name->valuestring, "radar_calibrate_background")) && result != ESP_OK)
         cJSON_AddBoolToObject(reply, "configuration_may_be_partial", true);
     send_json(reply);
     cJSON_Delete(request);
