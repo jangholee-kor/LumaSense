@@ -1,0 +1,70 @@
+{
+  "date": "2026-11-03",
+  "source_commit": "853563b",
+  "port": "COM65",
+  "device": {
+    "chip": "ESP32-S3 QFN56 revision v0.2",
+    "flash_mb": 4,
+    "psram_mb": 2,
+    "usb_vid": "303a",
+    "usb_pid": "1001"
+  },
+  "flash": {
+    "firmware": "0.3.1",
+    "backup_performed": false,
+    "hash_verification": "passed",
+    "app_sha256": "923334f1fae185b6af52bbc5ee60de8686bdad339728a0bbb0984b493db47310",
+    "initial_hard_reset": "remained_in_rom_download_mode",
+    "watchdog_reset": "normal_application_boot"
+  },
+  "observed_gpio": {
+    "shut": 4,
+    "sda": 12,
+    "scl": 13
+  },
+  "roi_size": 8,
+  "usb_capture": {
+    "duration_seconds": 20.0,
+    "telemetry": 95,
+    "healthy": 95,
+    "sensor_errors": 0,
+    "invalid_packets": 0,
+    "sequence_gaps": 0,
+    "restarts": 0,
+    "physical_result": "unverified",
+    "elapsed_seconds": 20.094,
+    "invalid_lines": 0,
+    "sensor_stream_pass": true,
+    "ten_minute_stream_pass": false,
+    "lux_min": 170.8333282470703,
+    "lux_max": 173.3333282470703,
+    "distance_mm_min": 611,
+    "distance_mm_max": 636,
+    "usb_dropped_lines_delta": 0,
+    "minimum_main_stack_free_bytes": 5584
+  },
+  "pc_protocol_model": {
+    "accepted_captured_packets": 95,
+    "stabilization": "passed",
+    "physical_occupancy": "not_inferred"
+  },
+  "tof_shut_reset": {
+    "ack": "passed",
+    "invalid_frames": 2,
+    "healthy_frames_after_reset": 37,
+    "epoch": [
+      1
+    ]
+  },
+  "network": {
+    "configured": false,
+    "connected": false,
+    "physical_wireless_transfer": "not_tested"
+  },
+  "physical_observation": {
+    "human_vs_empty_chair": "unverified",
+    "monitor_brightness_sleep_wake": "not_tested",
+    "monitor_usb_standby_power": "not_tested"
+  },
+  "local_evidence_directory": ".local/supermini-bringup-20261103"
+}

@@ -110,6 +110,17 @@ API 접수 성공과 실제 화면 켜짐·꺼짐은 별도로 확인한다.
 
 ## 진단과 시험
 
+기록 해시 검증이 끝났는데도 USB 센서 응답이 없으면 BOOT 버튼을 놓았는지와 현재 COM 포트를 확인한다.<br>
+칩이 ROM 기록 모드에 남아 있는 경우 앱에서 포트를 해제한 뒤 아래 명령으로 watchdog reset을 요청할 수 있다.<br>
+이 명령은 MAC을 조회하고 재시작하며 플래시를 백업하거나 다시 기록하지 않는다.
+
+```powershell
+. .\scripts\idf_environment.ps1
+python -m esptool --chip esp32s3 --port COM번호 --before no_reset --after watchdog_reset --no-stub read_mac
+```
+
+재시작 뒤 USB 상태 조회와 새 센서 데이터 수신을 확인한다.
+
 USB 명령 `get_status`로 `presence_sensor`, `sda_gpio`, `scl_gpio`, `shut_gpio`, `roi_size`를 읽는다.<br>
 `tof_reset`은 SHUT를 LOW로 내렸다 해제한 뒤 센서를 다시 초기화하며 새로운 유효 측정이 올 때까지 기존 거리를 사용하지 않는다.<br>
 레이더 설정 명령은 ToF 펌웨어에서 지원하지 않는다.

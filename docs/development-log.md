@@ -500,3 +500,18 @@ SuperMini 4MB·Wi-Fi와 기존 DevKit 16MB·LD2412 빌드가 통과했고 최종
 배포 EXE의 GUI·독립 복귀·lease 감시 모의 검사 3종이 통과했으며 Wi-Fi 선택·설정 화면의 한글 렌더를 검토했다.<br>
 해시와 결과는 [Wi-Fi 검증 기록](validation/supermini-wifi-2026-11-03.json)에 보관했다.<br>
 보드 기록, 실제 공유기 접속·무선 센서 수신, 모니터 USB 대기 전원, 착석·빈자리·실제 화면 제어는 수행하지 않았다.
+
+## 2026-11-03 · SuperMini 기록과 실제 USB 센서 수신
+
+사용자가 연결한 COM65에서 ESP32-S3 QFN56 revision v0.2, 내장 플래시 4MB·PSRAM 2MB와 USB Serial/JTAG를 확인했다.<br>
+기존 플래시 백업 없이 SuperMini 펌웨어 0.3.1을 기록하고 부트로더·앱·파티션의 쓰기 해시 검증을 통과했다.<br>
+초기 하드 리셋 뒤 센서 응답이 없었으며 리셋하지 않은 ROM 명령에 응답해 기록 모드에 남아 있음을 확인했다.<br>
+esptool의 watchdog reset 뒤 정상 앱이 실행됐고 상태 응답에서 SHUT GPIO4·SDA GPIO12·SCL GPIO13, ROI 8을 확인했다.
+
+20.094초 동안 센서 데이터 95건을 수신했으며 조도·ToF가 모두 정상이고 손상·순번 누락·재부팅은 없었다.<br>
+거리는 611~636mm, 조도는 약 170.83~173.33lux였고 수집 중 USB 폐기 카운터는 증가하지 않았다.<br>
+실제 표본을 PC SensorManager에 넣어 프로토콜 검증과 5초 안정화를 통과했다.<br>
+ToF SHUT 재시작 ACK를 확인했고 이후 8초 표본에서 의도한 무효 측정 2건·정상 측정 37건과 재시작 순번 1을 확인했다.<br>
+이 거리값이 실제 사람·빈 의자 중 어느 대상에서 반사됐는지는 사용자 관찰로 확정하지 않았다.<br>
+Wi-Fi 설정은 저장되지 않은 상태이며 실제 무선 전송·모니터 USB 대기 전원·화면 밝기·절전·복귀는 시험하지 않았다.<br>
+요약은 [SuperMini USB 실물 검증 기록](validation/supermini-usb-2026-11-03.json), 원본 로그는 `.local/supermini-bringup-20261103`에 보관했다.
