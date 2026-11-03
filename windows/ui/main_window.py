@@ -872,6 +872,7 @@ class MainWindow(QMainWindow):
                 return "미확인 / 오류" if value is None else ("감지" if value else "미감지")
             labels = self.auto_panel.labels
             labels["lux"].setText(f"{text(packet.get('lux'))} lux{previous}")
+            self.auto_panel.profile_editor.set_current_lux(packet.get("lux") if snapshot.valid and packet.get("light_ok") else None)
             labels["presence"].setText(f"{detection(packet.get('presence'))}{previous}")
             labels["motion"].setText("VL53L1X 거리 기준 · 움직임 분류 없음" if packet.get("ver") == 2 else
                                      f"{detection(packet.get('moving'))} / {detection(packet.get('stationary'))}{previous}")
@@ -884,6 +885,11 @@ class MainWindow(QMainWindow):
             if self.settings.brightness_mode == "two_level":
                 lighting = "미확인" if not snapshot.valid or not packet.get("light_ok") or light_on is None else (
                     "기준 이상 · 형광등 ON 밝기" if light_on else "기준 미만 · 불 끔 밝기")
+            elif self.settings.brightness_mode == "steps":
+                steps = self.runtime.brightness.steps
+                lighting = "미확인" if not snapshot.valid or not packet.get("light_ok") or steps.index is None else (
+                    f"{self.settings.brightness_profile} · {steps.points[steps.index][0]:g} lux 이상 → {steps.points[steps.index][1]}%" +
+                    (" · 구간 전환 대기" if steps.candidate is not None else ""))
             labels["lighting"].setText(lighting)
             state = self.runtime.presence
             countdown = f" · 절전까지 {max(0, math.ceil(state.countdown_until - now))}초" if state.countdown_until is not None and not state.owns_off else ""

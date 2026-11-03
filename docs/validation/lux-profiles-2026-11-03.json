@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-03",
+  "windows_version": "0.5.0",
+  "reference": {
+    "repository": "https://github.com/lich426/FanCtrl/tree/master",
+    "image": "https://user-images.githubusercontent.com/26077884/109588504-31e8bf80-7b4c-11eb-9cf9-4d6d43930383.png",
+    "used": "Preset naming, step graph and hysteresis interaction; original PySide6 implementation."
+  },
+  "host_checks": {
+    "pytest_passed": 176,
+    "packaged_gui_watchdog_lease_guard": "passed",
+    "korean_gui_render": "inspected"
+  },
+  "coverage": [
+    "Inclusive lux thresholds and exact integer brightness",
+    "Dwell and descending hysteresis across multiple thresholds",
+    "Manual pause and command interval",
+    "Invalid sensors, reconnection and malformed telemetry",
+    "Legacy settings and named profile persistence",
+    "Profile creation, clone, rename, selection and deletion",
+    "Actual Qt pointer drag updates table",
+    "Invalid drafts block apply and profile switch",
+    "Stale live marker and current-lux insertion",
+    "Runtime changes only after explicit settings apply"
+  ],
+  "artifacts": {
+    "exe_sha256": "e2e3d664ffb5bdaa438f64d32a24894c415ce4020c2efa55fa2c23399b4fd5eb",
+    "gui_preview": ".local/lux-profile-preview/profiles.png"
+  },
+  "physical": {
+    "monitor_brightness": "not_tested",
+    "sensor_reflash": "not_needed",
+    "firmware_changed": false
+  }
+}

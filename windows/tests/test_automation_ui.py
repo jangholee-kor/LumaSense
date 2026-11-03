@@ -304,3 +304,30 @@ def test_two_level_preview_routes_each_preset_through_manual_worker(app, simulat
     assert pump(app, lambda: not simulated.busy)
     assert simulated.backend.value == 2
     assert simulated.runtime.brightness.pause_until > time.monotonic() + 890
+
+
+def test_step_profile_only_changes_runtime_after_apply_and_live_marker_expires(simulated):
+    view = simulated
+    panel = view.auto_panel
+    panel.brightness_mode.setCurrentIndex(panel.brightness_mode.findData("steps"))
+    editor = panel.profile_editor
+    editor.name.setText("작업")
+    editor.hold.setValue(0)
+    editor.table.cellWidget(1, 0).setValue(200)
+    editor.table.cellWidget(1, 1).setValue(40)
+    assert view.settings.brightness_mode == "curve"
+    view.apply_automation_settings()
+    assert view.settings.brightness_mode == "steps" and view.settings.brightness_profile == "작업"
+    view.auto_panel.sim_lux.setValue(250)
+    view.simulation_packet()
+    assert view.runtime.brightness.target == 40
+    editor.table.cellWidget(1, 1).setValue(60)
+    view.simulation_packet()
+    assert view.runtime.brightness.target == 40
+    view.automation_tick()
+    assert editor.graph.current_lux == 250
+    view.runtime.sensors.received_at = time.monotonic() - 10
+    view.automation_tick()
+    assert editor.graph.current_lux is None
+    saved = Settings.load(view.log.root / "settings.json")
+    assert saved.brightness_profiles[0]["points"][1] == [200, 40]

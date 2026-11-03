@@ -36,6 +36,9 @@ powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1 --sleep-test --met
 자세한 시험·복귀 절차는 [testing.md](docs/testing.md), 확인된 결과는 [개발 기록](docs/development-log.md)을 참고한다.<br>
 센서 연결·밝기 곡선·자동 절전·레이더 설정·로그인 실행은 [사용 안내](docs/user-guide.md)를 따른다.
 
+`사용자 프로필 · lux 구간별 밝기`에서 조도 기준마다 밝기를 지정하고 이름별로 저장·선택할 수 있다.<br>
+계단형 그래프의 점을 드래그하거나 표를 편집하고 `밝기 설정 적용`으로 저장한다.
+
 ## 시뮬레이션과 배포
 
 ```powershell

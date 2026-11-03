@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, Q
                                QCheckBox, QSpinBox, QDoubleSpinBox, QLineEdit, QComboBox, QPushButton,
                                QTableWidget, QTableWidgetItem, QTabWidget, QScrollArea)
 from windows.core.settings import Settings
+from windows.ui.brightness_profiles import BrightnessProfileEditor
 
 
 class AutomationPanel(QWidget):
@@ -184,8 +185,11 @@ class AutomationPanel(QWidget):
         self.brightness_mode = QComboBox()
         self.brightness_mode.addItem("조명 ON/OFF · 두 가지 밝기", "two_level")
         self.brightness_mode.addItem("조도 곡선 · 연속 밝기", "curve")
+        self.brightness_mode.addItem("사용자 프로필 · lux 구간별 밝기", "steps")
         self.brightness_mode.setCurrentIndex(self.brightness_mode.findData(settings.brightness_mode))
         curve_layout.addWidget(self.brightness_mode)
+        self.profile_editor = BrightnessProfileEditor(settings.brightness_profiles, settings.brightness_profile)
+        curve_layout.addWidget(self.profile_editor)
         self.two_level_group = QGroupBox("형광등 ON / 불 끔 밝기")
         light_form = QFormLayout(self.two_level_group)
         self.fields["light_threshold_lux"] = QDoubleSpinBox()
@@ -253,7 +257,10 @@ class AutomationPanel(QWidget):
         self.brightness_mode.currentIndexChanged.connect(self.update_brightness_mode)
         self.update_brightness_mode()
         self.update_light_samples()
-        self.tabs.addTab(curve_page, "밝기 설정 / 프로필")
+        curve_scroll = QScrollArea()
+        curve_scroll.setWidgetResizable(True)
+        curve_scroll.setWidget(curve_page)
+        self.tabs.addTab(curve_scroll, "밝기 설정 / 프로필")
 
         system = QWidget()
         system_layout = QVBoxLayout(system)
@@ -354,9 +361,10 @@ class AutomationPanel(QWidget):
             widget.setEnabled(not tcp)
 
     def update_brightness_mode(self):
-        two_level = self.brightness_mode.currentData() == "two_level"
-        self.two_level_group.setVisible(two_level)
-        self.curve_group.setVisible(not two_level)
+        mode = self.brightness_mode.currentData()
+        self.two_level_group.setVisible(mode == "two_level")
+        self.curve_group.setVisible(mode == "curve")
+        self.profile_editor.setVisible(mode == "steps")
 
     def set_light_sample(self, state, lux, recorded_at):
         self.light_samples[state] = (lux, recorded_at)
@@ -402,6 +410,7 @@ class AutomationPanel(QWidget):
         result.auto_brightness = self.auto_brightness.isChecked()
         result.auto_presence = self.auto_presence.isChecked()
         result.brightness_mode = self.brightness_mode.currentData()
+        result.brightness_profiles, result.brightness_profile = self.profile_editor.snapshot(include_draft=result.brightness_mode == "steps")
         for state, (lux, recorded_at) in self.light_samples.items():
             setattr(result, f"light_{state}_lux", lux)
             setattr(result, f"light_{state}_recorded_at", recorded_at)
