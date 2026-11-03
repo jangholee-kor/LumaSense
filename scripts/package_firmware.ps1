@@ -29,6 +29,7 @@ try {
         gpio=@{sda=$sdk.SMC_I2C_SDA;scl=$sdk.SMC_I2C_SCL;radar_rx=$sdk.SMC_RADAR_RX;radar_tx=$sdk.SMC_RADAR_TX;tof_shut=$sdk.SMC_TOF_SHUT_GPIO}
         presence_sensor=$(if ($sdk.SMC_PRESENCE_VL53L1X) { 'vl53l1x' } else { 'ld2412' })
         status_led=@{enabled=[bool]$sdk.SMC_STATUS_LED_ENABLE;gpio=$sdk.SMC_STATUS_LED_GPIO;brightness=$sdk.SMC_STATUS_LED_BRIGHTNESS}
+        wifi=@{tx_power_limit_enabled=[bool]$sdk.SMC_WIFI_TX_POWER_LIMIT;max_tx_power_qdbm=$sdk.SMC_WIFI_MAX_TX_POWER_QDBM}
         files=$files; merged_sha256=(Get-FileHash -LiteralPath (Join-Path $outputPath 'firmware-merged.bin') -Algorithm SHA256).Hash
     }
     $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $outputPath 'manifest.json') -Encoding UTF8

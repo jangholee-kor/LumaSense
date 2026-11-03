@@ -2,6 +2,22 @@ menu "Smart Monitor Controller"
     config SMC_PRESENCE_VL53L1X
         bool "Use VL53L1X ToF instead of LD2412 radar"
         default n
+    config SMC_WIFI_TX_POWER_LIMIT
+        bool "Limit Wi-Fi transmit power after startup"
+        depends on SMC_PRESENCE_VL53L1X
+        default n
+        help
+            Apply the limit before attempting an access point connection.
+            Disabled leaves the driver's default transmit power unchanged.
+    config SMC_WIFI_MAX_TX_POWER_QDBM
+        int "Maximum Wi-Fi transmit power (0.25 dBm units: 60=15, 44=11, 34=8.5)"
+        depends on SMC_WIFI_TX_POWER_LIMIT
+        default 60
+        range 8 84
+        help
+            ESP-IDF maps requests to supported power steps and applies PHY
+            and country restrictions. The status query reports driver readback,
+            which is not a measurement of radiated RF power.
     config SMC_TOF_SHUT_GPIO
         int "VL53L1X SHUT GPIO (confirmed SuperMini wiring: 4)"
         default 4

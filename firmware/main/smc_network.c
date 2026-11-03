@@ -1,5 +1,7 @@
 #include "smc_network.h"
 #include "smc_network_guard.h"
+#include "smc_wifi_radio.h"
+#include "sdkconfig.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -23,6 +25,11 @@ static volatile uint32_t generation;
 static volatile bool authenticated, configured, connected;
 static esp_netif_t *netif;
 static esp_err_t network_error = ESP_ERR_INVALID_STATE;
+#ifdef CONFIG_SMC_WIFI_TX_POWER_LIMIT
+static const int tx_power_requested_qdbm = CONFIG_SMC_WIFI_MAX_TX_POWER_QDBM;
+#else
+static const int tx_power_requested_qdbm = 0;
+#endif
 
 static bool text_valid(cJSON *item, size_t minimum, size_t maximum) {
     return cJSON_IsString(item) && strlen(item->valuestring) >= minimum && strlen(item->valuestring) <= maximum;
@@ -76,6 +83,14 @@ void smc_network_status(cJSON *reply) {
     cJSON_AddBoolToObject(network, "connected", connected);
     cJSON_AddStringToObject(network, "error", esp_err_to_name(network_error));
     cJSON_AddNumberToObject(network, "port", 47653);
+    if (tx_power_requested_qdbm)
+        cJSON_AddNumberToObject(network, "tx_power_requested_dbm", tx_power_requested_qdbm / 4.0);
+    else cJSON_AddNullToObject(network, "tx_power_requested_dbm");
+    int8_t tx_power = 0;
+    esp_err_t power_error = esp_wifi_get_max_tx_power(&tx_power);
+    cJSON_AddStringToObject(network, "tx_power_read_error", esp_err_to_name(power_error));
+    if (power_error == ESP_OK) cJSON_AddNumberToObject(network, "tx_power_max_dbm", tx_power / 4.0);
+    else cJSON_AddNullToObject(network, "tx_power_max_dbm");
     esp_netif_ip_info_t ip = {0};
     char address[16] = "";
     if (netif && connected && esp_netif_get_ip_info(netif, &ip) == ESP_OK)
@@ -247,7 +262,7 @@ esp_err_t smc_network_init(const char *boot_id) {
     esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_event, NULL);
     esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, wifi_event, NULL);
     esp_wifi_set_mode(WIFI_MODE_STA);
-    if ((result = esp_wifi_start()) != ESP_OK) return network_error = result;
+    if ((result = smc_wifi_radio_start(tx_power_requested_qdbm)) != ESP_OK) return network_error = result;
     /* Keep receiving latency predictable on monitor USB power. */
     esp_wifi_set_ps(WIFI_PS_NONE);
     config_queue = xQueueCreate(1, sizeof(credentials_t));

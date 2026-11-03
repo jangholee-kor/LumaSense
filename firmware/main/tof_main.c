@@ -17,7 +17,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define FIRMWARE_VERSION "0.3.1"
+#define FIRMWARE_VERSION "0.3.2"
 #define LINE_CAPACITY 2048
 _Static_assert(CONFIG_ESP_MAIN_TASK_STACK_SIZE >= 8192, "Main task stack must be at least 8192 bytes");
 static char input_line[LINE_CAPACITY];

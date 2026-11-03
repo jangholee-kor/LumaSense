@@ -89,6 +89,33 @@ PC 절전·최대 절전·종료 상태에서 센서 패킷으로 PC를 깨우�
 
 송신 출력별 접속 안정성을 비교하는 방법과 관련 사례의 적용 한계는 [Wi-Fi 송신 출력 조사 기록](validation/wifi-tx-power-2026-11-03.md)을 참고한다.
 
+### Wi-Fi 송신 출력 설정
+
+SuperMini 프로필의 펌웨어 0.3.2는 Wi-Fi를 시작한 뒤 첫 공유기 접속 전에 최대 송신 출력을 15 dBm으로 요청한다.<br>
+`menuconfig`의 Smart Monitor Controller에서 `Limit Wi-Fi transmit power after startup`과 `Maximum Wi-Fi transmit power`를 설정한다.<br>
+출력값은 0.25 dBm 단위이며 15 dBm은 `60`, 11 dBm은 `44`, 8.5 dBm은 `34`를 입력한다.<br>
+제한 항목을 해제하면 드라이버 기본값을 사용하며, 기존 빌드 폴더에 저장한 설정은 다음 빌드에서도 유지된다.<br>
+DevKit 프로필은 이 제한을 사용하지 않는다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\build_firmware.ps1 -Board SuperMini -Menuconfig
+powershell -ExecutionPolicy Bypass -File scripts\build_firmware.ps1 -Board SuperMini
+# 앱에서 USB 연결을 해제한 뒤 새 펌웨어를 기록한다.
+powershell -ExecutionPolicy Bypass -File scripts\flash_firmware.ps1 -Board SuperMini -Port COM번호
+.venv\Scripts\python.exe -m tools.sensor_cli status --port COM번호
+```
+
+출력 설정은 보드에 새 펌웨어를 기록한 뒤 적용되며 Windows 앱만 업데이트해서 바뀌지 않는다.<br>
+USB 상태 응답의 `network.tx_power_requested_dbm`은 빌드 설정의 요청값이며 제한을 해제하면 `null`이다.<br>
+`network.tx_power_max_dbm`은 조회 시점에 드라이버가 반환한 최대 출력 설정이며 실제 방사 출력을 측정한 값이 아니다.<br>
+드라이버의 출력 단계·PHY·국가 설정에 따라 요청값보다 낮게 조회될 수 있다.<br>
+`network.tx_power_read_error`가 `ESP_OK`가 아니면 조회값은 `null`이다.<br>
+출력 제한 적용·초기 조회가 실패하거나 초기 조회값이 요청 상한을 넘으면 공유기 접속 작업을 시작하지 않고 `network.error`에 오류를 남기며 USB 센서 수집은 계속한다.
+
+15 dBm은 비교 시험의 시작값이며 보드별 최적값을 보장하지 않는다.<br>
+접속이 불안정하면 같은 공유기·전원·설치 위치를 유지한 채 11 dBm, 8.5 dBm을 차례로 비교하고 실제 위치에서 수신 거리도 확인한다.<br>
+API 단위와 출력 단계는 [ESP-IDF 5.5.4 Wi-Fi API](https://docs.espressif.com/projects/esp-idf/en/v5.5.4/esp32s3/api-reference/network/esp_wifi.html#_CPPv425esp_wifi_set_max_tx_power6int8_t)를 따른다.
+
 ## 센서 방향과 판정
 
 모듈을 세로로 회전해도 광학 창이 몸통을 향하면 사용할 수 있다.<br>

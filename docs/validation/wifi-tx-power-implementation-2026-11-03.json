@@ -1,0 +1,109 @@
+{
+  "date": "2026-11-03",
+  "source_base_commit": "4029a67f90411d0dc028a338dadd31f4053cf606",
+  "source_changes": "accompanying implementation commit",
+  "firmware": "0.3.2",
+  "windows_app": "0.7.4",
+  "idf_version": "5.5.4",
+  "idf_commit": "735507283d5b2f9fb363a1901172dbd9e847945d",
+  "automated": {
+    "windows_pytest": {
+      "passed": 259
+    },
+    "native_c_suites": {
+      "passed": 6,
+      "compiler": "Zig 0.13.0 cc",
+      "new_suite": "wifi_radio_tests"
+    },
+    "supermini_build": "passed",
+    "devkit_build": "passed",
+    "profile_settings": "passed",
+    "package_hashes_and_license": "passed",
+    "relative_document_links": "passed",
+    "git_diff_check": "passed"
+  },
+  "build_attempts": [
+    {
+      "profile": "SuperMini",
+      "result": "failed",
+      "detail": "heap_align_hw.c compile process exited without a diagnostic"
+    },
+    {
+      "profile": "DevKit",
+      "result": "passed"
+    },
+    {
+      "profile": "SuperMini",
+      "result": "failed",
+      "detail": "compiler internal segmentation fault in esp_lcd_panel_rgb.c with cache disabled"
+    },
+    {
+      "profile": "SuperMini",
+      "result": "passed",
+      "detail": "cache disabled; ninja -j 2; no source change between retries"
+    }
+  ],
+  "package": {
+    "path": ".local/firmware-release/supermini.zip",
+    "sha256": "8a4b1146b1346e7c47ccca7801be167d3976d5b9df1774320d94a6e698631ff8",
+    "app_sha256": "7c15c9b9f6880015882f9e11d7ef53f537dc6a5ced4547d8ab7c114ac21acc17",
+    "flash_size": "4MB",
+    "psram_enabled": false,
+    "requested_qdbm": 60
+  },
+  "physical_board": {
+    "port": "COM6",
+    "chip": "ESP32-S3 QFN56 revision v0.2",
+    "flash_backup_performed": false,
+    "bootloader_app_partition_write_hashes": "passed",
+    "normal_application_boot": "passed",
+    "status_requested_dbm": 15,
+    "status_driver_max_dbm": 15,
+    "status_read_error": "ESP_OK",
+    "rf_radiated_power_measurement": "not_performed",
+    "before_flash_firmware": "0.3.1",
+    "before_flash_wifi_configured": false
+  },
+  "usb_capture": {
+    "duration_seconds": 20.0,
+    "telemetry": 96,
+    "healthy": 92,
+    "sensor_errors": 4,
+    "invalid_packets": 0,
+    "sequence_gaps": 0,
+    "restarts": 0,
+    "physical_result": "unverified",
+    "elapsed_seconds": 20.047,
+    "invalid_lines": 0,
+    "sensor_stream_pass": false,
+    "ten_minute_stream_pass": false,
+    "transport_pass": true,
+    "nonvalid_sensor_states": [
+      {
+        "tof_raw_status": 4,
+        "tof_error": "ESP_OK",
+        "light_ok": true,
+        "count": 4
+      }
+    ],
+    "interpretation": "4 raw sensor-invalid samples reported ToF signal failure (raw status 4); I2C acquisition and light were valid; no transport fault observed"
+  },
+  "wifi_connection": {
+    "state": "awaiting_user_router_configuration"
+  },
+  "not_performed": [
+    "RF power measurement",
+    "10 power cycles at each transmit power",
+    "11 and 8.5 dBm physical comparison",
+    "monitor USB standby power",
+    "monitor brightness/off/resume observation"
+  ],
+  "local_logs": [
+    ".local/build-supermini-power.log",
+    ".local/build-supermini-power-retry.log",
+    ".local/build-supermini-power-limited.log",
+    ".local/build-devkit-power.log",
+    ".local/flash-supermini-power.log",
+    ".local/wifi-power-usb"
+  ]
+}

@@ -1,5 +1,5 @@
 if(CONFIG_SMC_PRESENCE_VL53L1X)
-    set(sensor_main "tof_main.c" "smc_network.c" "smc_network_guard.c")
+    set(sensor_main "tof_main.c" "smc_network.c" "smc_network_guard.c" "smc_wifi_radio.c")
 else()
     set(sensor_main "main.c")
 endif()

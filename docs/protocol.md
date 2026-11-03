@@ -62,6 +62,18 @@ USB 명령 `wifi_config`는 `ssid`, `password`, `token`을 NVS에 저장하고 �
 저장 성공·공유기 접속·PC 센서 수신은 별도 상태이다.<br>
 PC는 요청별 인증 ID와 부팅 식별자, uptime 진행을 대조해 이전 연결이나 지연된 패킷을 배제한다.
 
+펌웨어 0.3.2부터 `network`에 다음 출력 진단 필드를 추가하며 기존 명령과 telemetry 형식은 유지한다.
+
+| 필드 | 의미 |
+|---|---|
+| `tx_power_requested_dbm` | 빌드 설정에서 요청한 최대 출력이며 단위는 dBm이다.<br>출력 제한을 해제하면 `null`이다. |
+| `tx_power_max_dbm` | 응답 시점에 `esp_wifi_get_max_tx_power()`로 읽은 드라이버의 최대 출력 설정이다.<br>조회 실패 시 `null`이며 방사 출력 측정값이 아니다. |
+| `tx_power_read_error` | 출력 조회 API의 오류 이름이며 성공은 `ESP_OK`이다. |
+
+출력 제한 적용·초기 조회가 실패하거나 초기 조회값이 요청 상한을 넘으면 네트워크 초기화를 중단하고 `network.error`에 오류를 남긴다.<br>
+이 경우에도 USB 명령과 센서 수집은 계속되며 상태 조회 명령의 `ok=true`는 조회 응답 성공을 뜻한다.<br>
+공유기 접속 성공은 `network.connected`와 IP 할당으로 별도 확인한다.
+
 ## LD2412 USB 전송
 
 아래 v1 telemetry와 레이더 설정 명령은 LD2412 펌웨어에 해당한다.

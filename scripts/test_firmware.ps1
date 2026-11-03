@@ -23,3 +23,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Native VL53L1X tests failed' }
 if ($LASTEXITCODE -ne 0) { throw 'Native network guard compile failed' }
 & '.local/firmware-tests/network_guard_tests.exe'
 if ($LASTEXITCODE -ne 0) { throw 'Native network guard tests failed' }
+& $Compiler -std=c11 -Wall -Wextra -Werror '-Ifirmware/tests/stubs' '-Ifirmware/main' 'firmware/main/smc_wifi_radio.c' 'firmware/tests/test_wifi_radio.c' -o '.local/firmware-tests/wifi_radio_tests.exe'
+if ($LASTEXITCODE -ne 0) { throw 'Native Wi-Fi radio compile failed' }
+& '.local/firmware-tests/wifi_radio_tests.exe'
+if ($LASTEXITCODE -ne 0) { throw 'Native Wi-Fi radio tests failed' }
