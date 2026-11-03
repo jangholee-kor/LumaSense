@@ -68,9 +68,10 @@ def main():
     sys.excepthook = exception_hook
     app.aboutToQuit.connect(window.stop_services)
     window.show()
-    if not args.smoke_test and (args.minimized or settings.start_minimized):
+    if not args.smoke_test and args.minimized:
         window.hide_to_tray()
-    log.event("app_started", version=__version__, mode="smoke" if args.smoke_test else ("simulation" if args.simulate else "live"))
+    log.event("app_started", version=__version__, mode="smoke" if args.smoke_test else ("simulation" if args.simulate else "live"),
+              start_minimized=window.isHidden())
     if args.smoke_test:
         def finish():
             if args.screenshot:

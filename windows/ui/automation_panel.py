@@ -289,12 +289,11 @@ class AutomationPanel(QWidget):
         system_layout.addWidget(wifi)
         self.connect_start = QCheckBox("시작 시 센서 자동 연결")
         self.connect_start.setChecked(settings.connect_on_start)
-        self.minimized_start = QCheckBox("시작 시 트레이로 숨기기")
-        self.minimized_start.setChecked(settings.start_minimized)
-        self.login_start = QCheckBox("Windows 로그인 시 실행")
+        self.login_start = QCheckBox("Windows 로그인 시 트레이로 실행")
         self.login_start.setChecked(settings.login_startup)
-        for control in (self.connect_start, self.minimized_start, self.login_start):
+        for control in (self.connect_start, self.login_start):
             system_layout.addWidget(control)
+        system_layout.addWidget(QLabel("직접 실행하면 일반 창으로 열립니다."))
         for label, signal in (("시스템 설정 적용", self.apply_requested), ("설정 / 밝기 프로필 내보내기", self.export_requested),
                               ("설정 / 밝기 프로필 가져오기", self.import_requested), ("별도 시뮬레이션 창 열기", self.simulation_requested)):
             button = QPushButton(label)
@@ -448,7 +447,7 @@ class AutomationPanel(QWidget):
         result.use_recent_input = self.use_input.isChecked()
         result.production_wake_method = self.production_wake.currentData()
         result.connect_on_start = self.connect_start.isChecked()
-        result.start_minimized = self.minimized_start.isChecked()
+        result.start_minimized = False
         result.login_startup = self.login_start.isChecked()
         result.radar_engineering = self.engineering.isChecked()
         result.radar_apply_range = self.radar_range.isChecked()
