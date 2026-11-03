@@ -21,6 +21,9 @@ class AutomationPanel(QWidget):
     monitor_requested = Signal()
     light_sample_requested = Signal(str)
     light_preview_requested = Signal(int)
+    wifi_config_requested = Signal()
+    network_status_requested = Signal()
+    tof_reset_requested = Signal()
 
     def __init__(self, settings, simulation=False):
         super().__init__()
@@ -37,6 +40,21 @@ class AutomationPanel(QWidget):
         dash = QVBoxLayout(dashboard)
         group = QGroupBox("센서 연결")
         form = QFormLayout(group)
+        self.transport = QComboBox()
+        self.transport.addItem("USB", "serial")
+        self.transport.addItem("Wi-Fi · TCP", "tcp")
+        self.transport.setCurrentIndex(self.transport.findData(settings.sensor_transport))
+        form.addRow("연결 방식", self.transport)
+        self.tcp_host = QLineEdit(settings.tcp_host)
+        self.tcp_host.setPlaceholderText("센서 IPv4 주소 · 예: 192.168.0.50")
+        self.tcp_port = QSpinBox()
+        self.tcp_port.setRange(1, 65535)
+        self.tcp_port.setValue(settings.tcp_port)
+        self.tcp_token = QLineEdit(settings.tcp_token)
+        self.tcp_token.setEchoMode(QLineEdit.EchoMode.Password)
+        form.addRow("센서 IP", self.tcp_host)
+        form.addRow("TCP 포트", self.tcp_port)
+        form.addRow("무선 장치 키", self.tcp_token)
         self.port = QComboBox()
         self.port.setEditable(True)
         self.port.addItem("자동 탐색", "")
@@ -47,6 +65,8 @@ class AutomationPanel(QWidget):
         self.serial_number = QLineEdit(settings.serial_number)
         self.serial_number.setPlaceholderText("선택 사항: USB 일련번호로 재연결 장치 고정")
         form.addRow("USB 일련번호", self.serial_number)
+        self.transport.currentIndexChanged.connect(self.update_transport)
+        self.update_transport()
         row = QHBoxLayout()
         for label, signal in (("포트 새로고침", self.refresh_requested), ("연결", self.connect_requested),
                               ("연결 해제 / 플래시 준비", self.disconnect_requested)):
@@ -237,6 +257,24 @@ class AutomationPanel(QWidget):
 
         system = QWidget()
         system_layout = QVBoxLayout(system)
+        wifi = QGroupBox("SuperMini Wi-Fi 설정 · 먼저 USB로 연결")
+        wifi_form = QFormLayout(wifi)
+        self.wifi_ssid = QLineEdit()
+        self.wifi_password = QLineEdit()
+        self.wifi_password.setEchoMode(QLineEdit.EchoMode.Password)
+        wifi_form.addRow("2.4GHz 공유기 이름", self.wifi_ssid)
+        wifi_form.addRow("공유기 비밀번호", self.wifi_password)
+        wifi_form.addRow(QLabel("저장 후 장치가 공유기에 접속합니다. IP 조회 후 대시보드에서 Wi-Fi로 연결하세요."))
+        for title, signal in (("USB로 Wi-Fi 설정 저장", self.wifi_config_requested),
+                              ("장치 IP / 연결 상태 조회", self.network_status_requested),
+                              ("ToF 센서 재시작", self.tof_reset_requested)):
+            button = QPushButton(title)
+            button.clicked.connect(lambda checked=False, target=signal: target.emit())
+            wifi_form.addRow(button)
+        self.network_result = QLabel("네트워크 정보 없음")
+        self.network_result.setWordWrap(True)
+        wifi_form.addRow(self.network_result)
+        system_layout.addWidget(wifi)
         self.connect_start = QCheckBox("시작 시 센서 자동 연결")
         self.connect_start.setChecked(settings.connect_on_start)
         self.minimized_start = QCheckBox("시작 시 트레이로 숨기기")
@@ -297,13 +335,23 @@ class AutomationPanel(QWidget):
         form.addRow(self.radar_result)
         system_layout.addWidget(group)
         system_layout.addStretch()
-        self.tabs.addTab(system, "시스템 / 레이더")
+        system_scroll = QScrollArea()
+        system_scroll.setWidgetResizable(True)
+        system_scroll.setWidget(system)
+        self.tabs.addTab(system_scroll, "시스템 / 센서")
 
     def set_curve(self, points):
         self.curve.setRowCount(len(points))
         for row, point in enumerate(points):
             for col, value in enumerate(point):
                 self.curve.setItem(row, col, QTableWidgetItem(str(value)))
+
+    def update_transport(self):
+        tcp = self.transport.currentData() == "tcp"
+        for widget in (self.tcp_host, self.tcp_port, self.tcp_token):
+            widget.setEnabled(tcp)
+        for widget in (self.port, self.serial_number):
+            widget.setEnabled(not tcp)
 
     def update_brightness_mode(self):
         two_level = self.brightness_mode.currentData() == "two_level"
@@ -347,6 +395,10 @@ class AutomationPanel(QWidget):
         result = Settings(**asdict(base))
         result.serial_port = self.selected_port()
         result.serial_number = self.serial_number.text().strip()
+        result.sensor_transport = self.transport.currentData()
+        result.tcp_host = self.tcp_host.text().strip()
+        result.tcp_port = self.tcp_port.value()
+        result.tcp_token = self.tcp_token.text().strip()
         result.auto_brightness = self.auto_brightness.isChecked()
         result.auto_presence = self.auto_presence.isChecked()
         result.brightness_mode = self.brightness_mode.currentData()

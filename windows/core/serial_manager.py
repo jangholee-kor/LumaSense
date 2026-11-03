@@ -79,6 +79,9 @@ class SerialManager:
                 break
         self.decoder = JsonLines()
 
+    def validate_transport(self, packet):
+        """Transport-specific freshness/identity checks; USB has no extra envelope."""
+
     def service_once(self):
         now = self.clock()
         if self.stop_event.is_set():
@@ -111,6 +114,7 @@ class SerialManager:
                 if packet.get("type") == "telemetry":
                     try:
                         validate_telemetry(packet)
+                        self.validate_transport(packet)
                     except ValueError as error:
                         self._status("invalid", str(error))
                         continue

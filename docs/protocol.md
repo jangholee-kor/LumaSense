@@ -1,4 +1,4 @@
-# USB 센서 프로토콜 v1
+# 센서 통신 프로토콜
 
 SuperMini의 VL53L1X 펌웨어는 아래 v2 거리 데이터를 사용하며 USB 명령·ACK는 v1 형식을 유지한다.<br>
 배선과 판정 설정은 [SuperMini·ToF 안내](supermini-tof.md)를 따른다.
@@ -6,7 +6,7 @@ SuperMini의 VL53L1X 펌웨어는 아래 v2 거리 데이터를 사용하며 USB
 ## VL53L1X 거리 데이터 v2
 
 ```json
-{"ver":2,"type":"telemetry","device":"smart-monitor-s3","presence_sensor":"vl53l1x","firmware":"0.3.0","boot_id":"0123456789abcdef","seq":1,"uptime_ms":1000,"light_ok":true,"tof_ok":true,"sensor_ok":true,"lux":125.5,"distance_mm":600,"tof_raw_status":9,"tof_sample_age_ms":30,"roi_size":8}
+{"ver":2,"type":"telemetry","device":"smart-monitor-s3","presence_sensor":"vl53l1x","firmware":"0.3.1","boot_id":"0123456789abcdef","seq":1,"uptime_ms":1000,"light_ok":true,"tof_ok":true,"sensor_ok":true,"lux":125.5,"distance_mm":600,"tof_raw_status":9,"tof_epoch":0,"tof_sample_age_ms":30,"roi_size":8}
 ```
 
 `boot_id`는 부팅마다 새로 생성한 16자리 16진수이며 PC는 값이 바뀌면 새 연결로 안정화한다.<br>
@@ -15,7 +15,24 @@ SuperMini의 VL53L1X 펌웨어는 아래 v2 거리 데이터를 사용하며 USB
 `tof_ok=false`이면 `distance_mm=null`이며 PC가 거리 오류를 부재로 해석하지 않는다.<br>
 `sensor_ok`는 `light_ok && tof_ok`이고 조도 무효 시 `lux=null`이다.<br>
 이 데이터는 움직임·정지 인체 분류를 제공하지 않는다.<br>
+0.3.1의 `tof_epoch`는 SHUT 재시작마다 증가하며 PC는 이 값이 바뀌면 측정 안정화를 다시 시작한다.<br>
 PC가 거리 범위·전환 유지 시간·거리 여유를 적용해 착석 상태를 만들며 원본 거리와 유효성을 보존한다.
+
+## TCP 연결과 Wi-Fi 설정
+
+SuperMini TCP 포트는 47653이며 JSON Lines 형식과 telemetry v2·명령/ACK v1을 사용한다.<br>
+첫 명령은 `auth`이고 `ver=1`, 요청별 문자열 `id`, USB로 등록한 64자리 16진수 `token`을 포함한다.<br>
+성공 응답은 `type=ack`, `cmd=auth`, 같은 `id`, `ok=true`, `boot_id`, `uptime_ms`를 담는다.<br>
+인증 전 telemetry·센서 명령을 허용하지 않으며 인증 실패·3초 시간 초과·2048바이트 이상의 입력 줄은 연결을 종료한다.<br>
+한 번에 PC 클라이언트 한 개를 연결한다.
+
+USB 명령 `wifi_config`는 `ssid`, `password`, `token`을 NVS에 저장하고 공유기 연결을 요청한다.<br>
+이 명령은 TCP에서 거부하며 ACK·상태 응답에 비밀번호와 키를 넣지 않는다.<br>
+`network_status`와 `get_status` 응답의 `network`에는 `configured`, `connected`, `address`, `port`, `error`가 있다.<br>
+저장 성공·공유기 접속·PC 센서 수신은 별도 상태이다.<br>
+PC는 요청별 인증 ID와 부팅 식별자, uptime 진행을 대조해 이전 연결이나 지연된 패킷을 배제한다.
+
+## LD2412 USB 전송
 
 아래 v1 telemetry와 레이더 설정 명령은 LD2412 펌웨어에 해당한다.
 

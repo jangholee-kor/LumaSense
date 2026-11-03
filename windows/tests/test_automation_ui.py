@@ -130,6 +130,46 @@ def test_port_edit_and_invalid_curve(simulated):
         view.auto_panel.collect(view.settings)
 
 
+def test_tcp_selection_settings_and_export_omit_secret(simulated, monkeypatch, tmp_path):
+    from windows.ui import main_window
+    view = simulated
+    panel = view.auto_panel
+    panel.transport.setCurrentIndex(panel.transport.findData("tcp"))
+    panel.tcp_host.setText("192.168.0.50")
+    panel.tcp_token.setText("b" * 64)
+    collected = panel.collect(view.settings)
+    assert collected.sensor_transport == "tcp" and collected.tcp_host == "192.168.0.50"
+    assert panel.tcp_host.isEnabled() and not panel.port.isEnabled()
+    path = tmp_path / "wifi-profile.json"
+    monkeypatch.setattr(main_window.QFileDialog, "getSaveFileName", lambda *args: (str(path), ""))
+    view.export_settings()
+    assert Settings.load(path).tcp_token == "" and "b" * 64 not in path.read_text(encoding="utf-8")
+
+
+def test_usb_wifi_setup_does_not_log_password_and_ip_query_updates_endpoint(simulated):
+    view = simulated
+    panel = view.auto_panel
+    requests = []
+    view.simulation = False
+    view.serial_worker = SimpleNamespace(command=lambda request: requests.append(request))
+    try:
+        panel.wifi_ssid.setText("test-router")
+        panel.wifi_password.setText("private-password")
+        view.configure_wifi()
+        assert requests[0]["cmd"] == "wifi_config" and requests[0]["password"] == "private-password"
+        assert len(requests[0]["token"]) == 64 and not panel.wifi_password.text()
+        assert Settings.load(view.log.root / "settings.json").tcp_token == requests[0]["token"]
+        view.sensor_command_result(dict(token=view.serial_token, cmd="network_status", ok=True,
+            response={"network": {"address": "192.168.0.20", "connected": True}}))
+        assert panel.tcp_host.text() == "192.168.0.20"
+        view.sensor_command_result(dict(token=view.serial_token, cmd="tof_reset", ok=True, response={}))
+        assert "센서 재시작 ACK 성공" in panel.network_result.text()
+        assert "private-password" not in (view.log.root / "settings.json").read_text(encoding="utf-8")
+    finally:
+        view.serial_worker = None
+        view.simulation = True
+
+
 def test_radar_request_requires_explicit_persistent_fields(simulated, tmp_path):
     panel = simulated.auto_panel
     assert panel.radar_request() == {"cmd": "radar_config", "engineering": False}

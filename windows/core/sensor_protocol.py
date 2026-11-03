@@ -41,12 +41,14 @@ def validate_telemetry(value):
     elif lux is not None:
         raise ValueError("조도 오류는 lux=null이어야 합니다.")
     if tof:
+        if type(value.get("tof_epoch", 0)) is not int or value.get("tof_epoch", 0) < 0:
+            raise ValueError("잘못된 ToF 재시작 순번")
         distance = value.get("distance_mm")
         age = value.get("tof_sample_age_ms")
         if value["tof_ok"]:
             if type(distance) is not int or not 40 <= distance <= 4000:
                 raise ValueError("유효하지 않은 ToF 거리")
-            if type(age) is not int or not 0 <= age < 500 or value.get("tof_raw_status") != 9:
+            if type(age) is not int or not 0 <= age < 500 or type(value.get("tof_raw_status")) is not int or value["tof_raw_status"] != 9:
                 raise ValueError("만료되었거나 유효하지 않은 ToF 측정")
         elif distance is not None:
             raise ValueError("ToF 오류는 distance_mm=null이어야 합니다.")

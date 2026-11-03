@@ -20,6 +20,8 @@ from windows.core.display_controller import State
 from windows.core.watchdog import recovery_window_seconds, arm_watchdog
 from windows.core.automation import AutomationRuntime
 from windows.core.serial_manager import SerialManager
+from windows.core.tcp_manager import TcpManager
+import secrets
 from windows.core.sensor_protocol import ports
 from windows.core.simulation import SimulatedBackend, SimulatedGuard, SimulatedPower, sensor_packet
 from windows.core.windows_session import WindowsSession
@@ -532,6 +534,9 @@ class MainWindow(QMainWindow):
                 (panel.export_requested, self.export_settings), (panel.import_requested, self.import_settings),
                 (panel.simulation_requested, self.open_simulation), (panel.radar_requested, self.configure_radar)):
             signal.connect(method)
+        panel.wifi_config_requested.connect(self.configure_wifi)
+        panel.network_status_requested.connect(lambda: self.sensor_request({"cmd": "network_status"}))
+        panel.tof_reset_requested.connect(self.reset_tof)
         panel.monitor_requested.connect(lambda: self.pages.setCurrentWidget(self.diagnostic_page))
         panel.light_sample_requested.connect(self.record_light_sample)
         panel.light_preview_requested.connect(self.set_brightness)
@@ -600,14 +605,20 @@ class MainWindow(QMainWindow):
         number = self.auto_panel.serial_number.text().strip()
         try:
             self.settings.serial_port, self.settings.serial_number = port, number
+            self.settings.sensor_transport = self.auto_panel.transport.currentData()
+            self.settings.tcp_host = self.auto_panel.tcp_host.text().strip()
+            self.settings.tcp_port = self.auto_panel.tcp_port.value()
+            self.settings.tcp_token = self.auto_panel.tcp_token.text().strip()
             self.save_settings()
             self.serial_token += 1
             token = self.serial_token
-            self.serial_worker = SerialManager(self.log,
+            manager = TcpManager if self.settings.sensor_transport == "tcp" else SerialManager
+            options = dict(host=self.settings.tcp_host, port=self.settings.tcp_port, token=self.settings.tcp_token) if manager is TcpManager else dict(port=port, serial_number=number)
+            self.serial_worker = manager(self.log,
                 lambda event: self.serial_signals.packet.emit({**event, "token": token}),
                 lambda event: self.serial_signals.status.emit({**event, "token": token}),
                 lambda event: self.serial_signals.command.emit({**event, "token": token}),
-                port=port, serial_number=number, stale_seconds=self.settings.sensor_stale_seconds)
+                **options, stale_seconds=self.settings.sensor_stale_seconds)
             self.serial_worker.start()
         except Exception as error:
             self.fail(str(error))
@@ -639,6 +650,58 @@ class MainWindow(QMainWindow):
         if event.get("token") != self.serial_token:
             return
         self.auto_panel.radar_result.setText("설정 ACK 성공 · 실제 감지 결과는 확인이 필요합니다." if event["ok"] else f"설정 실패: {event['error']}")
+        response = event.get("response") or {}
+        if event.get("cmd") in ("wifi_config", "network_status", "get_status", "tof_reset"):
+            network = response.get("network", {})
+            address = network.get("address", "")
+            if address:
+                self.auto_panel.tcp_host.setText(address)
+            if not event["ok"]:
+                message = f"명령 실패: {event['error']}"
+            elif network:
+                message = f"IP {address or '미할당'} · 공유기 {'연결됨' if network.get('connected') else '접속 대기'}"
+            elif event.get("cmd") == "tof_reset":
+                message = "센서 재시작 ACK 성공 · 새 측정과 안정화 완료를 확인하세요."
+            else:
+                message = "설정 저장 ACK 성공 · 잠시 후 장치 IP를 조회하세요."
+            self.auto_panel.network_result.setText(message)
+
+    def sensor_request(self, payload):
+        if self.simulation:
+            self.auto_panel.network_result.setText("시뮬레이션에서는 장치 명령을 보내지 않습니다.")
+            return
+        try:
+            if not self.serial_worker:
+                raise RuntimeError("먼저 센서를 연결하세요.")
+            return self.serial_worker.command(payload)
+        except Exception as error:
+            self.auto_panel.network_result.setText(str(error))
+
+    def reset_tof(self):
+        if self.sensor_request({"cmd": "tof_reset"}):
+            self.runtime.sensors.invalidate("ToF 재시작 후 안정화", new_session=True)
+
+    def configure_wifi(self):
+        panel = self.auto_panel
+        if self.simulation:
+            panel.network_result.setText("시뮬레이션에서는 Wi-Fi 설정을 저장하지 않습니다.")
+            return
+        try:
+            if not self.serial_worker or isinstance(self.serial_worker, TcpManager):
+                raise ValueError("Wi-Fi 설정은 센서에 USB로 연결한 뒤 저장하세요.")
+            ssid, password = panel.wifi_ssid.text(), panel.wifi_password.text()
+            if '\0' in ssid or '\0' in password or not 1 <= len(ssid.encode()) <= 32 or not 8 <= len(password.encode()) <= 63:
+                raise ValueError("공유기 이름은 UTF-8 1~32바이트, 비밀번호는 8~63바이트여야 합니다.")
+            token = panel.tcp_token.text().strip() or secrets.token_hex(32)
+            candidate = replace(self.settings, tcp_token=token).validate()
+            self.serial_worker.command(dict(cmd="wifi_config", ssid=ssid, password=password, token=token))
+            self.settings.tcp_token = token
+            panel.tcp_token.setText(token)
+            candidate.save(self.log.root / "settings.json")
+            panel.wifi_password.clear()
+            panel.network_result.setText("장치 설정 저장 응답 대기 중")
+        except Exception as error:
+            panel.network_result.setText(str(error))
 
     def simulation_packet(self, new_session=False):
         if not self.simulation:
@@ -674,7 +737,8 @@ class MainWindow(QMainWindow):
                 except Exception:
                     self.settings.save(self.log.root / "settings.json")
                     raise
-            reconnect = candidate.serial_port != self.settings.serial_port or candidate.serial_number != self.settings.serial_number
+            reconnect = any(getattr(candidate, field) != getattr(self.settings, field) for field in
+                            ("serial_port", "serial_number", "sensor_transport", "tcp_host", "tcp_port", "tcp_token"))
             active = bool(self.serial_worker and self.serial_worker.thread and self.serial_worker.thread.is_alive())
             self.settings = candidate
             self.runtime.apply_settings(candidate)
@@ -719,7 +783,7 @@ class MainWindow(QMainWindow):
         filename, _ = QFileDialog.getSaveFileName(self, "설정과 밝기 프로필 저장", "monitor-profile.json", "JSON (*.json)")
         if filename:
             try:
-                self.collect_settings().save(Path(filename))
+                replace(self.collect_settings(), tcp_token="").save(Path(filename))
                 self.message("설정과 밝기 프로필을 저장했습니다.")
             except Exception as error:
                 self.fail(str(error))
@@ -729,6 +793,8 @@ class MainWindow(QMainWindow):
         if filename:
             try:
                 candidate = Settings.load(Path(filename))
+                if not candidate.tcp_token:
+                    candidate.tcp_token = self.settings.tcp_token
                 self.path.setText(candidate.twinkle_path)
                 self.method.setCurrentIndex(self.method.findData(candidate.wake_method))
                 self.delay.setValue(candidate.recovery_seconds)

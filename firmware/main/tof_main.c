@@ -7,6 +7,8 @@
 #include "bh1750.h"
 #include "vl53l1x.h"
 #include "status_led.h"
+#include "smc_network.h"
+#include "smc_network_guard.h"
 #include "driver/usb_serial_jtag.h"
 #include "esp_system.h"
 #include "esp_random.h"
@@ -15,7 +17,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define FIRMWARE_VERSION "0.3.0"
+#define FIRMWARE_VERSION "0.3.1"
 #define LINE_CAPACITY 2048
 _Static_assert(CONFIG_ESP_MAIN_TASK_STACK_SIZE >= 8192, "Main task stack must be at least 8192 bytes");
 static char input_line[LINE_CAPACITY];
@@ -27,21 +29,24 @@ static bool pins_ok, light_ok;
 static float lux;
 static int64_t light_at;
 static int report_ms = CONFIG_SMC_REPORT_MS;
-static uint32_t sequence, usb_dropped;
+static uint32_t sequence, usb_dropped, tof_epoch;
 static char boot_id[17];
+static smc_net_message_t network_command;
 
-static void send_json(cJSON *root) {
+static void send_json(cJSON *root, uint32_t target) {
     if (!root) return;
     char *text = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
     if (!text) return;
     /* A disconnected USB host must not stall sensor collection. */
     size_t length = strlen(text);
-    if (usb_serial_jtag_is_connected()) {
+    if ((target == 0 || target == UINT32_MAX) && usb_serial_jtag_is_connected()) {
         int sent = usb_serial_jtag_write_bytes(text, length, pdMS_TO_TICKS(10));
         if (sent != (int)length) ++usb_dropped;
         usb_serial_jtag_write_bytes("\n", 1, pdMS_TO_TICKS(10));
     }
+    if (target == UINT32_MAX) smc_network_publish(text);
+    else if (target) smc_network_reply(target, text);
     free(text);
 }
 
@@ -66,6 +71,7 @@ static void telemetry(void) {
     if (tof_valid) cJSON_AddNumberToObject(root, "distance_mm", tof.latest.distance_mm);
     else cJSON_AddNullToObject(root, "distance_mm");
     cJSON_AddNumberToObject(root, "tof_raw_status", tof.latest.raw_status);
+    cJSON_AddNumberToObject(root, "tof_epoch", tof_epoch);
     if (tof.last_sample_us) cJSON_AddNumberToObject(root, "tof_sample_age_ms", (double)((now - tof.last_sample_us) / 1000));
     else cJSON_AddNullToObject(root, "tof_sample_age_ms");
     cJSON_AddStringToObject(root, "tof_error", esp_err_to_name(tof.error));
@@ -73,11 +79,20 @@ static void telemetry(void) {
     cJSON_AddNumberToObject(root, "usb_dropped_lines", usb_dropped);
     cJSON_AddNumberToObject(root, "free_heap", esp_get_free_heap_size());
     cJSON_AddNumberToObject(root, "main_stack_min_free_bytes", uxTaskGetStackHighWaterMark(NULL));
-    send_json(root);
+    send_json(root, UINT32_MAX);
 }
 
-static void command(const char *line) {
-    cJSON *request = cJSON_ParseWithOpts(line, NULL, true);
+static esp_err_t reset_tof(void) {
+    ++tof_epoch;
+    tof.latest.valid = false;
+    tof.last_sample_us = 0;
+    /* Publish invalidation before the bounded initialization wait. */
+    telemetry();
+    return smc_tof_reset(&tof);
+}
+
+static void command(const char *line, uint32_t target) {
+    cJSON *request = smc_network_line_bounded(line) ? cJSON_ParseWithOpts(line, NULL, true) : NULL;
     cJSON *reply = cJSON_CreateObject();
     cJSON_AddNumberToObject(reply, "ver", 1);
     cJSON_AddStringToObject(reply, "type", "ack");
@@ -99,8 +114,14 @@ static void command(const char *line) {
             cJSON_AddNumberToObject(reply, "shut_gpio", CONFIG_SMC_TOF_SHUT_GPIO);
             cJSON_AddNumberToObject(reply, "roi_size", CONFIG_SMC_TOF_ROI_SIZE);
             cJSON_AddNumberToObject(reply, "report_ms", report_ms);
+            smc_network_status(reply);
+        } else if (!strcmp(name->valuestring, "wifi_config")) {
+            result = target == 0 ? smc_network_configure(request) : ESP_ERR_NOT_SUPPORTED;
+        } else if (!strcmp(name->valuestring, "network_status")) {
+            smc_network_status(reply);
+            result = ESP_OK;
         } else if (!strcmp(name->valuestring, "tof_reset")) {
-            if (pins_ok && tof.device) result = smc_tof_reset(&tof);
+            if (pins_ok && tof.device) result = reset_tof();
             else result = ESP_ERR_INVALID_STATE;
         } else if (!strcmp(name->valuestring, "set_reporting")) {
             cJSON *interval = cJSON_GetObjectItemCaseSensitive(request, "interval_ms");
@@ -116,7 +137,7 @@ static void command(const char *line) {
     cJSON_AddStringToObject(reply, "error", esp_err_to_name(result));
     cJSON_AddStringToObject(reply, "boot_id", boot_id);
     cJSON_AddNumberToObject(reply, "uptime_ms", (double)(esp_timer_get_time() / 1000));
-    send_json(reply);
+    send_json(reply, target);
     cJSON_Delete(request);
 }
 
@@ -145,6 +166,7 @@ void app_main(void) {
         bh1750_attach(&light, bus, CONFIG_SMC_BH1750_ADDR);
         smc_tof_init(&tof, bus, CONFIG_SMC_TOF_SHUT_GPIO, CONFIG_SMC_TOF_ROI_SIZE);
     }
+    smc_network_init(boot_id);
     int64_t next_report = 0, next_light = 0, next_retry = 0;
     size_t used = 0;
     bool discard = false;
@@ -164,7 +186,7 @@ void app_main(void) {
                 }
                 /* Retry stuck/no-data sensors, but do not reset merely for a bad range. */
                 if (tof.device && (!tof.running || now - (tof.last_sample_us ? tof.last_sample_us : tof.started_us) > 2000000))
-                    smc_tof_reset(&tof);
+                    reset_tof();
                 next_retry = esp_timer_get_time() + 3000000;
             }
         }
@@ -172,13 +194,14 @@ void app_main(void) {
         int count = usb_serial_jtag_read_bytes(bytes, sizeof(bytes), 0);
         for (int i = 0; i < count; ++i) {
             if (bytes[i] == '\n') {
-                if (used && !discard) { input_line[used] = 0; command(input_line); }
+                if (used && !discard) { input_line[used] = 0; command(input_line, 0); }
                 used = 0; discard = false;
             } else if (bytes[i] != '\r') {
                 if (used + 1 < sizeof(input_line) && !discard) input_line[used++] = bytes[i];
                 else discard = true;
             }
         }
+        if (smc_network_command(&network_command)) command(network_command.line, network_command.generation);
         now = esp_timer_get_time();
         bool tof_valid = smc_tof_valid(&tof, now);
         smc_status_led_update(&led, pins_ok, valid_light(now), tof_valid,

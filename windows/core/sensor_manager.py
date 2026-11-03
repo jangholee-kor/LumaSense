@@ -42,7 +42,8 @@ class SensorManager:
         try:
             validate_telemetry(packet)
             restarted = self.packet is not None and (packet["uptime_ms"] < self.packet["uptime_ms"] or
-                packet.get("boot_id") != self.packet.get("boot_id") or packet["ver"] != self.packet["ver"])
+                packet.get("boot_id") != self.packet.get("boot_id") or packet["ver"] != self.packet["ver"] or
+                packet.get("tof_epoch", 0) != self.packet.get("tof_epoch", 0))
             if self.packet is not None and not restarted and packet["seq"] <= self.packet["seq"]:
                 raise ValueError("센서 순번 중복 또는 역전")
             if restarted:

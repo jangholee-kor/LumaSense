@@ -58,6 +58,17 @@ def test_tof_settings_do_not_break_legacy_distance_limit():
         Settings(tof_min_distance_cm=150, tof_max_distance_cm=100).validate()
 
 
+def test_sensor_reset_epoch_restabilizes_even_if_invalidation_frame_was_missed():
+    model = SensorManager(stabilization_seconds=1)
+    model.ingest(packet(), 0)
+    model.ingest(packet(2), 1)
+    assert model.ready(1)
+    value = packet(3)
+    value["tof_epoch"] = 1
+    model.ingest(value, 1.1)
+    assert not model.ready(1.1) and model.generation == 1
+
+
 def test_tof_absence_countdown_cancels_on_invalid_range_and_wakes_owned_display():
     settings = Settings(absence_seconds=5, stabilization_seconds=1, use_recent_input=False)
     sensors = SensorManager(stabilization_seconds=1)

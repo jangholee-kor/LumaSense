@@ -1,7 +1,7 @@
 # Smart Monitor Controller
 
-Windows 11에서 ESP32-S3의 BH1750·LD2412 데이터를 받아 조도에 따른 밝기와 인체 부재 시 화면 절전을 제어하는 Python 3.12 / PySide6 프로그램이다.<br>
-Twinkle Tray와 Windows API로 모니터를 제어하고 USB 연결·자동 제어·수동 진단·시뮬레이션을 제공한다.
+Windows 11에서 ESP32-S3의 BH1750 조도와 LD2412 감지 또는 VL53L1X 거리 데이터를 받아 밝기와 자리 비움에 따른 화면 절전을 제어하는 Python 3.12 / PySide6 프로그램이다.<br>
+Twinkle Tray와 Windows API로 모니터를 제어하고 USB·Wi-Fi 연결, 자동 제어·수동 진단·시뮬레이션을 제공한다.
 
 ## 설치와 테스트
 
@@ -65,6 +65,9 @@ USB 통신·자동 밝기·인체 상태 제어는 독립 모듈로 구성한다
 ## ESP32-S3 펌웨어
 
 SuperMini와 VL53L1X의 확정 배선·빌드·거리 판정은 [SuperMini·ToF 안내](docs/supermini-tof.md)를 따른다.
+
+SuperMini는 USB에서 공유기 접속 정보를 저장한 뒤 Wi-Fi TCP로 연결할 수 있다.<br>
+앱의 시스템 / 센서 탭에서 Wi-Fi 설정과 장치 IP를 확인하고 대시보드에서 연결 방식을 선택한다.
 
 [펌웨어 프로젝트](firmware/README.md)는 BH1750·LD2412 센서 수집과 양방향 USB 통신을 제공한다.<br>
 MCN16R8 기준으로 기본·PSRAM 프로필을 빌드하고 [펌웨어 시험 안내](docs/firmware-testing.md)에 따라 플래시·센서 로그를 확인한다.<br>

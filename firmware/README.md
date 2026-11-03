@@ -1,5 +1,8 @@
 # ESP32-S3 센서 펌웨어
 
+SuperMini의 VL53L1X·BH1750·Wi-Fi 구성은 [SuperMini·ToF 안내](../docs/supermini-tof.md)를 따른다.<br>
+아래 배선·16MB 메모리·LD2412 명령은 DevKit 프로필에 해당한다.
+
 ESP-IDF 5.5.x로 BH1750 조도, LD2412 인체 감지와 USB Serial/JTAG JSON Lines 통신을 구현한다.<br>
 사용자가 실물 모듈 표기를 MCN16R8로 확인했으며 기본 플래시는 16MB로 설정한다.<br>
 PSRAM을 사용하지 않는 기본 빌드와 octal PSRAM 활성화 빌드를 구분한다.<br>

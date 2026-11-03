@@ -19,3 +19,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Native status LED driver tests failed' }
 if ($LASTEXITCODE -ne 0) { throw 'Native VL53L1X compile failed' }
 & '.local/firmware-tests/vl53l1x_tests.exe'
 if ($LASTEXITCODE -ne 0) { throw 'Native VL53L1X tests failed' }
+& $Compiler -std=c11 -Wall -Wextra -Werror '-Ifirmware/main' 'firmware/main/smc_network_guard.c' 'firmware/tests/test_network_guard.c' -o '.local/firmware-tests/network_guard_tests.exe'
+if ($LASTEXITCODE -ne 0) { throw 'Native network guard compile failed' }
+& '.local/firmware-tests/network_guard_tests.exe'
+if ($LASTEXITCODE -ne 0) { throw 'Native network guard tests failed' }

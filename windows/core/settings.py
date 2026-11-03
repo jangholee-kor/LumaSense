@@ -1,6 +1,7 @@
 import json
 from dataclasses import asdict, dataclass, field
 import math
+import ipaddress
 from pathlib import Path
 
 
@@ -14,6 +15,10 @@ class Settings:
     fallback_seconds: int = 30
     serial_port: str = ""
     serial_number: str = ""
+    sensor_transport: str = "serial"
+    tcp_host: str = ""
+    tcp_port: int = 47653
+    tcp_token: str = ""
     connect_on_start: bool = False
     auto_brightness: bool = False
     auto_presence: bool = False
@@ -78,6 +83,17 @@ class Settings:
         for name in ("serial_port", "serial_number"):
             if not isinstance(getattr(self, name), str) or len(getattr(self, name)) > 256:
                 raise ValueError(f"잘못된 {name}")
+        if self.sensor_transport not in ("serial", "tcp"):
+            raise ValueError("센서 연결 방식은 USB 또는 Wi-Fi TCP여야 합니다.")
+        if not isinstance(self.tcp_host, str):
+            raise ValueError("잘못된 센서 IPv4 주소")
+        if self.tcp_host:
+            ipaddress.IPv4Address(self.tcp_host)
+        if type(self.tcp_port) is not int or not 1 <= self.tcp_port <= 65535:
+            raise ValueError("TCP 포트는 1~65535 정수 필요")
+        if not isinstance(self.tcp_token, str) or (self.tcp_token and
+                (len(self.tcp_token) != 64 or any(c not in "0123456789abcdef" for c in self.tcp_token))):
+            raise ValueError("무선 장치 키는 64자리 16진수 필요")
         for name in ("connect_on_start", "auto_brightness", "auto_presence", "use_recent_input", "start_minimized", "login_startup",
                      "radar_engineering", "radar_apply_range", "radar_apply_thresholds"):
             if type(getattr(self, name)) is not bool:

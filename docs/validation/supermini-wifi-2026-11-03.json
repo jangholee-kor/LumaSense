@@ -1,0 +1,49 @@
+{
+  "date": "2026-11-03",
+  "firmware": "0.3.1",
+  "windows_app": "0.4.0",
+  "wiring": {
+    "shut_gpio": 4,
+    "sda_gpio": 12,
+    "scl_gpio": 13
+  },
+  "host_checks": {
+    "pytest_passed": 143,
+    "native_test_executables_passed": 5,
+    "packaged_gui_watchdog_lease_guard": "passed",
+    "gui_render": "inspected",
+    "final_gui_pytest_passed": 15
+  },
+  "tcp_loopback_cases": [
+    "fragmented_authentication",
+    "incorrect_key",
+    "telemetry_v2",
+    "correlated_command_ack",
+    "lost_ack_no_retransmission",
+    "reauthentication_and_new_session",
+    "stale_data_rejection"
+  ],
+  "build": {
+    "esp_idf": "5.5.4",
+    "supermini_4mb_wifi": "passed",
+    "legacy_devkit_16mb": "passed"
+  },
+  "artifacts": {
+    "exe_sha256": "d574f15516cfc1bfceb0d947d9ee7e8b8bc2565cefaacefaf0896506ccc3f785",
+    "supermini_merged_sha256": "96DFA362036FD14403751A15FF2C0956AE45A7899877EC1121AE82B4363454EA",
+    "supermini_zip_sha256": "9111dcfe3a1733e9dfeda2e5644bd424c00f9eac33148f38b74b6ef298a661fb"
+  },
+  "physical": {
+    "flash": "not_performed",
+    "wifi_connection": "unverified",
+    "wireless_sensor_stream": "unverified",
+    "monitor_usb_standby_power": "unverified",
+    "seated_and_empty_chair": "unverified",
+    "monitor_output": "unverified"
+  },
+  "conditions": [
+    "WPA2 or later personal 2.4 GHz LAN with PC-to-sensor reachability.",
+    "TCP authentication key provisioned over USB; TCP transport has no TLS.",
+    "Valid background range is needed for absence; invalid ToF data inhibits sleep."
+  ]
+}
