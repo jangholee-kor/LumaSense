@@ -32,6 +32,7 @@ from windows.core.sensor_log import SensorRecorder
 from windows.ui.automation_panel import AutomationPanel
 from windows.ui.lux import format_lux
 from windows.ui.screen_status import ScreenStatusBanner
+from windows.ui.countdown_overlay import CountdownOverlay, countdown_seconds
 from windows import __version__
 
 
@@ -255,6 +256,8 @@ class MainWindow(QMainWindow):
         root_layout = QVBoxLayout(root)
         root_layout.setContentsMargins(0, 0, 0, 0)
         self.screen_status = ScreenStatusBanner()
+        self.countdown_overlay = CountdownOverlay()
+        self.countdown_overlay.cancel_requested.connect(self.cancel_banner_countdown)
         self.screen_status.cancel_requested.connect(self.cancel_banner_countdown)
         self.screen_status.resume_requested.connect(self.resume_automation)
         root_layout.addWidget(self.screen_status)
@@ -458,6 +461,7 @@ class MainWindow(QMainWindow):
             self.runtime.pause()
             self.runtime.external_block = True
             self.controller.start()
+            self.countdown_overlay.set_seconds(5)
             self.cancel_button.setEnabled(True)
             self.sleep_button.setEnabled(False)
             self.wake_button.setEnabled(False)
@@ -473,6 +477,7 @@ class MainWindow(QMainWindow):
 
     def cancel_sleep(self):
         if self.controller.cancel():
+            self.countdown_overlay.set_seconds(None)
             self.power_status.setText("절전 시험 취소됨 · 화면 절전 명령 없음")
             self.reset_controls()
             self.runtime.external_block = False
@@ -594,6 +599,7 @@ class MainWindow(QMainWindow):
             self.monitors.setCurrentIndex(names.index(chosen))
 
     def cancel_banner_countdown(self):
+        self.countdown_overlay.set_seconds(None)
         if self.controller.state == State.COUNTDOWN:
             self.cancel_sleep()
         else:
@@ -625,6 +631,7 @@ class MainWindow(QMainWindow):
             setattr(self.runtime.settings, field, False)
             self.runtime.epoch += 1
             if kind == "presence":
+                self.countdown_overlay.set_seconds(None)
                 self.runtime.presence.cancel(time.monotonic())
         if hasattr(self, "tray_auto_brightness"):
             (self.tray_auto_brightness if kind == "brightness" else self.tray_auto_presence).setChecked(False)
@@ -794,6 +801,7 @@ class MainWindow(QMainWindow):
             active = bool(self.serial_worker and self.serial_worker.thread and self.serial_worker.thread.is_alive())
             self.settings = candidate
             self.runtime.apply_settings(candidate)
+            self.countdown_overlay.set_seconds(None)
             self.runtime.external_block = self.controller.state != State.IDLE
             self.runtime.set_monitor(candidate.monitor_id,
                                      next((m.brightness for m in getattr(self, "monitor_list", []) if m.identifier == candidate.monitor_id), None))
@@ -819,6 +827,7 @@ class MainWindow(QMainWindow):
             self.fail(str(error))
 
     def pause_automation(self):
+        self.countdown_overlay.set_seconds(None)
         self.runtime.pause(900)
         self.cancel_sleep()
         self.message("자동 제어를 15분 중단합니다.")
@@ -970,7 +979,9 @@ class MainWindow(QMainWindow):
             self.auto_panel.simple_page.live.setText(
                 f"현재 조도 {format_lux(packet.get('lux'))} lux · {distance_text}{previous}")
             self.screen_status.update_status(self.runtime, now, self.controller)
+            self.countdown_overlay.set_seconds(countdown_seconds(self.runtime, now, self.controller))
         except Exception as error:
+            self.countdown_overlay.set_seconds(None)
             self.auto_fault = True
             self.runtime.external_block = True
             self.fail(f"자동 제어 중단: {error}")
@@ -979,6 +990,7 @@ class MainWindow(QMainWindow):
         if self.services_stopped:
             return
         self.services_stopped = True
+        self.countdown_overlay.close()
         self.timer.stop()
         self.sim_timer.stop()
         if self.serial_worker:

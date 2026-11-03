@@ -398,3 +398,23 @@ def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulate
     assert "거리 미측정 · 부재 판정" in view.auto_panel.labels["distance"].text()
     assert "5초 후 화면이 꺼집니다" == view.screen_status.title.text()
     assert view.runtime.sensors.packet["sensor_ok"] is False
+    assert view.countdown_overlay.isVisible() and view.countdown_overlay.number.text() == "5"
+    view.runtime.sensor_status({"connected": False, "message": "test disconnect"})
+    view.automation_tick()
+    assert not view.countdown_overlay.isVisible()
+
+
+def test_overlay_visible_with_hidden_mainwindow_and_cancel_closes_it(app, simulated):
+    from windows.core.display_controller import State
+    view = simulated
+    view.start_sleep()
+    assert view.countdown_overlay.isVisible() and view.countdown_overlay.number.text() == "5"
+    view.hide()
+    app.processEvents()
+    assert view.countdown_overlay.isVisible() and view.countdown_overlay.parentWidget() is None
+    view.countdown_overlay.cancel.click()
+    assert view.controller.state == State.IDLE and not view.countdown_overlay.isVisible()
+    view.start_sleep()
+    assert view.countdown_overlay.isVisible()
+    view.stop_services()
+    assert not view.countdown_overlay.isVisible()

@@ -1,0 +1,72 @@
+{
+  "date": "2026-11-03",
+  "app_version": "0.7.0",
+  "automated_tests": {
+    "full_passed": 246,
+    "final_overlay_passed": 14,
+    "full_log": ".local/overlay-pytest.log"
+  },
+  "native_windows_display": {
+    "primary_geometry": [
+      0,
+      0,
+      2560,
+      1440
+    ],
+    "overlay_geometry": [
+      900,
+      310,
+      760,
+      820
+    ],
+    "topmost": true,
+    "noactivate": true,
+    "toolwindow": true,
+    "foreground_preserved_on_show": true,
+    "overlay_took_foreground": false,
+    "sequence": [
+      5,
+      4,
+      3,
+      2,
+      1
+    ],
+    "physical_output": "not_invoked",
+    "hidden_at_end": true
+  },
+  "native_preview": ".local/overlay-preview/native-3.png",
+  "packaged_checks": {
+    "executable": "C:\\work\\git\\LumaSense\\.local\\releases\\LumaSense-0.7.0\\LumaSense\\LumaSense.exe",
+    "exe_sha256": "e014ba4bfde3642b93dd30d75ff75ab67befb1003d47c36811f348a6950cc7d2",
+    "checks": [
+      {
+        "case": "gui",
+        "pass": true,
+        "screenshot": "C:\\work\\git\\LumaSense\\.local\\overlay-exe-check\\gui\\ui.png"
+      },
+      {
+        "case": "watchdog",
+        "pass": true,
+        "simulated": true
+      },
+      {
+        "case": "lease_guard",
+        "pass": true,
+        "simulated": true
+      }
+    ],
+    "physical_validation": "not_run"
+  },
+  "coverage": [
+    "positive countdown digits 5 through 1",
+    "hide at zero",
+    "negative coordinates and portrait screen centering",
+    "nonactivating topmost tool window",
+    "hidden parent main window independence",
+    "manual and automatic cancel",
+    "sensor failure hides overlay",
+    "application shutdown closes overlay"
+  ],
+  "physical_monitor_power_validation": "not_run",
+  "firmware_changed": false
+}
