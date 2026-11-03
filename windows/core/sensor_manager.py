@@ -2,7 +2,7 @@
 import copy
 from dataclasses import dataclass
 
-from .sensor_protocol import validate_telemetry, tof_no_target, control_sensor_ok
+from .sensor_protocol import validate_telemetry, tof_no_target, control_sensor_ok, tof_acquisition_ok
 from .tof_presence import TofPresence
 
 
@@ -63,6 +63,7 @@ class SensorManager:
                     self.tof_presence.reset()
                     presence = None
                 self.packet.update(presence=presence, tof_no_target=no_target,
+                                   tof_acquisition_ok=tof_acquisition_ok(packet),
                                    moving=None, stationary=None,
                                    distance_cm=packet["distance_mm"] / 10 if packet["tof_ok"] else None)
             self.received_at = now
@@ -73,7 +74,7 @@ class SensorManager:
             elif self.healthy_since is None:
                 self.healthy_since = now
             self.reason = "센서 오류" if not healthy else ("순번 누락 후 안정화" if gap else (
-                "반사 대상 미감지 · 부재 판정" if tof_no_target(packet) else "정상"))
+                "센서 통신 정상 · 거리 미측정 · 부재 판정" if tof_no_target(packet) else "정상"))
             return self.snapshot(now)
         except (ValueError, TypeError) as error:
             self.invalidate(str(error))

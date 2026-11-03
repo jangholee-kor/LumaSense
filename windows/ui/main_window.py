@@ -934,7 +934,7 @@ class MainWindow(QMainWindow):
             labels["presence"].setText(f"{detection(packet.get('presence'))}{previous}")
             labels["motion"].setText("VL53L1X 거리 기준 · 움직임 분류 없음" if packet.get("ver") == 2 else
                                      f"{detection(packet.get('moving'))} / {detection(packet.get('stationary'))}{previous}")
-            distance_text = "반사 대상 미감지" if packet.get("tof_no_target") else f"{text(packet.get('distance_cm'))} cm"
+            distance_text = "거리 미측정 · 부재 판정" if packet.get("tof_no_target") else f"{text(packet.get('distance_cm'))} cm"
             labels["distance"].setText(f"{distance_text}{previous}")
             ready = self.runtime.sensors.ready(now)
             labels["sensor"].setText(f"{snapshot.reason} · {'안정화 완료' if ready else '자동 절전 보류'}")

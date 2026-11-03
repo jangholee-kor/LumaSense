@@ -1,6 +1,6 @@
 """No-return samples are usable absence observations, not fabricated distances."""
 import pytest
-from windows.core.sensor_protocol import tof_no_target, control_sensor_ok, validate_telemetry
+from windows.core.sensor_protocol import tof_no_target, control_sensor_ok, validate_telemetry, tof_acquisition_ok
 from windows.core.sensor_manager import SensorManager
 from windows.core.tof_presence import TofPresence
 from windows.core.settings import Settings
@@ -18,13 +18,26 @@ def missing(seq=1, **changes):
     return value
 
 
-@pytest.mark.parametrize("change", [{"tof_raw_status": 3}, {"tof_raw_status": 5},
-    {"tof_raw_status": 6}, {"tof_raw_status": 7}, {"tof_raw_status": 9},
+@pytest.mark.parametrize("change", [{"tof_raw_status": 3}, {"tof_raw_status": 0},
+    {"tof_raw_status": 13}, {"tof_raw_status": 18}, {"tof_raw_status": 31},
     {"tof_raw_status": True}, {"tof_error": "ESP_ERR_TIMEOUT"}, {"tof_error": None},
     {"tof_sample_age_ms": 500}, {"tof_sample_age_ms": -1}, {"tof_sample_age_ms": None},
     {"tof_sample_age_ms": True}, {"tof_sample_age_ms": 1.5}, {"distance_mm": 2000}, {"tof_ok": True}])
-def test_only_fresh_signal_failure_with_successful_io_is_no_target(change):
+def test_hardware_config_unknown_and_failed_acquisition_are_not_absence(change):
     assert not tof_no_target(missing(**change))
+
+
+@pytest.mark.parametrize("raw", [4, 5, 6, 7, 8, 9, 12, 19, 22, 23])
+def test_live_i2c_and_fresh_distance_failure_means_absence(raw):
+    value = missing(tof_raw_status=raw)
+    assert tof_acquisition_ok(value) and tof_no_target(value)
+    assert control_sensor_ok(value)
+
+
+def test_i2c_response_alone_does_not_hide_reported_hardware_failure():
+    value = missing(tof_raw_status=3)
+    assert tof_acquisition_ok(value)
+    assert not tof_no_target(value) and not control_sensor_ok(value)
 
 
 def test_no_target_keeps_raw_failure_flags_and_light_fault_still_blocks_control():
@@ -49,7 +62,7 @@ def test_no_target_preserves_stabilization_and_advanced_absence_dwell():
     end = manager.ingest(missing(4), 2.3)
     assert end.packet["presence"] is False and end.packet["tof_no_target"]
     assert end.packet["distance_cm"] is None and end.packet["sensor_ok"] is False
-    assert manager.ready(2.3) and "대상 미감지" in end.reason
+    assert manager.ready(2.3) and "부재 판정" in end.reason
     assert not manager.ready(6)
 
 
@@ -75,12 +88,13 @@ def ingest(model, now, value, time):
     return model.tick(time, 0, False, False)
 
 
-def test_seated_to_no_target_off_after_wait_and_redetection_wakes(tmp_path):
+@pytest.mark.parametrize("raw", [4, 5, 6, 7, 8, 9, 12, 19, 22, 23])
+def test_seated_to_no_target_off_after_wait_and_redetection_wakes(tmp_path, raw):
     model, now = runtime(tmp_path)
     for t in range(6):
         assert not ingest(model, now, packet(t + 1), t)
     for t in range(6, 17):
-        actions = ingest(model, now, missing(t + 1), t)
+        actions = ingest(model, now, missing(t + 1, tof_raw_status=raw), t)
         if t == 6:
             assert model.presence.absent_since == 6
         if t == 11:

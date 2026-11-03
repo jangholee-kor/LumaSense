@@ -4,17 +4,27 @@ import math
 from serial.tools import list_ports
 
 
+# ST raw statuses for distance/quality outcomes, including an otherwise valid
+# sample outside the firmware's 40..4000 mm distance bounds (raw 9).
+TOF_DISTANCE_OUTCOMES = frozenset((4, 5, 6, 7, 8, 9, 12, 19, 22, 23))
+
+
+def tof_acquisition_ok(value):
+    """Successful VL53L1X I2C read/interrupt clear and a fresh sensor sample."""
+    age = value.get("tof_sample_age_ms")
+    return (value.get("ver") == 2 and value.get("tof_error") == "ESP_OK"
+            and type(age) is int and 0 <= age < 500)
+
+
 def tof_no_target(value):
-    """Fresh signal failure (raw 4 -> ST ULD 2), with a successful I2C read.
+    """Distance unavailable while acquisition is alive means application absence.
 
     This is an application absence decision, not a usable distance measurement.
-    All other invalid statuses and transport failures remain sensor errors.
+    Hardware/configuration/unknown states and acquisition failures stay errors.
     """
-    age = value.get("tof_sample_age_ms")
-    return (value.get("ver") == 2 and value.get("tof_ok") is False
+    return (tof_acquisition_ok(value) and value.get("tof_ok") is False
             and value.get("distance_mm") is None and type(value.get("tof_raw_status")) is int
-            and value["tof_raw_status"] == 4 and value.get("tof_error") == "ESP_OK"
-            and type(age) is int and 0 <= age < 500)
+            and value["tof_raw_status"] in TOF_DISTANCE_OUTCOMES)
 
 
 def control_sensor_ok(value):

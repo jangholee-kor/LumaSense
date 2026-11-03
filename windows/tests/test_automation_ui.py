@@ -394,7 +394,7 @@ def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulate
         view.runtime.ingest({"packet": value, "received_at": base + i})
         view.runtime.tick(base + i, 0, False, False)
     view.automation_tick()
-    assert "반사 대상 미감지" in view.auto_panel.simple_page.live.text()
-    assert "반사 대상 미감지" in view.auto_panel.labels["distance"].text()
+    assert "거리 미측정 · 부재 판정" in view.auto_panel.simple_page.live.text()
+    assert "거리 미측정 · 부재 판정" in view.auto_panel.labels["distance"].text()
     assert "5초 후 화면이 꺼집니다" == view.screen_status.title.text()
     assert view.runtime.sensors.packet["sensor_ok"] is False

@@ -1,0 +1,51 @@
+{
+  "date": "2026-11-03",
+  "app_version": "0.6.3",
+  "firmware_version": "0.3.1 unchanged",
+  "measurement_failure_raw_states": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    12,
+    19,
+    22,
+    23
+  ],
+  "required_acquisition": {
+    "tof_error": "ESP_OK",
+    "sample_age_ms": "integer 0..499"
+  },
+  "hardware_error_raw_3": "blocks automatic off even when I2C acquisition is fresh",
+  "automated_tests": {
+    "passed": 231,
+    "log": ".local/tof-acquisition-pytest.log"
+  },
+  "packaged_checks": {
+    "executable": "C:\\work\\git\\LumaSense\\.local\\releases\\LumaSense-0.6.3\\LumaSense\\LumaSense.exe",
+    "exe_sha256": "fbfc6f6e828faa90a18ca02211c2186c43eae7877e521c583dd107219dd5692a",
+    "checks": [
+      {
+        "case": "gui",
+        "pass": true,
+        "screenshot": "C:\\work\\git\\LumaSense\\.local\\tof-acquisition-exe-check\\gui\\ui.png"
+      },
+      {
+        "case": "watchdog",
+        "pass": true,
+        "simulated": true
+      },
+      {
+        "case": "lease_guard",
+        "pass": true,
+        "simulated": true
+      }
+    ],
+    "physical_validation": "not_run"
+  },
+  "ui_preview": ".local/tof-acquisition-preview/countdown.png",
+  "physical_monitor_validation": "not_run",
+  "firmware_changed": false
+}
