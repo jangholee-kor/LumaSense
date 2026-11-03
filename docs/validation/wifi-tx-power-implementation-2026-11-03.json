@@ -89,14 +89,68 @@
     "interpretation": "4 raw sensor-invalid samples reported ToF signal failure (raw status 4); I2C acquisition and light were valid; no transport fault observed"
   },
   "wifi_connection": {
-    "state": "awaiting_user_router_configuration"
+    "state": "verified_short_run",
+    "router_credentials_entered_by": "user_in_app",
+    "firmware_implementation_commit": "d5ed789",
+    "pc_app_commit": "0c263e9",
+    "tcp_capture": {
+      "duration_seconds": 60,
+      "telemetry": 286,
+      "sensor_ok": 176,
+      "invalid_packets": 0,
+      "sequence_gaps": 0,
+      "restarts": 0,
+      "network": {
+        "configured": true,
+        "connected": true,
+        "error": "ESP_OK",
+        "port": 47653,
+        "tx_power_requested_dbm": 15,
+        "tx_power_read_error": "ESP_OK",
+        "tx_power_max_dbm": 15,
+        "ipv4_assigned": true
+      },
+      "transport_error": null,
+      "monitor_control_performed": false,
+      "authentication": "passed",
+      "elapsed_seconds": 60.031,
+      "invalid_lines": 0,
+      "transport_pass": true,
+      "nonvalid_sensor_states": [
+        {
+          "tof_raw_status": 4,
+          "tof_error": "ESP_OK",
+          "light_ok": true,
+          "count": 110
+        }
+      ]
+    },
+    "app_connection": {
+      "version": "0.7.5",
+      "transport": "tcp",
+      "port": 47653,
+      "state": "connected",
+      "observed_packets": 436,
+      "observed_seconds": 97.856,
+      "first_sequence": 3812,
+      "last_sequence": 4247,
+      "packet_schema": "passed",
+      "sequence_continuity": "passed",
+      "auto_brightness": true,
+      "auto_presence": true,
+      "physical_usb_cable": "still_attached_for_power"
+    },
+    "user_observation": "User reported briefly leaving the seat during the capture; this is separate from raw ToF status and does not prove human absence classification.",
+    "interpretation": "15 dBm driver setting allowed router association, TCP authentication and a continuous short capture. No unlimited-power baseline comparison was performed, so reduced transmit power is not established as the cause of connection success."
   },
   "not_performed": [
     "RF power measurement",
     "10 power cycles at each transmit power",
     "11 and 8.5 dBm physical comparison",
     "monitor USB standby power",
-    "monitor brightness/off/resume observation"
+    "monitor brightness/off/resume observation",
+    "unlimited transmit power baseline router comparison",
+    "long-term wireless stability"
   ],
   "local_logs": [
     ".local/build-supermini-power.log",
@@ -104,6 +158,7 @@
     ".local/build-supermini-power-limited.log",
     ".local/build-devkit-power.log",
     ".local/flash-supermini-power.log",
-    ".local/wifi-power-usb"
+    ".local/wifi-power-usb",
+    ".local/wifi-power-live"
   ]
 }
