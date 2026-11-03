@@ -934,7 +934,8 @@ class MainWindow(QMainWindow):
             labels["presence"].setText(f"{detection(packet.get('presence'))}{previous}")
             labels["motion"].setText("VL53L1X 거리 기준 · 움직임 분류 없음" if packet.get("ver") == 2 else
                                      f"{detection(packet.get('moving'))} / {detection(packet.get('stationary'))}{previous}")
-            labels["distance"].setText(f"{text(packet.get('distance_cm'))} cm{previous}")
+            distance_text = "반사 대상 미감지" if packet.get("tof_no_target") else f"{text(packet.get('distance_cm'))} cm"
+            labels["distance"].setText(f"{distance_text}{previous}")
             ready = self.runtime.sensors.ready(now)
             labels["sensor"].setText(f"{snapshot.reason} · {'안정화 완료' if ready else '자동 절전 보류'}")
             labels["brightness"].setText(f"{text(self.runtime.brightness.target)} / {text(self.runtime.brightness.requested)} %")
@@ -967,7 +968,7 @@ class MainWindow(QMainWindow):
             self.auto_panel.pause_status.setText(f"자동 밝기 {'ON' if self.settings.auto_brightness else 'OFF'} · 자동 절전 {'ON' if self.settings.auto_presence else 'OFF'}\n"
                                                 f"전체 중단 {remaining}초 · 수동 밝기 보호 {manual}초")
             self.auto_panel.simple_page.live.setText(
-                f"현재 조도 {format_lux(packet.get('lux'))} lux · 거리 {text(packet.get('distance_cm'))} cm{previous}")
+                f"현재 조도 {format_lux(packet.get('lux'))} lux · {distance_text}{previous}")
             self.screen_status.update_status(self.runtime, now, self.controller)
         except Exception as error:
             self.auto_fault = True

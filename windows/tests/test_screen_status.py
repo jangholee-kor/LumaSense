@@ -68,3 +68,16 @@ def test_banner_sensor_error_never_shows_off_countdown_and_manual_countdown_is_s
     controller.deadline = 5
     banner.update_status(runtime, 2, controller)
     assert banner.title.text() == "3초 후 화면이 꺼집니다" and not banner.cancel.isHidden()
+
+
+def test_banner_signal_failure_is_absence_wait_then_countdown(setup):
+    from windows.tests.test_tof_no_target import missing
+    runtime, banner, controller, app = setup
+    for index in range(12):
+        value = packet(index + 1) if index < 6 else missing(index + 1)
+        runtime.ingest({"packet": value, "received_at": index})
+        runtime.tick(index, 0, False, False)
+        banner.update_status(runtime, index, controller)
+        if index >= 6:
+            assert "보류" not in banner.title.text()
+    assert banner.title.text() == "5초 후 화면이 꺼집니다"

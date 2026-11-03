@@ -3,6 +3,7 @@ import math
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton
 from windows.core.display_controller import State
+from windows.core.sensor_protocol import control_sensor_ok
 
 
 class ScreenStatusBanner(QWidget):
@@ -61,7 +62,7 @@ class ScreenStatusBanner(QWidget):
             title, detail = "자리 비움 자동 꺼짐이 꺼져 있습니다", "자동 화면 꺼짐·켜짐을 선택하고 설정 적용을 누르세요."
         elif now < runtime.pause_until:
             title, detail = "자동 제어 일시 중단", f"{math.ceil(runtime.pause_until - now)}초 후 재개 · 자동 제어 재개로 바로 시작할 수 있습니다."
-        elif not snap.valid or not snap.packet or not snap.packet["sensor_ok"]:
+        elif not snap.valid or not control_sensor_ok(snap.packet):
             title, detail = "센서 확인 중 · 자동 꺼짐 보류", snap.reason
         elif not runtime.sensors.ready(now):
             title, detail = "센서 안정화 중", "정상 측정이 이어지면 자동으로 시작합니다."

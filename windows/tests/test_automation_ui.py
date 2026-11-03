@@ -376,3 +376,25 @@ def test_simple_mode_ignores_hidden_invalid_profile_and_checkbox_disables_immedi
     assert view.settings.auto_presence and view.runtime.settings.auto_presence
     panel.simple_page.auto_presence.setChecked(False)
     assert not view.settings.auto_presence and not view.runtime.settings.auto_presence
+
+
+def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulated):
+    from windows.tests.test_tof import packet
+    from windows.tests.test_tof_no_target import missing
+    view = simulated
+    view.ui_mode.setCurrentIndex(view.ui_mode.findData("simple"))
+    view.auto_panel.simple_page.auto_presence.setChecked(True)
+    view.auto_panel.simple_page.fields["absence_seconds"].setValue(5)
+    view.apply_automation_settings()
+    view.sim_timer.stop()
+    view.runtime.sensors.invalidate("test", new_session=True)
+    base = time.monotonic() - 11
+    for i in range(12):
+        value = packet(i + 1) if i < 6 else missing(i + 1)
+        view.runtime.ingest({"packet": value, "received_at": base + i})
+        view.runtime.tick(base + i, 0, False, False)
+    view.automation_tick()
+    assert "반사 대상 미감지" in view.auto_panel.simple_page.live.text()
+    assert "반사 대상 미감지" in view.auto_panel.labels["distance"].text()
+    assert "5초 후 화면이 꺼집니다" == view.screen_status.title.text()
+    assert view.runtime.sensors.packet["sensor_ok"] is False

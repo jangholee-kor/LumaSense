@@ -4,6 +4,23 @@ import math
 from serial.tools import list_ports
 
 
+def tof_no_target(value):
+    """Fresh signal failure (raw 4 -> ST ULD 2), with a successful I2C read.
+
+    This is an application absence decision, not a usable distance measurement.
+    All other invalid statuses and transport failures remain sensor errors.
+    """
+    age = value.get("tof_sample_age_ms")
+    return (value.get("ver") == 2 and value.get("tof_ok") is False
+            and value.get("distance_mm") is None and type(value.get("tof_raw_status")) is int
+            and value["tof_raw_status"] == 4 and value.get("tof_error") == "ESP_OK"
+            and type(age) is int and 0 <= age < 500)
+
+
+def control_sensor_ok(value):
+    return bool(value and (value.get("sensor_ok") or (value.get("light_ok") and tof_no_target(value))))
+
+
 def ports():
     return [{"port": p.device, "description": p.description, "vid": p.vid, "pid": p.pid,
              "serial_number": p.serial_number} for p in list_ports.comports()]

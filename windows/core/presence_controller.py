@@ -1,6 +1,7 @@
 """Presence state machine: invalid data is never interpreted as absence."""
 from enum import Enum
 import math
+from .sensor_protocol import control_sensor_ok
 
 
 class PresenceState(str, Enum):
@@ -35,14 +36,14 @@ class PresenceController:
         return None
 
     def tick(self, now, snapshot, ready, *, enabled, paused=False, input_age=None, locked=False):
-        valid = bool(snapshot.valid and snapshot.packet and snapshot.packet["sensor_ok"] and ready)
+        valid = bool(snapshot.valid and control_sensor_ok(snapshot.packet) and ready)
         input_block = self.settings.use_recent_input and (input_age is None or input_age < self.settings.recent_input_seconds)
         self.input_remaining = max(0, self.settings.recent_input_seconds - input_age) if input_block and input_age is not None else 0
         if not valid or not enabled or paused or locked:
             self.absent_since = None
             self.countdown_until = None
             self.state = PresenceState.SENSOR_ERROR if not valid else PresenceState.PRESENT
-            if not snapshot.valid or not snapshot.packet or not snapshot.packet["sensor_ok"]:
+            if not snapshot.valid or not control_sensor_ok(snapshot.packet):
                 self.reason = snapshot.reason
             elif not ready:
                 self.reason = "센서 안정화 대기"

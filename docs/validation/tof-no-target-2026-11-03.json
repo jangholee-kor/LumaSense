@@ -1,0 +1,64 @@
+{
+  "date": "2026-11-03",
+  "app_version": "0.6.2",
+  "firmware_version": "0.3.1 unchanged",
+  "sources": [
+    "https://www.st.com/resource/en/user_manual/um2510-a-guide-to-using-the-vl53l1x-ultra-lite-driver-stmicroelectronics.pdf",
+    "https://github.com/stm32duino/VL53L1X/blob/main/src/vl53l1x_class.cpp"
+  ],
+  "no_target_conditions": {
+    "tof_ok": false,
+    "distance_mm": null,
+    "tof_raw_status": 4,
+    "tof_error": "ESP_OK",
+    "sample_age_ms": "integer 0..499"
+  },
+  "automated_tests": {
+    "passed": 211,
+    "log": ".local/no-target-pytest.log"
+  },
+  "recorded_telemetry_replay": {
+    "frames": 7181,
+    "fresh_no_target": 678,
+    "raw_invalid": {
+      "4": 678,
+      "7": 7
+    },
+    "legacy": {
+      "simulated_actions": {},
+      "off_during_no_target": 0
+    },
+    "fixed": {
+      "simulated_actions": {
+        "off": 4,
+        "wake": 4
+      },
+      "off_during_no_target": 4
+    }
+  },
+  "packaged_checks": {
+    "executable": "C:\\work\\git\\LumaSense\\.local\\releases\\LumaSense-0.6.2\\LumaSense\\LumaSense.exe",
+    "exe_sha256": "2be8f6a09a6eac24a3a49e142731b297d1e72d523ba7723c59c58b634b531e23",
+    "checks": [
+      {
+        "case": "gui",
+        "pass": true,
+        "screenshot": "C:\\work\\git\\LumaSense\\.local\\no-target-exe-check\\gui\\ui.png"
+      },
+      {
+        "case": "watchdog",
+        "pass": true,
+        "simulated": true
+      },
+      {
+        "case": "lease_guard",
+        "pass": true,
+        "simulated": true
+      }
+    ],
+    "physical_validation": "not_run"
+  },
+  "ui_preview": ".local/no-target-preview/no-target-countdown.png",
+  "physical_monitor_validation": "not_run",
+  "firmware_changed": false
+}

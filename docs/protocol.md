@@ -6,17 +6,28 @@ SuperMini의 VL53L1X 펌웨어는 아래 v2 거리 데이터를 사용하며 USB
 ## VL53L1X 거리 데이터 v2
 
 ```json
-{"ver":2,"type":"telemetry","device":"smart-monitor-s3","presence_sensor":"vl53l1x","firmware":"0.3.1","boot_id":"0123456789abcdef","seq":1,"uptime_ms":1000,"light_ok":true,"tof_ok":true,"sensor_ok":true,"lux":125.5,"distance_mm":600,"tof_raw_status":9,"tof_epoch":0,"tof_sample_age_ms":30,"roi_size":8}
+{"ver":2,"type":"telemetry","device":"smart-monitor-s3","presence_sensor":"vl53l1x","firmware":"0.3.1","boot_id":"0123456789abcdef","seq":1,"uptime_ms":1000,"light_ok":true,"tof_ok":true,"sensor_ok":true,"lux":125.5,"distance_mm":600,"tof_raw_status":9,"tof_epoch":0,"tof_sample_age_ms":30,"tof_error":"ESP_OK","roi_size":8}
 ```
 
 `boot_id`는 부팅마다 새로 생성한 16자리 16진수이며 PC는 값이 바뀌면 새 연결로 안정화한다.<br>
-`tof_raw_status`는 센서 레지스터의 원시 상태이며 ST ULD에서 RangeValid로 변환하는 9만 정상으로 사용한다.<br>
+`tof_raw_status`는 센서 레지스터의 원시 상태이며 ST ULD에서 RangeValid로 변환하는 9만 유효한 거리값으로 사용한다.<br>
 `tof_ok=true`이면 `distance_mm`은 40~4000 정수이고 `tof_sample_age_ms`는 0~499 정수이다.<br>
-`tof_ok=false`이면 `distance_mm=null`이며 PC가 거리 오류를 부재로 해석하지 않는다.<br>
+`tof_ok=false`이면 `distance_mm=null`이며 유효한 거리값을 만들지 않는다.<br>
 `sensor_ok`는 `light_ok && tof_ok`이고 조도 무효 시 `lux=null`이다.<br>
 이 데이터는 움직임·정지 인체 분류를 제공하지 않는다.<br>
 0.3.1의 `tof_epoch`는 SHUT 재시작마다 증가하며 PC는 이 값이 바뀌면 측정 안정화를 다시 시작한다.<br>
 PC가 거리 범위·전환 유지 시간·거리 여유를 적용해 착석 상태를 만들며 원본 거리와 유효성을 보존한다.
+
+앱 0.6.2부터 원시 상태 4·`tof_error=ESP_OK`·측정 나이 0~499ms·`tof_ok=false`·`distance_mm=null`을 모두 만족하면 반사 대상 미감지로 판정한다.<br>
+원시 상태 4는 ST ULD의 신호 부족 상태 2에 해당하며, 앱은 이 측정을 부재 관측으로 사용한다.<br>
+반사 대상 미감지는 착석 범위 밖의 유효한 거리와 같은 부재 유지 시간을 적용하고, 정상 측정의 안정화 시간을 초기화하지 않는다.<br>
+원본 `tof_ok`와 `sensor_ok`는 false로 보존하고 PC 내부에서 계산한 `tof_no_target`과 제어 가능 여부를 구분한다.<br>
+조도까지 정상일 때만 해당 관측으로 자동 꺼짐을 진행한다.<br>
+통신 오류·누락된 `tof_error`·500ms 이상 오래된 측정·그 밖의 무효 원시 상태는 부재로 바꾸지 않는다.<br>
+기존 펌웨어 0.3.1이 이 필드들을 전송하므로 재기록 없이 사용할 수 있다.
+
+상태 정의는 [ST ULD 가이드의 Range status interpretation](https://www.st.com/resource/en/user_manual/um2510-a-guide-to-using-the-vl53l1x-ultra-lite-driver-stmicroelectronics.pdf)과 [ST 원시 상태 변환 코드](https://github.com/stm32duino/VL53L1X/blob/main/src/vl53l1x_class.cpp)를 따른다.<br>
+신호 부족은 반사율이 낮거나 대상이 멀 때도 발생하므로 실제 사람의 부재를 확정하는 분류값이 아닌 앱의 감지 기준이다.
 
 ## TCP 연결과 Wi-Fi 설정
 

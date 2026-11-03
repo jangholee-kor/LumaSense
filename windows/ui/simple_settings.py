@@ -47,7 +47,7 @@ class SimpleSettingsPage(QWidget):
         form.addRow("범위 밖에서 기다릴 시간", seconds)
         note = QLabel("범위 밖 상태가 위 시간 동안 이어지면 5초 카운트다운 후 화면을 끕니다.\n"
                       "다시 범위 안으로 돌아오면 취소하거나 화면을 켭니다.\n"
-                      "센서 측정 오류가 발생하면 자동 꺼짐을 보류합니다.")
+                      "반사 대상이 없으면 부재로 판단하고, 통신·센서 오류일 때는 꺼짐을 보류합니다.")
         note.setWordWrap(True)
         form.addRow(note)
         layout.addWidget(presence)

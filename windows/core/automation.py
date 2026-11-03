@@ -150,6 +150,7 @@ class AutomationRuntime:
                     presence=snap.packet.get("presence") if snap.packet else None,
                     distance_cm=snap.packet.get("distance_cm") if snap.packet else None,
                     tof_raw_status=snap.packet.get("tof_raw_status") if snap.packet else None,
+                    tof_no_target=snap.packet.get("tof_no_target", False) if snap.packet else False,
                     absence_seconds=self.settings.absence_seconds,
                     tof_min_distance_cm=self.settings.tof_min_distance_cm, tof_max_distance_cm=self.settings.tof_max_distance_cm)
                 self.last_state = state

@@ -2,7 +2,7 @@
 import copy
 from dataclasses import dataclass
 
-from .sensor_protocol import validate_telemetry
+from .sensor_protocol import validate_telemetry, tof_no_target, control_sensor_ok
 from .tof_presence import TofPresence
 
 
@@ -54,18 +54,26 @@ class SensorManager:
                 self.tof_presence.reset()
             self.packet = copy.deepcopy(packet)
             if packet["ver"] == 2:
-                if not packet["tof_ok"]:
+                no_target = tof_no_target(packet)
+                if packet["tof_ok"]:
+                    presence = self.tof_presence.observe(packet["distance_mm"], now)
+                elif no_target:
+                    presence = self.tof_presence.observe_no_target(now)
+                else:
                     self.tof_presence.reset()
-                self.packet.update(presence=self.tof_presence.observe(packet["distance_mm"], now) if packet["tof_ok"] else None,
+                    presence = None
+                self.packet.update(presence=presence, tof_no_target=no_target,
                                    moving=None, stationary=None,
                                    distance_cm=packet["distance_mm"] / 10 if packet["tof_ok"] else None)
             self.received_at = now
             self.valid = True
-            if not packet["sensor_ok"] or gap or stale:
+            healthy = control_sensor_ok(packet)
+            if not healthy or gap or stale:
                 self.healthy_since = None
             elif self.healthy_since is None:
                 self.healthy_since = now
-            self.reason = "센서 오류" if not packet["sensor_ok"] else ("순번 누락 후 안정화" if gap else "정상")
+            self.reason = "센서 오류" if not healthy else ("순번 누락 후 안정화" if gap else (
+                "반사 대상 미감지 · 부재 판정" if tof_no_target(packet) else "정상"))
             return self.snapshot(now)
         except (ValueError, TypeError) as error:
             self.invalidate(str(error))
@@ -79,5 +87,5 @@ class SensorManager:
 
     def ready(self, now):
         snapshot = self.snapshot(now)
-        return bool(snapshot.valid and snapshot.packet["sensor_ok"] and snapshot.healthy_since is not None
+        return bool(snapshot.valid and control_sensor_ok(snapshot.packet) and snapshot.healthy_since is not None
                     and now - snapshot.healthy_since >= self.stabilization_seconds)
