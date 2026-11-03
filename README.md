@@ -11,6 +11,10 @@ powershell -ExecutionPolicy Bypass -File scripts\test.ps1
 powershell -ExecutionPolicy Bypass -File scripts\run_windows.ps1
 ```
 
+설치를 마친 뒤 저장소 최상위의 [`LumaSense.cmd`](LumaSense.cmd)를 더블클릭하면 앱을 실행한다.<br>
+실행 파일은 저장소 폴더로 이동한 뒤 `.venv`의 Python을 사용하므로 별도로 터미널을 열 필요가 없다.<br>
+실행 중 오류가 나면 명령 창에 메시지를 남기고 키 입력을 기다린다.
+
 Twinkle Tray는 별도 설치하고 실행한다.<br>
 실행 경로는 기본 설치 폴더, Microsoft Store 실행 별칭, PATH, 사용자가 지정한 경로에서 검색한다.<br>
 설치 프로그램은 [공식 Twinkle Tray 저장소](https://github.com/xanderfrangos/twinkle-tray)에서 받는다.
