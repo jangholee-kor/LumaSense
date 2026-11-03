@@ -144,8 +144,25 @@ def test_brief_absence_stationary_presence_and_recent_input():
     assert model.state == PresenceState.MAYBE_ABSENT
     model.tick(10, snapshot(False), True, enabled=True, input_age=0)
     assert model.state == PresenceState.PRESENT and model.absent_since is None
+    assert model.status_text(10) == "최근 입력 보호 중 · 30초 남음"
     model.tick(11, snapshot(False), True, enabled=True, input_age=None)
     assert model.state == PresenceState.PRESENT
+    assert "Windows 입력 상태 확인 불가" in model.status_text(11)
+    assert "남음" not in model.status_text(11)
+
+
+def test_input_protection_finishes_before_absence_and_cancel_countdown():
+    model = PresenceController(Settings(absence_seconds=5, recent_input_seconds=30))
+    for second in range(30):
+        assert model.tick(second, snapshot(False), True, enabled=True, input_age=second) is None
+        assert model.status_text(second) == f"최근 입력 보호 중 · {30 - second}초 남음"
+    for second in range(30, 35):
+        assert model.tick(second, snapshot(False), True, enabled=True, input_age=second) is None
+        assert model.status_text(second) == f"연속 부재 확인 중 · {35 - second}초 남음"
+    for second in range(35, 40):
+        assert model.tick(second, snapshot(False), True, enabled=True, input_age=second) is None
+        assert model.countdown_until == 40
+    assert model.tick(40, snapshot(False), True, enabled=True, input_age=40) == "off"
 
 
 @pytest.mark.parametrize("case", ["invalid", "startup", "disabled", "paused", "locked"])

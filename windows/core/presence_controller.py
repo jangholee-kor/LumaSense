@@ -1,5 +1,6 @@
 """Presence state machine: invalid data is never interpreted as absence."""
 from enum import Enum
+import math
 
 
 class PresenceState(str, Enum):
@@ -23,6 +24,7 @@ class PresenceController:
         self.wake_attempts = 0
         self.retry_after = 0.0
         self.reason = "센서 연결 대기"
+        self.input_remaining = 0
 
     def _wake(self, now):
         if self.owns_off and self.pending is None and self.wake_attempts < 3 and now >= self.retry_after:
@@ -35,11 +37,21 @@ class PresenceController:
     def tick(self, now, snapshot, ready, *, enabled, paused=False, input_age=None, locked=False):
         valid = bool(snapshot.valid and snapshot.packet and snapshot.packet["sensor_ok"] and ready)
         input_block = self.settings.use_recent_input and (input_age is None or input_age < self.settings.recent_input_seconds)
+        self.input_remaining = max(0, self.settings.recent_input_seconds - input_age) if input_block and input_age is not None else 0
         if not valid or not enabled or paused or locked:
             self.absent_since = None
             self.countdown_until = None
             self.state = PresenceState.SENSOR_ERROR if not valid else PresenceState.PRESENT
-            self.reason = snapshot.reason if not valid else "자동 절전 중단"
+            if not snapshot.valid or not snapshot.packet or not snapshot.packet["sensor_ok"]:
+                self.reason = snapshot.reason
+            elif not ready:
+                self.reason = "센서 안정화 대기"
+            elif not enabled:
+                self.reason = "자동 절전 꺼짐"
+            elif paused:
+                self.reason = "자동 제어 일시 중단"
+            else:
+                self.reason = "Windows 잠금 또는 세션 상태 확인 불가"
             return self._wake(now)
         present = snapshot.packet["presence"]
         distance = snapshot.packet.get("distance_cm")
@@ -50,7 +62,8 @@ class PresenceController:
             self.absent_since = None
             self.countdown_until = None
             self.off_failed = False
-            self.reason = "인체 감지" if present else "최근 입력 또는 입력 상태 확인 불가"
+            self.reason = "인체 감지" if present else (
+                "Windows 입력 상태 확인 불가 · 자동 절전 보류" if input_age is None else "최근 입력 보호 중")
             if not self.owns_off:
                 self.state = PresenceState.PRESENT
             return self._wake(now)
@@ -77,6 +90,14 @@ class PresenceController:
             self.pending = "off"
             return "off"
         return None
+
+    def status_text(self, now):
+        if self.reason == "최근 입력 보호 중":
+            return f"{self.reason} · {math.ceil(self.input_remaining)}초 남음"
+        if self.reason == "연속 부재 확인 중" and self.absent_since is not None:
+            remaining = max(0, math.ceil(self.settings.absence_seconds - (now - self.absent_since)))
+            return f"{self.reason} · {remaining}초 남음"
+        return self.reason
 
     def completed(self, action, success, now):
         self.pending = None

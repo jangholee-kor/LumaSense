@@ -59,6 +59,28 @@ def test_automatic_off_lease_and_immediate_redetection_wake(tmp_path):
     assert calls == ["off", "wake"] and guard.released and not runtime.presence.owns_off
 
 
+def test_tof_valid_ceiling_distance_turns_off_and_redetection_wakes_with_debug_context(tmp_path):
+    import json
+    from windows.tests.test_tof import packet
+
+    runtime, now, calls = make_runtime(tmp_path, tof_max_distance_cm=100)
+    runtime.settings.tof_hold_seconds = 1
+    for index in range(211):
+        now[0] = index / 5
+        value = packet(index + 1)
+        value["distance_mm"] = 1980 if index < 205 else 600
+        runtime.ingest({"packet": value, "received_at": now[0]})
+        for action in runtime.tick(now[0], now[0], False, False):
+            runtime.perform(action)
+    assert calls == ["off", "wake"]
+    events = [json.loads(line) for path in tmp_path.glob("events-*.jsonl")
+              for line in path.read_text(encoding="utf-8").splitlines()]
+    protection = next(e for e in events if e.get("event") == "presence_state" and e["reason"] == "최근 입력 보호 중")
+    assert protection["distance_cm"] == 198 and protection["presence"] is False
+    assert protection["input_age_seconds"] < 30 and protection["sensor_ready"]
+    assert protection["tof_max_distance_cm"] == 100 and protection["tof_raw_status"] == 9
+
+
 def test_disconnect_after_off_wakes_and_does_not_repeat_off(tmp_path):
     runtime, now, calls = make_runtime(tmp_path)
     advance(runtime, now, 0, 11)

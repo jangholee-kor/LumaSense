@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-03",
+  "app_version": "0.5.2",
+  "automated_tests": {
+    "passed": 178,
+    "log": ".local/presence-debug-pytest.log"
+  },
+  "packaged_checks": {
+    "executable": "C:\\work\\git\\LumaSense\\.local\\presence-debug-dist\\LumaSense\\LumaSense.exe",
+    "exe_sha256": "da1f39d99bc9d9c2befa201d2aa40f2e71aea0a483a5cbda88303c21bc531308",
+    "checks": [
+      {
+        "case": "gui",
+        "pass": true,
+        "screenshot": "C:\\work\\git\\LumaSense\\.local\\presence-debug-exe-check\\gui\\ui.png"
+      },
+      {
+        "case": "watchdog",
+        "pass": true,
+        "simulated": true
+      },
+      {
+        "case": "lease_guard",
+        "pass": true,
+        "simulated": true
+      }
+    ],
+    "physical_validation": "not_run"
+  },
+  "ui_checks": {
+    "input_protection_remaining": "passed",
+    "unknown_input_separated": "passed",
+    "compact_lux": "passed",
+    "korean_render": "inspected"
+  },
+  "observations": {
+    "live_ui_distance_cm": 198.7,
+    "live_ui_presence": false,
+    "live_ui_reason": "최근 입력 또는 입력 상태 확인 불가",
+    "sensor_recent_samples": "valid status 9 mixed with invalid status 4; invalid samples hold automatic off",
+    "physical_wake": "user reported screen turned on after pointing sensor toward self",
+    "physical_off_timing": "unverified"
+  },
+  "behavior_change": "diagnostic display and logging only; off/wake safety gates unchanged"
+}

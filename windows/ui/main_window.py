@@ -757,6 +757,10 @@ class MainWindow(QMainWindow):
             self.auto_panel.pause_status.setText("설정을 적용했습니다.")
             self.message("자동 제어 설정을 적용했습니다. 센서 안정화 후 제어합니다.")
             self.log.event("automation_settings_applied", auto_brightness=candidate.auto_brightness, auto_presence=candidate.auto_presence,
+                           absence_seconds=candidate.absence_seconds, use_recent_input=candidate.use_recent_input,
+                           recent_input_seconds=candidate.recent_input_seconds,
+                           tof_min_distance_cm=candidate.tof_min_distance_cm, tof_max_distance_cm=candidate.tof_max_distance_cm,
+                           tof_hysteresis_cm=candidate.tof_hysteresis_cm, tof_hold_seconds=candidate.tof_hold_seconds,
                            simulated=self.simulation)
         except Exception as error:
             self.fail(str(error))
@@ -903,7 +907,7 @@ class MainWindow(QMainWindow):
                                               QSystemTrayIcon.MessageIcon.Information, 5000)
             else:
                 self.tray.setToolTip("Smart Monitor Controller" + (" · 시뮬레이션" if self.simulation else ""))
-            labels["power"].setText(f"{state.state.value} · {state.reason}{countdown}")
+            labels["power"].setText(f"{state.state.value} · {state.status_text(now)}{countdown}")
             labels["last"].setText(self.runtime.last_action)
             remaining = max(0, math.ceil(self.runtime.pause_until - now))
             manual = max(0, math.ceil(self.runtime.brightness.pause_until - now))

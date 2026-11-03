@@ -140,7 +140,16 @@ class AutomationRuntime:
                                     "epoch": self.epoch, "id": uuid.uuid4().hex})
             state = (self.presence.state.value, self.presence.reason)
             if state != self.last_state:
-                self.log.event("presence_state", state=state[0], reason=state[1])
+                self.log.event("presence_state", state=state[0], reason=state[1],
+                    auto_presence=self.settings.auto_presence, paused=paused, locked=locked,
+                    input_age_seconds=round(input_age, 1) if input_age is not None else None,
+                    input_protection=self.settings.use_recent_input, recent_input_seconds=self.settings.recent_input_seconds,
+                    sensor_valid=snap.valid, sensor_ready=ready, sensor_reason=snap.reason,
+                    presence=snap.packet.get("presence") if snap.packet else None,
+                    distance_cm=snap.packet.get("distance_cm") if snap.packet else None,
+                    tof_raw_status=snap.packet.get("tof_raw_status") if snap.packet else None,
+                    absence_seconds=self.settings.absence_seconds,
+                    tof_min_distance_cm=self.settings.tof_min_distance_cm, tof_max_distance_cm=self.settings.tof_max_distance_cm)
                 self.last_state = state
             return actions
 
