@@ -143,3 +143,77 @@ def test_brightness_uses_selected_id(app, window):
         time.sleep(0.01)
     assert calls == [("exact-id", 50)]
     assert view.last_test
+
+
+def test_preview_recovers_missing_inventory_using_saved_target_in_worker(app, window, monkeypatch, tmp_path):
+    from windows.ui import main_window
+    view, _ = window
+    view.settings.monitor_id = "saved-target"
+    calls, threads = [], []
+    def inventory():
+        threads.append(QThread.currentThread())
+        time.sleep(0.05)
+        return [Monitor("other", "Other", 20, "ddcci"), Monitor("saved-target", "Target", 50, "ddcci")]
+    def change(identifier, value):
+        calls.append((identifier, value))
+        threads.append(QThread.currentThread())
+        return {"physical_result": "unverified"}
+    backend = SimpleNamespace(monitors=inventory, set_brightness=change)
+    monkeypatch.setattr(main_window, "discover_twinkle", lambda configured: tmp_path / "Twinkle.exe")
+    monkeypatch.setattr(main_window, "TwinkleTrayBackend", lambda *args: backend)
+    view.set_brightness(55)
+    assert "목록을 확인" in view.action_result.text()
+    deadline = time.monotonic() + 3
+    while (view.busy or not view.last_test) and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(.01)
+    assert calls == [("saved-target", 55)]
+    assert view.monitors.currentData() == "saved-target"
+    assert all(thread != app.thread() for thread in threads)
+    assert "55% 밝기 요청 접수" in view.action_result.text()
+    assert not view.action_result.isHidden()
+    assert view.action_result.parentWidget() == view.centralWidget()
+    assert view.runtime.brightness.pause_until > time.monotonic() + 890
+
+
+@pytest.mark.parametrize("failure", ["missing_target", "inventory_error", "no_saved_target"])
+def test_preview_inventory_failure_is_visible_and_does_not_change_other_monitor(app, window, monkeypatch, tmp_path, failure):
+    from windows.ui import main_window
+    view, _ = window
+    view.settings.monitor_id = "" if failure == "no_saved_target" else "saved-target"
+    calls = []
+    def inventory():
+        if failure == "inventory_error":
+            raise RuntimeError("모니터 목록 조회 실패")
+        return [Monitor("other", "Other", 20, "ddcci")]
+    backend = SimpleNamespace(monitors=inventory, set_brightness=lambda *args: calls.append(args))
+    monkeypatch.setattr(main_window, "discover_twinkle", lambda configured: tmp_path / "Twinkle.exe")
+    monkeypatch.setattr(main_window, "TwinkleTrayBackend", lambda *args: backend)
+    view.set_brightness(55)
+    deadline = time.monotonic() + 3
+    while view.busy and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(.01)
+    assert not calls and not view.last_test
+    if failure == "missing_target":
+        assert view.monitors.currentData() is None and view.runtime.monitor_id == ""
+    assert not view.action_result.isHidden()
+    assert any(text in view.action_result.text() for text in ("찾지 못했습니다", "조회 실패", "다시 누르세요"))
+
+
+def test_preview_backend_error_is_visible_and_not_retried(app, window):
+    view, _ = window
+    calls = []
+    def change(*args):
+        calls.append(args)
+        raise RuntimeError("Twinkle Tray 응답 실패")
+    view.backend = SimpleNamespace(set_brightness=change)
+    view.monitors.addItem("Target", "saved-target")
+    view.set_brightness(55)
+    deadline = time.monotonic() + 3
+    while view.busy and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(.01)
+    assert len(calls) == 1
+    assert "Twinkle Tray 응답 실패" in view.action_result.text()
+    assert not view.action_result.isHidden()

@@ -50,3 +50,24 @@ def test_explicit_discovery(tmp_path):
     exe = tmp_path / "custom.exe"
     exe.touch()
     assert discover_twinkle(str(exe)) == exe.resolve()
+
+
+def test_empty_inventory_is_retried_but_not_a_brightness_write(tmp_path):
+    calls = []
+    def runner(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "\n" if len(calls) < 3 else LIST, "")
+    backend = TwinkleTrayBackend(tmp_path / "test.exe", Diagnostics(tmp_path), runner)
+    assert backend.monitors()[0].identifier == "full&ID"
+    assert len(calls) == 3 and all(command[-1] == "--List" for command in calls)
+
+
+def test_empty_inventory_has_bounded_retries_and_never_sets_brightness(tmp_path):
+    calls = []
+    def runner(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "\n", "")
+    backend = TwinkleTrayBackend(tmp_path / "test.exe", Diagnostics(tmp_path), runner)
+    with pytest.raises(ValueError, match="모니터를 읽지 못했습니다"):
+        backend.set_brightness("full&ID", 55)
+    assert len(calls) == 3 and all(command[-1] == "--List" for command in calls)

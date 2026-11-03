@@ -280,6 +280,11 @@ class MainWindow(QMainWindow):
         mode_row.addWidget(QLabel("변경 후 설정 적용을 누르세요."))
         mode_row.addStretch()
         root_layout.addLayout(mode_row)
+        self.action_result = QLabel()
+        self.action_result.setWordWrap(True)
+        self.action_result.setContentsMargins(12, 4, 12, 4)
+        self.action_result.hide()
+        root_layout.addWidget(self.action_result)
         self.pages = QTabWidget()
         self.diagnostic_page = scroll
         self.auto_scroll = QScrollArea()
@@ -357,6 +362,12 @@ class MainWindow(QMainWindow):
     def fail(self, error):
         self.log.event("ui_error", error=error)
         self.message(f"오류: {error}")
+        self.show_action_result(f"오류: {error}", error=True)
+
+    def show_action_result(self, text, error=False):
+        self.action_result.setText(text)
+        self.action_result.setStyleSheet("color:#b3261e" if error else "color:#147d6b")
+        self.action_result.show()
 
     def submit(self, function, done):
         if self.busy:
@@ -401,9 +412,14 @@ class MainWindow(QMainWindow):
         self.schedule.setText(f"절전 요청 직전 기준: 1차 약 {first}초 · 첫 추가 요청 약 {first + interval}초{extra}\n"
                               "추가 요청 전에 켜지는지 확인하세요. 실제 화면 켜짐에는 모니터 자체 지연이 더해집니다.")
 
-    def scan_monitors(self):
+    def scan_monitors(self, on_ready=None):
         if self.controller.state != State.IDLE:
-            return
+            self.fail("진행 중인 화면 절전 시험이 끝난 뒤 모니터를 검색하세요.")
+            return False
+        if self.busy:
+            self.show_action_result("진행 중인 요청이 끝난 뒤 모니터를 다시 검색하세요.")
+            return False
+        self.show_action_result("Twinkle Tray에서 모니터 목록을 확인하고 있습니다.")
         configured = self.path.text().strip()
         def scan():
             if self.simulation:
@@ -423,13 +439,21 @@ class MainWindow(QMainWindow):
             self.monitor_list = monitors
             for monitor in monitors:
                 self.monitors.addItem(f"{monitor.name} · {monitor.kind} · {monitor.identifier}", monitor.identifier)
-            self.monitors.setCurrentIndex(max(0, self.monitors.findData(selected)))
+            self.monitors.setCurrentIndex(self.monitors.findData(selected) if selected else (0 if monitors else -1))
             self.monitors.blockSignals(False)
             self.selection_changed()
             self.message(f"모니터 {len(monitors)}대 검색됨. 대상 모니터를 확인하세요.")
-        self.submit(scan, done)
+            self.show_action_result(f"모니터 {len(monitors)}대 검색됨 · 대상 모니터를 확인하세요.")
+            if callable(on_ready):
+                on_ready()
+        return self.submit(scan, done)
 
     def selection_changed(self):
+        if not self.monitors.currentData():
+            self.reported.setText("Twinkle Tray 보고 밝기: 미확인")
+            self.runtime.set_monitor("")
+            self.auto_panel.target_monitor.setText("선택된 모니터 없음 · 모니터 선택 / 탐색에서 선택하세요.")
+            return
         for monitor in getattr(self, "monitor_list", []):
             if monitor.identifier == self.monitors.currentData():
                 self.reported.setText(f"Twinkle Tray 보고 밝기: {monitor.brightness}% (실제 휘도 측정 아님)")
@@ -449,16 +473,29 @@ class MainWindow(QMainWindow):
         self.message("Twinkle Tray 실행을 요청했습니다. 잠시 후 목록을 새로고침하세요.")
 
     def set_brightness(self, value):
-        if self.controller.state != State.IDLE or not self.backend or not self.monitors.currentData():
-            self.fail("진행 중인 절전 시험이 끝난 뒤 모니터를 선택하세요.")
+        if self.controller.state != State.IDLE:
+            self.fail("진행 중인 화면 절전 시험이 끝난 뒤 밝기를 미리 보세요.")
+            return
+        if not self.backend or not self.monitors.currentData():
+            identifier = self.monitors.currentData() or self.settings.monitor_id
+            def ready():
+                if not identifier:
+                    self.show_action_result("모니터 선택 / 탐색에서 대상 모니터를 선택한 뒤 미리보기를 다시 누르세요.")
+                elif self.monitors.currentData() != identifier:
+                    self.fail("기존 대상 모니터를 찾지 못했습니다. 모니터 선택 / 탐색에서 다시 선택하세요.")
+                else:
+                    self.set_brightness(value)
+            self.scan_monitors(on_ready=ready)
             return
         self.runtime.manual_brightness(value)
         if self.busy:
             self.queued_manual = (self.monitors.currentData(), value)
             self.message("진행 중인 요청 이후 마지막 수동 밝기를 적용합니다.")
+            self.show_action_result(f"진행 중인 요청이 끝나면 {value}% 밝기를 적용합니다.")
             return
         backend, identifier = self.backend, self.monitors.currentData()
         test_id = uuid.uuid4().hex
+        self.show_action_result(f"선택한 모니터에 {value}% 밝기를 요청하고 있습니다.")
         def change():
             result = backend.set_brightness(identifier, value)
             self.log.event("brightness_test", test_id=test_id, monitor_id=identifier, percent=value, result=result)
@@ -467,6 +504,7 @@ class MainWindow(QMainWindow):
             self.last_test = test_id
             self.observation.setCurrentIndex(0)
             self.message(f"{value}% 밝기 요청 접수 · 시험 {test_id} · 실제 변화는 관찰 후 기록하세요.")
+            self.show_action_result(f"{value}% 밝기 요청 접수 · 실제 밝기 변화는 화면에서 확인하세요.")
         self.submit(change, done)
 
     def start_sleep(self):

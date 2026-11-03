@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -77,7 +78,15 @@ class TwinkleTrayBackend:
             raise
 
     def monitors(self):
-        return parse_monitors(self.command("--List"))
+        # A running Twinkle Tray can briefly return only a newline while its
+        # monitor inventory is not ready. Retry reads, never brightness writes.
+        for attempt in range(3):
+            output = self.command("--List")
+            if output.strip():
+                return parse_monitors(output)
+            if attempt < 2:
+                time.sleep(0.25)
+        return parse_monitors(output)
 
     def set_brightness(self, identifier, percent):
         if type(percent) is not int or not 0 <= percent <= 100:
