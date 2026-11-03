@@ -1,5 +1,5 @@
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 import math
 import ipaddress
 from pathlib import Path
@@ -8,6 +8,7 @@ from .brightness_profiles import default_brightness_profiles, validate_profiles
 
 @dataclass
 class Settings:
+    ui_mode: str = "advanced"
     twinkle_path: str = ""
     monitor_id: str = ""
     wake_method: str = "monitor_power"
@@ -67,7 +68,7 @@ class Settings:
     @classmethod
     def load(cls, path: Path):
         if not path.exists():
-            return cls()
+            return cls(ui_mode="simple")
         values = json.loads(path.read_text(encoding="utf-8"))
         result = cls(**values)
         result.validate()
@@ -75,6 +76,8 @@ class Settings:
 
     def validate(self):
         result = self
+        if result.ui_mode not in ("simple", "advanced"):
+            raise ValueError("일반모드 또는 고급모드를 선택하세요.")
         if result.wake_method not in ("monitor_power", "execution_state", "mouse_move"):
             raise ValueError("지원하지 않는 복귀 방식")
         if type(result.recovery_seconds) is not int or not 5 <= result.recovery_seconds <= 30:
@@ -103,7 +106,7 @@ class Settings:
                 raise ValueError(f"잘못된 {name}")
         ranges = {"brightness_min": (0, 100), "brightness_max": (0, 100), "brightness_deadband": (1, 20),
                   "light_on_brightness": (0, 100), "light_off_brightness": (0, 100),
-                  "manual_pause_seconds": (0, 86400), "absence_seconds": (5, 3600),
+                  "manual_pause_seconds": (0, 86400), "absence_seconds": (1, 3600),
                   "recent_input_seconds": (1, 3600), "max_distance_cm": (1, 900),
                   "tof_min_distance_cm": (4, 399), "tof_max_distance_cm": (5, 400), "tof_hysteresis_cm": (0, 50),
                   "radar_min_gate": (0, 13), "radar_max_gate": (0, 13), "radar_absence_seconds": (5, 65535)}
@@ -132,7 +135,7 @@ class Settings:
                 raise ValueError("레이더 민감도는 거리문 14개의 0~100 정수 필요")
         for name, low, high in (("transition_seconds", 1, 3), ("ema_alpha", .01, 1), ("brightness_interval", .2, 10),
                                 ("light_threshold_lux", 0, 65535), ("light_switch_seconds", 0, 10),
-                                ("tof_hold_seconds", .1, 5),
+                                ("tof_hold_seconds", 0, 5),
                                 ("stabilization_seconds", 1, 60), ("sensor_stale_seconds", .5, 15)):
             value = getattr(self, name)
             if type(value) not in (int, float) or not math.isfinite(value) or not low <= value <= high:
@@ -154,6 +157,19 @@ class Settings:
                 raise ValueError("조도는 오름차순, 밝기는 0~100")
             previous = lux
         return self
+
+    def for_control(self):
+        """Apply simple-mode defaults without overwriting saved advanced options."""
+        if self.ui_mode == "advanced":
+            return self
+        defaults = Settings()
+        fields = ("brightness_min", "brightness_max", "transition_seconds", "ema_alpha",
+                  "brightness_interval", "brightness_deadband", "manual_pause_seconds",
+                  "recent_input_seconds", "stabilization_seconds", "sensor_stale_seconds",
+                  "max_distance_cm", "production_wake_method", "light_switch_seconds")
+        return replace(self, **{name: getattr(defaults, name) for name in fields},
+                       brightness_mode="two_level", use_recent_input=False,
+                       tof_hysteresis_cm=0, tof_hold_seconds=0)
 
     def save(self, path: Path):
         self.validate()

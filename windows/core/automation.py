@@ -13,6 +13,7 @@ from .tof_presence import TofPresence
 class AutomationRuntime:
     def __init__(self, settings, diagnostics, power, *, clock=time.monotonic, guard_factory=LeaseGuard,
                  input_provider=lambda: None, locked_provider=lambda: True):
+        settings = settings.for_control()
         self.settings, self.log, self.power, self.clock = settings, diagnostics, power, clock
         self.guard_factory = guard_factory
         self.input_provider, self.locked_provider = input_provider, locked_provider
@@ -85,6 +86,7 @@ class AutomationRuntime:
 
     def apply_settings(self, settings):
         settings.validate()
+        settings = settings.for_control()
         with self.lock:
             requested = self.brightness.requested
             self.settings = settings

@@ -17,7 +17,7 @@ class TofPresence:
     def observe(self, distance_mm, now):
         margin = self.hysteresis_mm if self.present is True else 0
         candidate = self.minimum_mm - margin <= distance_mm <= self.maximum_mm + margin
-        if self.present is None:
+        if self.present is None or self.hold_seconds == 0:
             self.present = candidate
         if candidate == self.present:
             self.candidate = self.candidate_since = None
