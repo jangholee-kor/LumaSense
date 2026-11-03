@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, Q
                                QTableWidget, QTableWidgetItem, QTabWidget, QScrollArea)
 from windows.core.settings import Settings
 from windows.ui.brightness_profiles import BrightnessProfileEditor
+from windows.ui.lux import LuxSpinBox, LuxDelegate, format_lux
 
 
 class AutomationPanel(QWidget):
@@ -116,7 +117,7 @@ class AutomationPanel(QWidget):
         if simulation:
             sim = QGroupBox("가상 센서 입력")
             form = QFormLayout(sim)
-            self.sim_lux = QDoubleSpinBox()
+            self.sim_lux = LuxSpinBox()
             self.sim_lux.setRange(0, 65535)
             self.sim_lux.setValue(125)
             self.sim_presence = QComboBox()
@@ -192,9 +193,8 @@ class AutomationPanel(QWidget):
         curve_layout.addWidget(self.profile_editor)
         self.two_level_group = QGroupBox("형광등 ON / 불 끔 밝기")
         light_form = QFormLayout(self.two_level_group)
-        self.fields["light_threshold_lux"] = QDoubleSpinBox()
+        self.fields["light_threshold_lux"] = LuxSpinBox()
         self.fields["light_threshold_lux"].setRange(0, 65535)
-        self.fields["light_threshold_lux"].setDecimals(1)
         self.fields["light_threshold_lux"].setValue(settings.light_threshold_lux)
         light_form.addRow("기준 조도 (lux)", self.fields["light_threshold_lux"])
         self.light_samples = {state: (getattr(settings, f"light_{state}_lux"), getattr(settings, f"light_{state}_recorded_at"))
@@ -237,6 +237,7 @@ class AutomationPanel(QWidget):
         curve_fields.addWidget(QLabel("Lux 오름차순으로 지정한 점 사이를 선형 보간합니다."))
         self.curve = QTableWidget(0, 2)
         self.curve.setHorizontalHeaderLabels(["조도 (lux)", "목표 밝기 (%)"])
+        self.curve.setItemDelegateForColumn(0, LuxDelegate(self.curve))
         self.set_curve(settings.curve)
         curve_fields.addWidget(self.curve)
         row = QHBoxLayout()
@@ -372,7 +373,7 @@ class AutomationPanel(QWidget):
 
     def update_light_samples(self):
         for state, (lux, recorded_at) in self.light_samples.items():
-            self.light_sample_labels[state].setText("조도 미기록" if lux is None else f"{lux:.1f} lux · {recorded_at}")
+            self.light_sample_labels[state].setText("조도 미기록" if lux is None else f"{format_lux(lux)} lux · {recorded_at}")
         on, off = self.light_samples["on"][0], self.light_samples["off"][0]
         self.midpoint_button.setEnabled(on is not None and off is not None and on > off)
 

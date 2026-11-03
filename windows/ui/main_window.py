@@ -30,6 +30,7 @@ from windows.core import startup
 from windows.core.settings import Settings
 from windows.core.sensor_log import SensorRecorder
 from windows.ui.automation_panel import AutomationPanel
+from windows.ui.lux import format_lux
 from windows import __version__
 
 
@@ -559,7 +560,7 @@ class MainWindow(QMainWindow):
             self.auto_panel.set_light_sample(state, lux, recorded_at)
             self.log.event("lighting_sample_captured", state=state, lux=lux, recorded_at=recorded_at,
                            simulated=self.simulation)
-            self.message(f"{state.upper()} 조도 {lux:.1f} lux를 기록했습니다. 밝기 설정 적용을 누르면 저장됩니다.")
+            self.message(f"{state.upper()} 조도 {format_lux(lux)} lux를 기록했습니다. 밝기 설정 적용을 누르면 저장됩니다.")
         except Exception as error:
             self.fail(str(error))
 
@@ -871,7 +872,7 @@ class MainWindow(QMainWindow):
             def detection(value):
                 return "미확인 / 오류" if value is None else ("감지" if value else "미감지")
             labels = self.auto_panel.labels
-            labels["lux"].setText(f"{text(packet.get('lux'))} lux{previous}")
+            labels["lux"].setText(f"{format_lux(packet.get('lux'))} lux{previous}")
             self.auto_panel.profile_editor.set_current_lux(packet.get("lux") if snapshot.valid and packet.get("light_ok") else None)
             labels["presence"].setText(f"{detection(packet.get('presence'))}{previous}")
             labels["motion"].setText("VL53L1X 거리 기준 · 움직임 분류 없음" if packet.get("ver") == 2 else
@@ -888,7 +889,7 @@ class MainWindow(QMainWindow):
             elif self.settings.brightness_mode == "steps":
                 steps = self.runtime.brightness.steps
                 lighting = "미확인" if not snapshot.valid or not packet.get("light_ok") or steps.index is None else (
-                    f"{self.settings.brightness_profile} · {steps.points[steps.index][0]:g} lux 이상 → {steps.points[steps.index][1]}%" +
+                    f"{self.settings.brightness_profile} · {format_lux(steps.points[steps.index][0])} lux 이상 → {steps.points[steps.index][1]}%" +
                     (" · 구간 전환 대기" if steps.candidate is not None else ""))
             labels["lighting"].setText(lighting)
             state = self.runtime.presence

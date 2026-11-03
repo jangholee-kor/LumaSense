@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, Q
                                QLineEdit, QPushButton, QTableWidget, QDoubleSpinBox, QSpinBox,
                                QAbstractItemView, QHeaderView)
 
+from windows.ui.lux import LuxSpinBox, format_lux
 from windows.core.brightness_profiles import default_brightness_profiles, validate_profile, validate_profiles
 
 
@@ -60,7 +61,7 @@ class LuxStepGraph(QWidget):
             painter.setPen(QColor("#4b5563"))
             painter.drawText(QRectF(0, y - 10, 41, 20), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, str(index * 20))
             painter.drawText(QRectF(x - 35, rect.bottom() + 3, 70, 18), Qt.AlignmentFlag.AlignCenter,
-                             f"{self.maximum_lux() * index / 5:g}")
+                             format_lux(self.maximum_lux() * index / 5))
         painter.setPen(QPen(QColor("#64748b"), 1))
         painter.drawRect(rect)
         painter.drawText(QRectF(rect.left(), self.height() - 20, rect.width(), 18), Qt.AlignmentFlag.AlignCenter, "조도 (lux)")
@@ -105,9 +106,9 @@ class LuxStepGraph(QWidget):
         index = self.drag_index
         rect = self.plot_rect()
         lux = (event.position().x() - rect.left()) / rect.width() * self.maximum_lux()
-        minimum = self.points[index - 1][0] + .01 if index else 0
-        maximum = self.points[index + 1][0] - .01 if index + 1 < len(self.points) else 65535
-        lux = round(max(minimum, min(maximum, lux)), 2) if index else 0
+        minimum = self.points[index - 1][0] + .1 if index else 0
+        maximum = self.points[index + 1][0] - .1 if index + 1 < len(self.points) else 65535
+        lux = round(max(minimum, min(maximum, lux)), 1) if index else 0
         brightness = max(0, min(100, round((rect.bottom() - event.position().y()) / rect.height() * 100)))
         self.point_moved.emit(index, lux, brightness)
 
@@ -156,9 +157,8 @@ class BrightnessProfileEditor(QWidget):
         self.table.setMinimumHeight(130)
         row.addWidget(self.table, 2)
         form = QFormLayout()
-        self.hysteresis = QDoubleSpinBox()
+        self.hysteresis = LuxSpinBox()
         self.hysteresis.setRange(0, 65535)
-        self.hysteresis.setDecimals(2)
         self.hold = QDoubleSpinBox()
         self.hold.setRange(0, 10)
         self.hold.setDecimals(2)
@@ -203,9 +203,8 @@ class BrightnessProfileEditor(QWidget):
     def set_points(self, points):
         self.table.setRowCount(len(points))
         for index, (lux, brightness) in enumerate(points):
-            threshold = QDoubleSpinBox()
+            threshold = LuxSpinBox()
             threshold.setRange(0, 65535)
-            threshold.setDecimals(2)
             threshold.setValue(lux)
             threshold.setEnabled(index != 0)
             percent = QSpinBox()
@@ -317,7 +316,7 @@ class BrightnessProfileEditor(QWidget):
             points = self.draft()["points"]
             if len(points) >= 32:
                 raise ValueError("구간은 최대 32개까지 만들 수 있습니다.")
-            threshold = min(65535, points[-1][0] + 100) if lux is None else round(lux, 2)
+            threshold = min(65535, points[-1][0] + 100) if lux is None else round(lux, 1)
             index = bisect_right([point[0] for point in points], threshold)
             brightness = points[max(0, index - 1)][1]
             points.insert(index, [threshold, brightness])
@@ -348,7 +347,7 @@ class BrightnessProfileEditor(QWidget):
             return
         self.current_lux = lux
         self.graph.current_lux = lux
-        self.live.setText(("현재 조도 미확인" if lux is None else f"현재 조도 {lux:.2f} lux · 주황색 표시") +
+        self.live.setText(("현재 조도 미확인" if lux is None else f"현재 조도 {format_lux(lux)} lux · 주황색 표시") +
                           " · 편집 내용은 밝기 설정 적용 후 사용합니다.")
         self.graph.update()
 

@@ -66,7 +66,7 @@ def test_current_lux_addition_stale_rejection_and_base_row_protection(editor):
     editor.set_current_lux(171.25)
     editor.add_current_lux()
     points = editor.draft()["points"]
-    assert points[2] == [171.25, 30]
+    assert points[2] == [171.2, 30]
     count = editor.table.rowCount()
     editor.set_current_lux(None)
     editor.add_current_lux()
