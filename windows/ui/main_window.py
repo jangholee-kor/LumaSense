@@ -269,6 +269,8 @@ class MainWindow(QMainWindow):
         self.ui_mode = QComboBox()
         self.ui_mode.addItem("일반", "simple")
         self.ui_mode.addItem("고급", "advanced")
+        self.ui_mode.setMinimumWidth(120)
+        self.ui_mode.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
         self.ui_mode.setCurrentIndex(self.ui_mode.findData(settings.ui_mode))
         mode_row.addWidget(self.ui_mode)
         mode_row.addWidget(QLabel("변경 후 설정 적용을 누르세요."))
