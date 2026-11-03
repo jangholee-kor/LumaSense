@@ -329,13 +329,13 @@ class MainWindow(QMainWindow):
         resume_action.triggered.connect(self.resume_automation)
         menu.addAction(resume_action)
         menu.addSeparator()
-        for label, slot in [("설정 / 시험 창 열기", self.showNormal), ("화면 절전 시험", self.tray_sleep),
+        for label, slot in [("설정 / 시험 창 열기", self.show_main_window), ("화면 절전 시험", self.tray_sleep),
                              ("카운트다운 취소", self.cancel_sleep), ("복귀 요청", self.wake_now), ("종료", self.quit_app)]:
             action = QAction(label, self)
             action.triggered.connect(slot)
             menu.addAction(action)
         self.tray.setContextMenu(menu)
-        self.tray.activated.connect(lambda reason: self.showNormal() if reason == QSystemTrayIcon.ActivationReason.DoubleClick else None)
+        self.tray.activated.connect(lambda reason: self.show_main_window() if reason == QSystemTrayIcon.ActivationReason.DoubleClick else None)
         self.tray.messageClicked.connect(self.pause_automation)
         if QSystemTrayIcon.isSystemTrayAvailable():
             self.tray.show()
@@ -626,6 +626,12 @@ class MainWindow(QMainWindow):
         self.log.event("user_observation", test_id=self.last_test,
                        result=("unverified", "pass", "fail")[self.observation.currentIndex()], notes=self.notes.text())
         self.message(f"관찰 결과 기록됨 · {self.last_test}")
+
+    def show_main_window(self):
+        self.setWindowState(self.windowState() & ~Qt.WindowState.WindowMinimized)
+        self.show()
+        self.raise_()
+        self.activateWindow()
 
     def hide_to_tray(self):
         if self.tray.isVisible() and self.controller.state == State.IDLE:
