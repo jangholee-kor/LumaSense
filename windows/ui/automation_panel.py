@@ -70,6 +70,9 @@ class AutomationPanel(QWidget):
         self.serial_number = QLineEdit(settings.serial_number)
         self.serial_number.setPlaceholderText("선택 사항: USB 일련번호로 재연결 장치 고정")
         form.addRow("USB 일련번호", self.serial_number)
+        self.port_serial_numbers = {}
+        self.port.activated.connect(self.select_port_identity)
+        self.port.lineEdit().textEdited.connect(self.select_port_identity)
         self.transport.currentIndexChanged.connect(self.update_transport)
         self.update_transport()
         row = QHBoxLayout()
@@ -410,6 +413,7 @@ class AutomationPanel(QWidget):
 
     def set_ports(self, values):
         selected = self.selected_port()
+        self.port_serial_numbers = {value["port"]: value.get("serial_number") or "" for value in values}
         self.port.clear()
         self.port.addItem("자동 탐색", "")
         for value in values:
@@ -419,6 +423,20 @@ class AutomationPanel(QWidget):
             self.port.addItem(selected, selected)
             index = self.port.count() - 1
         self.port.setCurrentIndex(max(0, index))
+
+    def select_port_identity(self, *_):
+        port = self.selected_port()
+        if port:
+            # Explicitly choosing a port also chooses its device, including a
+            # device without a serial number. Refresh alone keeps a saved lock.
+            self.serial_number.setText(self.port_serial_numbers.get(port, ""))
+
+    def selected_serial_number(self):
+        if self.ui_mode == "simple" and self.selected_port() in self.port_serial_numbers:
+            # The serial field is hidden in simple mode; a stale saved identity
+            # must not override the visible, present port selected by the user.
+            self.select_port_identity()
+        return self.serial_number.text().strip()
 
     def selected_port(self):
         index = self.port.currentIndex()

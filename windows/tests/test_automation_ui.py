@@ -130,6 +130,58 @@ def test_port_edit_and_invalid_curve(simulated):
         view.auto_panel.collect(view.settings)
 
 
+@pytest.mark.parametrize("ui_mode,expected", [("simple", "new-board"), ("advanced", "old-board")])
+def test_visible_usb_port_and_hidden_saved_identity(simulated, monkeypatch, ui_mode, expected):
+    from windows.ui import main_window
+    view = simulated
+    panel = view.auto_panel
+    panel.set_ui_mode(ui_mode)
+    panel.transport.setCurrentIndex(panel.transport.findData("serial"))
+    panel.set_ports([dict(port="COM6", description="ESP32", serial_number="new-board")])
+    panel.port.setCurrentIndex(panel.port.findData("COM6"))
+    panel.serial_number.setText("old-board")
+    options = {}
+    worker = SimpleNamespace(start=lambda: None)
+    def factory(*args, **kwargs):
+        options.update(kwargs)
+        return worker
+    monkeypatch.setattr(main_window, "SerialManager", factory)
+    view.simulation = False
+    try:
+        view.connect_sensor()
+        assert options["port"] == "COM6" and options["serial_number"] == expected
+        assert Settings.load(view.log.root / "settings.json").serial_number == expected
+    finally:
+        view.serial_worker = None
+        view.simulation = True
+
+
+def test_explicit_port_selection_rebinds_identity_but_refresh_preserves_it(simulated):
+    panel = simulated.auto_panel
+    panel.serial_number.setText("saved-board")
+    panel.set_ports([dict(port="COM6", description="ESP32", serial_number="new-board"),
+                     dict(port="COM1", description="Serial port", serial_number=None)])
+    assert panel.serial_number.text() == "saved-board"
+    panel.port.setCurrentIndex(panel.port.findData("COM6"))
+    panel.port.activated.emit(panel.port.currentIndex())
+    assert panel.serial_number.text() == "new-board"
+    panel.port.setCurrentIndex(0)
+    panel.port.activated.emit(0)
+    assert panel.serial_number.text() == "new-board"
+    panel.port.setCurrentIndex(panel.port.findData("COM1"))
+    panel.port.activated.emit(panel.port.currentIndex())
+    assert panel.serial_number.text() == ""
+
+
+def test_simple_auto_discovery_preserves_serial_when_saved_port_is_absent(simulated):
+    panel = simulated.auto_panel
+    panel.set_ui_mode("simple")
+    panel.port.setEditText("COM3")
+    panel.serial_number.setText("saved-board")
+    panel.set_ports([dict(port="COM6", description="ESP32", serial_number="saved-board")])
+    assert panel.selected_serial_number() == "saved-board"
+
+
 def test_tcp_selection_settings_and_export_omit_secret(simulated, monkeypatch, tmp_path):
     from windows.ui import main_window
     view = simulated

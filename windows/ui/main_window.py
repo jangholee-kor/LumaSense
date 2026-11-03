@@ -699,7 +699,7 @@ class MainWindow(QMainWindow):
                 self.message("시리얼 작업이 이미 실행 중입니다.")
             return
         port = self.auto_panel.selected_port()
-        number = self.auto_panel.serial_number.text().strip()
+        number = self.auto_panel.selected_serial_number() if self.auto_panel.transport.currentData() == "serial" else self.auto_panel.serial_number.text().strip()
         try:
             self.settings.serial_port, self.settings.serial_number = port, number
             self.settings.sensor_transport = self.auto_panel.transport.currentData()
