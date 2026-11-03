@@ -1,4 +1,17 @@
 menu "Smart Monitor Controller"
+    config SMC_PRESENCE_VL53L1X
+        bool "Use VL53L1X ToF instead of LD2412 radar"
+        default n
+    config SMC_TOF_SHUT_GPIO
+        int "VL53L1X SHUT GPIO (confirmed SuperMini wiring: 4)"
+        default 4
+        range 0 48
+        depends on SMC_PRESENCE_VL53L1X
+    config SMC_TOF_ROI_SIZE
+        int "VL53L1X centered square ROI size (4..16 SPADs)"
+        default 8
+        range 4 16
+        depends on SMC_PRESENCE_VL53L1X
     config SMC_STATUS_LED_ENABLE
         bool "Use on-board SK6812MINI-HS RGB sensor status LED"
         default y

@@ -40,6 +40,10 @@ class Settings:
     stabilization_seconds: float = 5.0
     sensor_stale_seconds: float = 3.0
     max_distance_cm: int = 150
+    tof_min_distance_cm: int = 20
+    tof_max_distance_cm: int = 150
+    tof_hysteresis_cm: int = 5
+    tof_hold_seconds: float = 1.0
     production_wake_method: str = "execution_state"
     start_minimized: bool = False
     login_startup: bool = False
@@ -82,6 +86,7 @@ class Settings:
                   "light_on_brightness": (0, 100), "light_off_brightness": (0, 100),
                   "manual_pause_seconds": (0, 86400), "absence_seconds": (5, 3600),
                   "recent_input_seconds": (1, 3600), "max_distance_cm": (1, 900),
+                  "tof_min_distance_cm": (4, 399), "tof_max_distance_cm": (5, 400), "tof_hysteresis_cm": (0, 50),
                   "radar_min_gate": (0, 13), "radar_max_gate": (0, 13), "radar_absence_seconds": (5, 65535)}
         for name, (low, high) in ranges.items():
             value = getattr(self, name)
@@ -89,6 +94,8 @@ class Settings:
                 raise ValueError(f"{name}: {low}~{high} 정수 필요")
         if self.brightness_min > self.brightness_max:
             raise ValueError("최소 밝기는 최대 밝기 이하여야 합니다.")
+        if self.tof_min_distance_cm >= self.tof_max_distance_cm:
+            raise ValueError("ToF 최소 거리는 최대 거리보다 작아야 합니다.")
         if self.brightness_mode not in ("curve", "two_level"):
             raise ValueError("지원하지 않는 밝기 방식")
         for name in ("light_on_lux", "light_off_lux"):
@@ -105,6 +112,7 @@ class Settings:
                 raise ValueError("레이더 민감도는 거리문 14개의 0~100 정수 필요")
         for name, low, high in (("transition_seconds", 1, 3), ("ema_alpha", .01, 1), ("brightness_interval", .2, 10),
                                 ("light_threshold_lux", 0, 65535), ("light_switch_seconds", 0, 10),
+                                ("tof_hold_seconds", .1, 5),
                                 ("stabilization_seconds", 1, 60), ("sensor_stale_seconds", .5, 15)):
             value = getattr(self, name)
             if type(value) not in (int, float) or not math.isfinite(value) or not low <= value <= high:

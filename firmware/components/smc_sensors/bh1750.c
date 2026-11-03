@@ -16,9 +16,17 @@ esp_err_t bh1750_init(bh1750_t *sensor, int sda, int scl, uint8_t address) {
                                   .flags.enable_internal_pullup = true};
     esp_err_t err = i2c_new_master_bus(&bus, &sensor->bus);
     if (err != ESP_OK) return err;
+    err = bh1750_attach(sensor, sensor->bus, address);
+    if (err != ESP_OK && !sensor->device) { i2c_del_master_bus(sensor->bus); sensor->bus = NULL; }
+    return err;
+}
+
+esp_err_t bh1750_attach(bh1750_t *sensor, i2c_master_bus_handle_t bus, uint8_t address) {
+    if (address != 0x23 && address != 0x5c) return ESP_ERR_INVALID_ARG;
+    sensor->bus = bus;
     i2c_device_config_t device = {.dev_addr_length = I2C_ADDR_BIT_LEN_7, .device_address = address, .scl_speed_hz = 100000};
-    err = i2c_master_bus_add_device(sensor->bus, &device, &sensor->device);
-    if (err != ESP_OK) { i2c_del_master_bus(sensor->bus); sensor->bus = NULL; return err; }
+    esp_err_t err = i2c_master_bus_add_device(bus, &device, &sensor->device);
+    if (err != ESP_OK) return err;
     return bh1750_start(sensor);
 }
 

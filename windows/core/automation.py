@@ -7,6 +7,7 @@ from .brightness_controller import BrightnessController
 from .lease_guard import LeaseGuard
 from .presence_controller import PresenceController
 from .sensor_manager import SensorManager
+from .tof_presence import TofPresence
 
 
 class AutomationRuntime:
@@ -16,6 +17,7 @@ class AutomationRuntime:
         self.guard_factory = guard_factory
         self.input_provider, self.locked_provider = input_provider, locked_provider
         self.sensors = SensorManager(settings.sensor_stale_seconds, settings.stabilization_seconds)
+        self.sensors.tof_presence = self._tof_presence(settings)
         self.brightness = BrightnessController(settings)
         self.presence = PresenceController(settings)
         self.lock = threading.RLock()
@@ -29,6 +31,11 @@ class AutomationRuntime:
         self.last_action = "없음"
         self.last_state = None
         self.brightness_retry = 0.0
+
+    @staticmethod
+    def _tof_presence(settings):
+        return TofPresence(settings.tof_min_distance_cm, settings.tof_max_distance_cm,
+                           settings.tof_hysteresis_cm, settings.tof_hold_seconds)
 
     def sensor_status(self, value):
         if not value.get("connected"):
@@ -75,6 +82,7 @@ class AutomationRuntime:
             self.settings = settings
             self.sensors.stale_seconds = settings.sensor_stale_seconds
             self.sensors.stabilization_seconds = settings.stabilization_seconds
+            self.sensors.tof_presence = self._tof_presence(settings)
             self.sensors.invalidate("설정 변경 후 안정화")
             self.brightness = BrightnessController(settings)
             self.brightness.seed(requested, self.clock())
@@ -94,7 +102,7 @@ class AutomationRuntime:
             return False
         present = snap.packet["presence"]
         distance = snap.packet.get("distance_cm")
-        return not present or (distance is not None and distance > self.settings.max_distance_cm)
+        return not present or (snap.packet.get("ver") != 2 and distance is not None and distance > self.settings.max_distance_cm)
 
     def tick(self, now, input_age, locked, backend_ready):
         with self.lock:

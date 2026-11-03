@@ -64,6 +64,8 @@ USB 통신·자동 밝기·인체 상태 제어는 독립 모듈로 구성한다
 
 ## ESP32-S3 펌웨어
 
+SuperMini와 VL53L1X의 확정 배선·빌드·거리 판정은 [SuperMini·ToF 안내](docs/supermini-tof.md)를 따른다.
+
 [펌웨어 프로젝트](firmware/README.md)는 BH1750·LD2412 센서 수집과 양방향 USB 통신을 제공한다.<br>
 MCN16R8 기준으로 기본·PSRAM 프로필을 빌드하고 [펌웨어 시험 안내](docs/firmware-testing.md)에 따라 플래시·센서 로그를 확인한다.<br>
 GPIO 기본값은 배선 예시이며 실제 연결에 맞춰 변경한다.

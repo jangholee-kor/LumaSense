@@ -3,7 +3,7 @@ from dataclasses import asdict
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QGroupBox, QLabel,
                                QCheckBox, QSpinBox, QDoubleSpinBox, QLineEdit, QComboBox, QPushButton,
-                               QTableWidget, QTableWidgetItem, QTabWidget)
+                               QTableWidget, QTableWidgetItem, QTabWidget, QScrollArea)
 from windows.core.settings import Settings
 
 
@@ -118,6 +118,10 @@ class AutomationPanel(QWidget):
               ("brightness_interval", "명령 최소 간격 (초)", .2, 10, True), ("brightness_deadband", "변경 최소 폭 (%)", 1, 20, False),
               ("manual_pause_seconds", "수동 조절 후 자동 밝기 중단 (초)", 0, 86400, False)]),
             ("존재 감지", [("absence_seconds", "연속 부재 시간 (초)", 5, 3600, False), ("max_distance_cm", "PC 감지 범위 (cm)", 1, 900, False),
+              ("tof_min_distance_cm", "ToF 착석 최소 거리 (cm)", 4, 399, False),
+              ("tof_max_distance_cm", "ToF 착석 최대 거리 (cm)", 5, 400, False),
+              ("tof_hysteresis_cm", "ToF 착석 유지 거리 여유 (cm)", 0, 50, False),
+              ("tof_hold_seconds", "ToF 상태 전환 유지 시간 (초)", .1, 5, True),
               ("recent_input_seconds", "최근 입력 보호 시간 (초)", 1, 3600, False),
               ("stabilization_seconds", "연결·오류 복구 후 안정화 (초)", 1, 60, True),
               ("sensor_stale_seconds", "센서 데이터 만료 (초)", .5, 15, True)])]
@@ -131,7 +135,9 @@ class AutomationPanel(QWidget):
                 form.addRow(label, widget)
                 self.fields[name] = widget
             if title == "존재 감지":
-                timing = QLabel("화면이 꺼지기까지 레이더의 부재 유지 시간과 앱의 연속 부재 시간, 5초 취소 카운트다운이 더해집니다.\n"
+                timing = QLabel("ToF는 유효한 거리가 착석 범위에 드는지 판정하며 사람과 물건을 구분하지 않습니다.\n"
+                                "측정 실패·범위 초과는 부재가 아닌 오류로 처리합니다.\n"
+                                "화면이 꺼지기까지 센서 판정 유지 시간과 앱의 연속 부재 시간, 5초 취소 카운트다운이 더해집니다.\n"
                                 "재감지하면 별도 복귀 지연 없이 즉시 복귀를 요청합니다.")
                 timing.setWordWrap(True)
                 form.addRow(timing)
@@ -148,7 +154,10 @@ class AutomationPanel(QWidget):
         apply_button.clicked.connect(self.apply_requested.emit)
         controls_layout.addWidget(apply_button)
         controls_layout.addStretch()
-        self.tabs.addTab(controls, "자동 제어 설정")
+        controls_scroll = QScrollArea()
+        controls_scroll.setWidgetResizable(True)
+        controls_scroll.setWidget(controls)
+        self.tabs.addTab(controls_scroll, "자동 제어 설정")
 
         curve_page = QWidget()
         curve_layout = QVBoxLayout(curve_page)
@@ -242,6 +251,7 @@ class AutomationPanel(QWidget):
             button.clicked.connect(lambda checked=False, target=signal: target.emit())
             system_layout.addWidget(button)
         group = QGroupBox("LD2412 설정 명령")
+        self.radar_group = group
         form = QFormLayout(group)
         self.engineering = QCheckBox("공학 모드 활성화")
         self.engineering.setChecked(settings.radar_engineering)

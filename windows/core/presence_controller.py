@@ -43,7 +43,7 @@ class PresenceController:
             return self._wake(now)
         present = snapshot.packet["presence"]
         distance = snapshot.packet.get("distance_cm")
-        if present and distance is not None and distance > self.settings.max_distance_cm:
+        if snapshot.packet.get("ver") != 2 and present and distance is not None and distance > self.settings.max_distance_cm:
             present = False
         # Recent physical input always overrides radar absence.
         if present or input_block:

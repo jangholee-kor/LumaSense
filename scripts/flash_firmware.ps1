@@ -1,4 +1,4 @@
-param([string]$Port = '', [switch]$EnablePsram)
+param([string]$Port = '', [switch]$EnablePsram, [ValidateSet('DevKit', 'SuperMini')][string]$Board = 'DevKit')
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'idf_environment.ps1')
@@ -7,7 +7,8 @@ if (-not $Port) {
     $Port = & '.venv\Scripts\python.exe' -m tools.sensor_cli select-port
     if ($LASTEXITCODE -ne 0) { throw 'Specify -Port COMx explicitly.' }
 }
-$buildName = if ($EnablePsram) { 'firmware-build-psram' } else { 'firmware-build' }
+if ($Board -eq 'SuperMini' -and $EnablePsram) { throw 'SuperMini profile does not use octal PSRAM.' }
+$buildName = if ($Board -eq 'SuperMini') { 'firmware-build-supermini' } elseif ($EnablePsram) { 'firmware-build-psram' } else { 'firmware-build' }
 $buildPath = Join-Path $repoRoot ".local\$buildName"
 if (-not (Test-Path -LiteralPath (Join-Path $buildPath 'smart_monitor_s3.bin'))) { throw 'Run build_firmware.ps1 first.' }
 Set-Location -LiteralPath (Join-Path $repoRoot 'firmware')

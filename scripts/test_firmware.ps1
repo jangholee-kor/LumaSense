@@ -15,3 +15,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Native status LED tests failed' }
 if ($LASTEXITCODE -ne 0) { throw 'Native status LED driver compile failed' }
 & '.local/firmware-tests/status_led_driver_tests.exe'
 if ($LASTEXITCODE -ne 0) { throw 'Native status LED driver tests failed' }
+& $Compiler -std=c11 -Wall -Wextra -Werror '-Ifirmware/components/smc_sensors/include' 'firmware/components/smc_sensors/vl53l1x_core.c' 'firmware/tests/test_vl53l1x.c' -o '.local/firmware-tests/vl53l1x_tests.exe'
+if ($LASTEXITCODE -ne 0) { throw 'Native VL53L1X compile failed' }
+& '.local/firmware-tests/vl53l1x_tests.exe'
+if ($LASTEXITCODE -ne 0) { throw 'Native VL53L1X tests failed' }

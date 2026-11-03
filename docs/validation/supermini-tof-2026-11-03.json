@@ -1,0 +1,10 @@
+{
+  "date": "2026-11-03",
+  "board": "ESP32-S3 SuperMini, photo marking ESP32-S3FH4R2",
+  "user_reported_wiring": {"shut_gpio": 4, "sda_gpio": 12, "scl_gpio": 13},
+  "build": {"esp_idf": "5.5.4", "supermini_4mb_tof": "passed", "devkit_16mb_radar": "passed"},
+  "host_checks": {"pytest_passed": 131, "native_test_executables_passed": 4, "gui_render": "inspected"},
+  "package": {"profile": "supermini", "license_included": true},
+  "physical": {"flash": "not_performed", "voltage_and_pullups": "unverified", "sensor_stream": "unverified", "occupancy": "unverified", "monitor_output": "unverified"},
+  "limitations": ["Invalid or out-of-range ToF measurements inhibit absence detection.", "Valid background distance is needed to distinguish an empty seat.", "ToF detects objects in the configured distance window, not human identity."]
+}

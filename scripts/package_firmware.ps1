@@ -1,9 +1,10 @@
-param([switch]$EnablePsram)
+param([switch]$EnablePsram, [ValidateSet('DevKit', 'SuperMini')][string]$Board = 'DevKit')
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'idf_environment.ps1')
-$profileName = if ($EnablePsram) { 'psram' } else { 'default' }
-$buildName = if ($EnablePsram) { 'firmware-build-psram' } else { 'firmware-build' }
+if ($Board -eq 'SuperMini' -and $EnablePsram) { throw 'SuperMini profile does not use octal PSRAM.' }
+$profileName = if ($Board -eq 'SuperMini') { 'supermini' } elseif ($EnablePsram) { 'psram' } else { 'default' }
+$buildName = if ($Board -eq 'SuperMini') { 'firmware-build-supermini' } elseif ($EnablePsram) { 'firmware-build-psram' } else { 'firmware-build' }
 $buildPath = Join-Path $repoRoot ".local\$buildName"
 $outputPath = Join-Path $repoRoot ".local\firmware-release\$profileName"
 if (-not (Test-Path (Join-Path $buildPath 'flasher_args.json'))) { throw 'Build firmware first.' }
@@ -23,13 +24,15 @@ try {
     $sdk = Get-Content -LiteralPath (Join-Path $buildPath 'config\sdkconfig.json') -Raw | ConvertFrom-Json
     $projectDescription = Get-Content -LiteralPath (Join-Path $buildPath 'project_description.json') -Raw | ConvertFrom-Json
     $manifest = @{
-        firmware=$projectDescription.project_version; target='esp32s3'; profile=$profileName; flash_size='16MB'; psram_enabled=[bool]$EnablePsram
+        firmware=$projectDescription.project_version; target='esp32s3'; profile=$profileName; flash_size=$sdk.ESPTOOLPY_FLASHSIZE; psram_enabled=[bool]$EnablePsram
         idf_commit=(& git -C $env:IDF_PATH rev-parse HEAD); physical_validation='unverified'
-        gpio=@{sda=$sdk.SMC_I2C_SDA;scl=$sdk.SMC_I2C_SCL;radar_rx=$sdk.SMC_RADAR_RX;radar_tx=$sdk.SMC_RADAR_TX}
+        gpio=@{sda=$sdk.SMC_I2C_SDA;scl=$sdk.SMC_I2C_SCL;radar_rx=$sdk.SMC_RADAR_RX;radar_tx=$sdk.SMC_RADAR_TX;tof_shut=$sdk.SMC_TOF_SHUT_GPIO}
+        presence_sensor=$(if ($sdk.SMC_PRESENCE_VL53L1X) { 'vl53l1x' } else { 'ld2412' })
         status_led=@{enabled=[bool]$sdk.SMC_STATUS_LED_ENABLE;gpio=$sdk.SMC_STATUS_LED_GPIO;brightness=$sdk.SMC_STATUS_LED_BRIGHTNESS}
         files=$files; merged_sha256=(Get-FileHash -LiteralPath (Join-Path $outputPath 'firmware-merged.bin') -Algorithm SHA256).Hash
     }
     $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $outputPath 'manifest.json') -Encoding UTF8
 } finally { Pop-Location }
-Compress-Archive -LiteralPath (Join-Path $outputPath 'bootloader.bin'),(Join-Path $outputPath 'partition-table.bin'),(Join-Path $outputPath 'smart_monitor_s3.bin'),(Join-Path $outputPath 'firmware-merged.bin'),(Join-Path $outputPath 'manifest.json') -DestinationPath "$outputPath.zip" -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot 'firmware/components/smc_sensors/LICENSE.vl53l1x') -Destination $outputPath
+Compress-Archive -LiteralPath (Join-Path $outputPath 'bootloader.bin'),(Join-Path $outputPath 'partition-table.bin'),(Join-Path $outputPath 'smart_monitor_s3.bin'),(Join-Path $outputPath 'firmware-merged.bin'),(Join-Path $outputPath 'manifest.json'),(Join-Path $outputPath 'LICENSE.vl53l1x') -DestinationPath "$outputPath.zip" -Force
 Write-Output "Package: $outputPath.zip"

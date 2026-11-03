@@ -1,5 +1,24 @@
 # USB 센서 프로토콜 v1
 
+SuperMini의 VL53L1X 펌웨어는 아래 v2 거리 데이터를 사용하며 USB 명령·ACK는 v1 형식을 유지한다.<br>
+배선과 판정 설정은 [SuperMini·ToF 안내](supermini-tof.md)를 따른다.
+
+## VL53L1X 거리 데이터 v2
+
+```json
+{"ver":2,"type":"telemetry","device":"smart-monitor-s3","presence_sensor":"vl53l1x","firmware":"0.3.0","boot_id":"0123456789abcdef","seq":1,"uptime_ms":1000,"light_ok":true,"tof_ok":true,"sensor_ok":true,"lux":125.5,"distance_mm":600,"tof_raw_status":9,"tof_sample_age_ms":30,"roi_size":8}
+```
+
+`boot_id`는 부팅마다 새로 생성한 16자리 16진수이며 PC는 값이 바뀌면 새 연결로 안정화한다.<br>
+`tof_raw_status`는 센서 레지스터의 원시 상태이며 ST ULD에서 RangeValid로 변환하는 9만 정상으로 사용한다.<br>
+`tof_ok=true`이면 `distance_mm`은 40~4000 정수이고 `tof_sample_age_ms`는 0~499 정수이다.<br>
+`tof_ok=false`이면 `distance_mm=null`이며 PC가 거리 오류를 부재로 해석하지 않는다.<br>
+`sensor_ok`는 `light_ok && tof_ok`이고 조도 무효 시 `lux=null`이다.<br>
+이 데이터는 움직임·정지 인체 분류를 제공하지 않는다.<br>
+PC가 거리 범위·전환 유지 시간·거리 여유를 적용해 착석 상태를 만들며 원본 거리와 유효성을 보존한다.
+
+아래 v1 telemetry와 레이더 설정 명령은 LD2412 펌웨어에 해당한다.
+
 ESP32-S3는 J1 ESP USB의 USB Serial/JTAG CDC로 UTF-8 JSON Lines를 전송한다.<br>
 각 JSON 객체는 LF 한 바이트로 끝나며 기본 주기는 200ms이다.<br>
 통신 도구는 115200 baud로 포트를 열지만 네이티브 USB 전송 속도가 UART baud와 같다는 뜻은 아니다.<br>

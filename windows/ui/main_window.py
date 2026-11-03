@@ -625,6 +625,7 @@ class MainWindow(QMainWindow):
             return
         try:
             self.runtime.ingest(event)
+            self.auto_panel.radar_group.setEnabled(event["packet"].get("presence_sensor") != "vl53l1x")
         except ValueError as error:
             self.fail(str(error))
 
@@ -806,7 +807,8 @@ class MainWindow(QMainWindow):
             labels = self.auto_panel.labels
             labels["lux"].setText(f"{text(packet.get('lux'))} lux{previous}")
             labels["presence"].setText(f"{detection(packet.get('presence'))}{previous}")
-            labels["motion"].setText(f"{detection(packet.get('moving'))} / {detection(packet.get('stationary'))}{previous}")
+            labels["motion"].setText("VL53L1X 거리 기준 · 움직임 분류 없음" if packet.get("ver") == 2 else
+                                     f"{detection(packet.get('moving'))} / {detection(packet.get('stationary'))}{previous}")
             labels["distance"].setText(f"{text(packet.get('distance_cm'))} cm{previous}")
             ready = self.runtime.sensors.ready(now)
             labels["sensor"].setText(f"{snapshot.reason} · {'안정화 완료' if ready else '자동 절전 보류'}")

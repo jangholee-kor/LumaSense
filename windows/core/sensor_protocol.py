@@ -20,15 +20,19 @@ def select_port(configured="", available=None):
 
 
 def validate_telemetry(value):
-    if not isinstance(value, dict) or type(value.get("ver")) is not int or value.get("ver") != 1 or value.get("type") != "telemetry" or value.get("device") != "smart-monitor-s3":
-        raise ValueError("Smart Monitor Controller v1 telemetry가 아닙니다.")
+    if not isinstance(value, dict) or type(value.get("ver")) is not int or value.get("ver") not in (1, 2) or value.get("type") != "telemetry" or value.get("device") != "smart-monitor-s3":
+        raise ValueError("Smart Monitor Controller telemetry가 아닙니다.")
+    tof = value["ver"] == 2
+    if tof and value.get("presence_sensor") != "vl53l1x":
+        raise ValueError("지원하지 않는 거리 센서")
     for field in ("seq", "uptime_ms"):
         if type(value.get(field)) is not int or value[field] < 0:
             raise ValueError(f"잘못된 {field}")
-    for field in ("light_ok", "radar_ok", "sensor_ok"):
+    presence_ok = "tof_ok" if tof else "radar_ok"
+    for field in ("light_ok", presence_ok, "sensor_ok"):
         if type(value.get(field)) is not bool:
             raise ValueError(f"잘못된 {field}")
-    if value["sensor_ok"] != (value["light_ok"] and value["radar_ok"]):
+    if value["sensor_ok"] != (value["light_ok"] and value[presence_ok]):
         raise ValueError("sensor_ok 불일치")
     lux = value.get("lux")
     if value["light_ok"]:
@@ -36,6 +40,20 @@ def validate_telemetry(value):
             raise ValueError("잘못된 lux")
     elif lux is not None:
         raise ValueError("조도 오류는 lux=null이어야 합니다.")
+    if tof:
+        distance = value.get("distance_mm")
+        age = value.get("tof_sample_age_ms")
+        if value["tof_ok"]:
+            if type(distance) is not int or not 40 <= distance <= 4000:
+                raise ValueError("유효하지 않은 ToF 거리")
+            if type(age) is not int or not 0 <= age < 500 or value.get("tof_raw_status") != 9:
+                raise ValueError("만료되었거나 유효하지 않은 ToF 측정")
+        elif distance is not None:
+            raise ValueError("ToF 오류는 distance_mm=null이어야 합니다.")
+        boot = value.get("boot_id")
+        if not isinstance(boot, str) or len(boot) != 16 or any(c not in "0123456789abcdef" for c in boot):
+            raise ValueError("잘못된 장치 부팅 식별자")
+        return value
     for field in ("presence", "moving", "stationary"):
         if value["radar_ok"]:
             if type(value.get(field)) is not bool:
