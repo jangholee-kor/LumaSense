@@ -89,7 +89,11 @@ class MainWindow(QMainWindow):
         self.runtime = AutomationRuntime(settings, diagnostics, controller.power,
             input_provider=(lambda: 1000) if simulation else self.session.input_age,
             locked_provider=(lambda: False) if simulation else self.session.locked,
+            input_token_provider=None if simulation else self.session.input_token,
             **({"guard_factory": SimulatedGuard} if simulation else {}))
+        self.manual_input_token = None
+        self.manual_absent_seen = False
+        self.controller.cancel_check = self.manual_should_cancel
         self.serial_worker = None
         self.serial_token = 0
         self.pending_connect = False
@@ -257,8 +261,6 @@ class MainWindow(QMainWindow):
         root_layout.setContentsMargins(0, 0, 0, 0)
         self.screen_status = ScreenStatusBanner()
         self.countdown_overlay = CountdownOverlay()
-        self.countdown_overlay.cancel_requested.connect(self.cancel_banner_countdown)
-        self.screen_status.cancel_requested.connect(self.cancel_banner_countdown)
         self.screen_status.resume_requested.connect(self.resume_automation)
         root_layout.addWidget(self.screen_status)
         mode_row = QHBoxLayout()
@@ -460,6 +462,10 @@ class MainWindow(QMainWindow):
                 raise ValueError("마우스 이동 복귀를 먼저 허용하세요.")
             self.runtime.pause()
             self.runtime.external_block = True
+            self.runtime.observe_input(time.monotonic())
+            self.manual_input_token = self.runtime.last_input_token
+            snap = self.runtime.sensors.snapshot(time.monotonic())
+            self.manual_absent_seen = not (snap.valid and snap.packet and snap.packet.get("presence"))
             self.controller.start()
             self.countdown_overlay.set_seconds(5)
             self.cancel_button.setEnabled(True)
@@ -505,10 +511,32 @@ class MainWindow(QMainWindow):
             self.observation.setCurrentIndex(0)
             self.power_status.setText(f"시험 {self.last_test} · 1차 약 {seconds}초 / 추가 약 {seconds + interval}초")
             self.message(f"시험 {self.last_test} · 1차 {method}, 지연 {seconds}초, 추가 복귀 간격 {interval}초")
-            self.submit(lambda: self.controller.execute(method, seconds, allow, interval), lambda result: self.message(str(result)))
+            self.submit(lambda: self.controller.execute(method, seconds, allow, interval), self.manual_power_result)
             # The detached helper performs recovery even if this timer/GUI fails.
             window_seconds = recovery_window_seconds(method, seconds, allow, interval)
-            QTimer.singleShot(window_seconds * 1000, self.finish_sleep)
+            test_id = self.controller.test_id
+            QTimer.singleShot(window_seconds * 1000, lambda: self.finish_sleep()
+                              if self.controller.test_id == test_id and self.controller.state == State.RECOVERING else None)
+
+    def manual_should_cancel(self):
+        provider = self.runtime.input_token_provider
+        if provider is not None:
+            token = provider()
+            if token is None or self.manual_input_token is None or token != self.manual_input_token:
+                return True
+        with self.runtime.lock:
+            snap = self.runtime.sensors.snapshot(time.monotonic())
+            present = snap.packet.get("presence") if snap.valid and snap.packet else None
+            if present is False:
+                self.manual_absent_seen = True
+            return bool(present and self.manual_absent_seen)
+
+    def manual_power_result(self, result):
+        if isinstance(result, dict) and result.get("cancelled"):
+            self.finish_sleep()
+            self.message("입력·감지 변경으로 수동 화면 꺼짐을 취소했습니다.")
+        else:
+            self.message(str(result))
 
     def finish_sleep(self):
         self.controller.finish()
@@ -597,13 +625,6 @@ class MainWindow(QMainWindow):
                                         max(0, self.monitors.currentIndex()), False)
         if ok:
             self.monitors.setCurrentIndex(names.index(chosen))
-
-    def cancel_banner_countdown(self):
-        self.countdown_overlay.set_seconds(None)
-        if self.controller.state == State.COUNTDOWN:
-            self.cancel_sleep()
-        else:
-            self.pause_automation()
 
     def record_light_sample(self, state):
         try:
@@ -896,7 +917,8 @@ class MainWindow(QMainWindow):
         self.power_jobs.add(job)
         def done(result):
             self.power_jobs.discard(job)
-            self.message(f"자동 {action['kind']}: {result['ok']} · 실제 화면 상태는 관찰 필요")
+            self.message("입력·감지 변경으로 화면 꺼짐을 취소했습니다." if result.get("cancelled") else
+                         f"자동 {action['kind']}: {result['ok']} · 실제 화면 상태는 관찰 필요")
         def failed(error):
             self.power_jobs.discard(job)
             self.runtime.presence.completed(action["kind"], False, time.monotonic())
@@ -930,6 +952,9 @@ class MainWindow(QMainWindow):
                             self.runtime.brightness_pending = False
                     else:
                         self.submit_power_action(action)
+            if self.controller.state == State.COUNTDOWN and self.manual_should_cancel():
+                self.cancel_sleep()
+                self.message("키보드·마우스 입력 또는 재감지로 카운트다운을 취소했습니다.")
             snapshot = self.runtime.sensors.snapshot(now)
             packet = snapshot.packet or {}
             previous = " (이전 값)" if not snapshot.valid and packet else ""

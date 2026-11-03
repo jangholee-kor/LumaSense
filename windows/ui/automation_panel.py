@@ -168,7 +168,7 @@ class AutomationPanel(QWidget):
                 timing.setWordWrap(True)
                 form.addRow(timing)
             controls_layout.addWidget(group)
-        self.use_input = QCheckBox("최근 Windows 키보드·마우스 입력 우선 (확인 실패 시 절전 보류)")
+        self.use_input = QCheckBox("최근 입력 뒤 추가 보호 시간 사용 (입력 시 카운트다운 취소는 항상 적용)")
         self.use_input.setChecked(settings.use_recent_input)
         controls_layout.addWidget(self.use_input)
         self.production_wake = QComboBox()

@@ -3,7 +3,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from types import SimpleNamespace
 import pytest
 from PySide6.QtCore import QRect, Qt
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QPushButton
 from windows.core.display_controller import State
 from windows.ui.countdown_overlay import CountdownOverlay, countdown_seconds, overlay_geometry
 
@@ -60,7 +60,7 @@ def test_geometry_is_centered_on_the_primary_screen_not_the_virtual_desktop(scre
     assert rect.width() <= 760 and rect.height() <= 820
 
 
-def test_top_level_non_activating_overlay_displays_sequence_and_cancel():
+def test_top_level_non_activating_overlay_displays_sequence_without_buttons():
     app = QApplication.instance() or QApplication([])
     overlay = CountdownOverlay()
     try:
@@ -68,15 +68,12 @@ def test_top_level_non_activating_overlay_displays_sequence_and_cancel():
         assert overlay.windowFlags() & Qt.WindowType.WindowStaysOnTopHint
         assert overlay.windowFlags() & Qt.WindowType.WindowDoesNotAcceptFocus
         assert overlay.testAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
-        cancelled = []
-        overlay.cancel_requested.connect(lambda: cancelled.append(True))
+        assert not overlay.findChildren(QPushButton)
         for seconds in [5, 4, 3, 2, 1]:
             overlay.set_seconds(seconds)
             app.processEvents()
             assert overlay.isVisible() and overlay.number.text() == str(seconds)
             assert overlay.geometry() == overlay_geometry(app.primaryScreen().geometry())
-        overlay.cancel.click()
-        assert cancelled == [True]
         overlay.set_seconds(None)
         assert not overlay.isVisible()
     finally:

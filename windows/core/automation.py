@@ -10,13 +10,21 @@ from .sensor_manager import SensorManager
 from .tof_presence import TofPresence
 
 
+class OffCancelled(RuntimeError):
+    pass
+
+
 class AutomationRuntime:
     def __init__(self, settings, diagnostics, power, *, clock=time.monotonic, guard_factory=LeaseGuard,
-                 input_provider=lambda: None, locked_provider=lambda: True):
+                 input_provider=lambda: None, locked_provider=lambda: True, input_token_provider=None):
         settings = settings.for_control()
         self.settings, self.log, self.power, self.clock = settings, diagnostics, power, clock
         self.guard_factory = guard_factory
         self.input_provider, self.locked_provider = input_provider, locked_provider
+        self.input_token_provider = input_token_provider
+        self.last_input_token = input_token_provider() if input_token_provider else None
+        self.countdown_input_token = None
+        self.input_wake_requested = False
         self.sensors = SensorManager(settings.sensor_stale_seconds, settings.stabilization_seconds)
         self.sensors.tof_presence = self._tof_presence(settings)
         self.brightness = BrightnessController(settings)
@@ -107,6 +115,12 @@ class AutomationRuntime:
             return False
         if self.settings.use_recent_input and (input_age is None or input_age < self.settings.recent_input_seconds):
             return False
+        if self.input_wake_requested:
+            return False
+        if require_countdown and self.input_token_provider is not None:
+            token = self.input_token_provider()
+            if token is None or self.countdown_input_token is None or token != self.countdown_input_token:
+                return False
         if require_countdown and (self.presence.pending != "off" or self.presence.countdown_until is None
                                   or now < self.presence.countdown_until):
             return False
@@ -114,18 +128,44 @@ class AutomationRuntime:
         distance = snap.packet.get("distance_cm")
         return not present or (snap.packet.get("ver") != 2 and distance is not None and distance > self.settings.max_distance_cm)
 
+    def observe_input(self, now):
+        if self.input_token_provider is None:
+            return False
+        token = self.input_token_provider()
+        if token is None:
+            return False
+        with self.lock:
+            changed = self.last_input_token is not None and token != self.last_input_token
+            self.last_input_token = token
+            if changed:
+                self.input_wake_requested |= self.presence.owns_off or self.presence.pending == "off"
+                countdown = self.presence.countdown_until is not None
+                self.presence.cancel(now)
+                if countdown:
+                    self.log.event("countdown_cancelled_by_input")
+            return changed
+
     def tick(self, now, input_age, locked, backend_ready):
         with self.lock:
+            self.observe_input(now)
             snap = self.sensors.snapshot(now)
             ready = self.sensors.ready(now)
             paused = self.external_block or now < self.pause_until
+            previous_countdown = self.presence.countdown_until
             power_action = self.presence.tick(now, snap, ready, enabled=self.settings.auto_presence,
                                                paused=paused, input_age=input_age, locked=locked)
+            if previous_countdown is None and self.presence.countdown_until is not None:
+                self.countdown_input_token = self.last_input_token
+            if self.input_wake_requested and self.presence.owns_off and power_action is None:
+                power_action = self.presence.request_wake(now)
+            if not self.presence.owns_off and self.presence.pending != "off":
+                self.input_wake_requested = False
             actions = []
             if power_action == "off" and self.brightness_pending:
                 self.presence.pending = None
             elif power_action:
-                actions.append({"kind": power_action, "id": uuid.uuid4().hex, "epoch": self.epoch})
+                actions.append({"kind": power_action, "id": uuid.uuid4().hex, "epoch": self.epoch,
+                                "countdown_until": self.presence.countdown_until})
             if self.guard and self.presence.owns_off:
                 if not self.guard.alive():
                     self.sensors.invalidate("독립 복귀 안전장치 종료")
@@ -162,12 +202,15 @@ class AutomationRuntime:
         success = False
         result = None
         error = ""
+        cancelled = False
+        guard = None
         try:
             with self.lock:
                 now = self.clock()
                 if kind == "off":
-                    if not self._safe_off(now, self.input_provider(), self.locked_provider(), require_countdown=True):
-                        raise RuntimeError("화면 절전 직전 안전 조건 변경")
+                    if (action.get("countdown_until", self.presence.countdown_until) != self.presence.countdown_until
+                            or not self._safe_off(now, self.input_provider(), self.locked_provider(), require_countdown=True)):
+                        raise OffCancelled("입력·감지 변경으로 화면 꺼짐 취소")
                 elif kind == "brightness":
                     if (action["epoch"] != self.epoch or not self.settings.auto_brightness or self.external_block
                             or now < self.pause_until or now < self.brightness.pause_until or not self.sensors.ready(now)
@@ -179,8 +222,7 @@ class AutomationRuntime:
                 self.guard = guard
                 with self.lock:
                     if not self._safe_off(self.clock(), self.input_provider(), self.locked_provider(), require_countdown=True):
-                        guard.release()
-                        raise RuntimeError("안전장치 준비 후 절전 조건 변경")
+                        raise OffCancelled("안전장치 준비 중 입력·감지 변경으로 화면 꺼짐 취소")
                 result = self.power.off()
             elif kind == "wake":
                 try:
@@ -197,6 +239,16 @@ class AutomationRuntime:
                     raise RuntimeError("밝기 백엔드 없음")
                 result = backend.set_brightness(action["monitor_id"], action["percent"])
             success = True
+        except OffCancelled as exception:
+            cancelled = True
+            error = str(exception)
+            if guard is not None:
+                try:
+                    guard.release()
+                except Exception as release_error:
+                    self.log.event("cancelled_off_guard_release_error", error=str(release_error))
+                if self.guard is guard:
+                    self.guard = None
         except Exception as exception:
             error = str(exception)
         with self.lock:
@@ -206,10 +258,15 @@ class AutomationRuntime:
                     self.brightness.sent(action["percent"], self.clock())
                 elif not success:
                     self.brightness_retry = self.clock() + 5
+            elif cancelled:
+                self.presence.pending = None
+                self.observe_input(self.clock())
+                self.presence.cancel(self.clock())
             else:
                 self.presence.completed(kind, success, self.clock())
             self.last_action = f"{kind}: {'요청 접수' if success else error}"
             return self.log.event("automation_result", action=action, ok=success, result=result, error=error,
+                                  cancelled=cancelled,
                                   physical_result="unverified")
 
     def shutdown(self):

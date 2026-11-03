@@ -1,8 +1,8 @@
 """Non-activating, primary-screen overlay for the final screen-off countdown."""
 import math
-from PySide6.QtCore import QRect, Qt, Signal
+from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QFont, QPainter, QColor, QPen
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QSizePolicy
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QSizePolicy
 from windows.core.display_controller import State
 
 
@@ -31,8 +31,6 @@ def overlay_geometry(screen):
 
 
 class CountdownOverlay(QWidget):
-    cancel_requested = Signal()
-
     def __init__(self):
         super().__init__(None, Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint
                          | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowDoesNotAcceptFocus)
@@ -41,9 +39,7 @@ class CountdownOverlay(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.setStyleSheet("QLabel {color:#f9fafb;background:transparent;border:0;}"
-                           "QPushButton {color:#111827;background:#fbbf24;border:0;border-radius:10px;"
-                           "font-size:20px;padding:12px 28px;}")
+        self.setStyleSheet("QLabel {color:#f9fafb;background:transparent;border:0;}")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(32, 28, 32, 28)
         layout.setSpacing(12)
@@ -56,10 +52,11 @@ class CountdownOverlay(QWidget):
         self.number.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.number.setStyleSheet("color:#fbbf24")
         layout.addWidget(self.number, 1)
-        self.cancel = QPushButton("꺼짐 취소")
-        self.cancel.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.cancel.clicked.connect(self.cancel_requested.emit)
-        layout.addWidget(self.cancel, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.hint = QLabel("키보드·마우스 입력 또는 착석 감지 시 취소")
+        self.hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.hint.setStyleSheet("font-size:18px")
+        self.hint.setWordWrap(True)
+        layout.addWidget(self.hint)
         self.seconds = None
 
     def paintEvent(self, event):

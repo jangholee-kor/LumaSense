@@ -407,14 +407,30 @@ def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulate
 def test_overlay_visible_with_hidden_mainwindow_and_cancel_closes_it(app, simulated):
     from windows.core.display_controller import State
     view = simulated
+    token = [100]
+    view.runtime.input_token_provider = lambda: token[0]
     view.start_sleep()
     assert view.countdown_overlay.isVisible() and view.countdown_overlay.number.text() == "5"
     view.hide()
     app.processEvents()
     assert view.countdown_overlay.isVisible() and view.countdown_overlay.parentWidget() is None
-    view.countdown_overlay.cancel.click()
+    token[0] = 101
+    view.automation_tick()
     assert view.controller.state == State.IDLE and not view.countdown_overlay.isVisible()
     view.start_sleep()
     assert view.countdown_overlay.isVisible()
     view.stop_services()
     assert not view.countdown_overlay.isVisible()
+
+
+def test_manual_overlay_cancels_on_newly_detected_person(simulated):
+    from windows.core.display_controller import State
+    view = simulated
+    view.auto_panel.sim_presence.setCurrentIndex(view.auto_panel.sim_presence.findData("absent"))
+    view.simulation_packet()
+    view.start_sleep()
+    assert view.countdown_overlay.isVisible()
+    view.auto_panel.sim_presence.setCurrentIndex(view.auto_panel.sim_presence.findData("stationary"))
+    view.simulation_packet()
+    view.automation_tick()
+    assert view.controller.state == State.IDLE and not view.countdown_overlay.isVisible()

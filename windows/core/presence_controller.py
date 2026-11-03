@@ -27,7 +27,7 @@ class PresenceController:
         self.reason = "센서 연결 대기"
         self.input_remaining = 0
 
-    def _wake(self, now):
+    def request_wake(self, now):
         if self.owns_off and self.pending is None and self.wake_attempts < 3 and now >= self.retry_after:
             self.pending = "wake"
             self.wake_attempts += 1
@@ -53,7 +53,7 @@ class PresenceController:
                 self.reason = "자동 제어 일시 중단"
             else:
                 self.reason = "Windows 잠금 또는 세션 상태 확인 불가"
-            return self._wake(now)
+            return self.request_wake(now)
         present = snapshot.packet["presence"]
         distance = snapshot.packet.get("distance_cm")
         if snapshot.packet.get("ver") != 2 and present and distance is not None and distance > self.settings.max_distance_cm:
@@ -67,7 +67,7 @@ class PresenceController:
                 "Windows 입력 상태 확인 불가 · 자동 절전 보류" if input_age is None else "최근 입력 보호 중")
             if not self.owns_off:
                 self.state = PresenceState.PRESENT
-            return self._wake(now)
+            return self.request_wake(now)
         if self.pending:
             return None
         if self.owns_off:

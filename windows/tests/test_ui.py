@@ -25,6 +25,7 @@ def window(app, tmp_path):
     calls = []
     controller = DisplayController(SimpleNamespace(off=lambda: calls.append("off")), Diagnostics(tmp_path))
     window = MainWindow(controller.log, Settings(), controller, auto_scan=False)
+    window.runtime.input_token_provider = None
     yield window, calls
     window.stop_services()
     window.timer.stop()

@@ -40,19 +40,16 @@ def test_banner_wait_countdown_redetection_and_cancel(setup):
         feed(runtime, index, 1980)
         banner.update_status(runtime, index, controller)
         expected = f"자리 비움 · {11-index}초 후 꺼짐 카운트다운" if index < 11 else "5초 후 화면이 꺼집니다"
-        assert banner.title.text() == expected and not banner.cancel.isHidden()
+        assert banner.title.text() == expected
+        assert not hasattr(banner, "cancel")
     feed(runtime, 12, 600)
     banner.update_status(runtime, 12, controller)
-    assert "사용 중" in banner.title.text() and banner.cancel.isHidden()
+    assert "사용 중" in banner.title.text()
     feed(runtime, 13, 1980)
     banner.update_status(runtime, 13, controller)
-    cancelled = []
-    banner.cancel_requested.connect(lambda: cancelled.append(True))
-    banner.cancel.click()
-    assert cancelled == [True]
     runtime.pause_until = 30
     banner.update_status(runtime, 14, controller)
-    assert banner.title.text() == "자동 제어 일시 중단" and banner.cancel.isHidden()
+    assert banner.title.text() == "자동 제어 일시 중단"
     assert not banner.resume.isHidden()
 
 
@@ -63,11 +60,11 @@ def test_banner_sensor_error_never_shows_off_countdown_and_manual_countdown_is_s
     runtime.ingest({"packet": value, "received_at": 0})
     runtime.tick(0, 0, False, False)
     banner.update_status(runtime, 0, controller)
-    assert "자동 꺼짐 보류" in banner.title.text() and banner.cancel.isHidden()
+    assert "자동 꺼짐 보류" in banner.title.text()
     controller.state = State.COUNTDOWN
     controller.deadline = 5
     banner.update_status(runtime, 2, controller)
-    assert banner.title.text() == "3초 후 화면이 꺼집니다" and not banner.cancel.isHidden()
+    assert banner.title.text() == "3초 후 화면이 꺼집니다"
 
 
 def test_banner_signal_failure_is_absence_wait_then_countdown(setup):

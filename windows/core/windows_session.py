@@ -27,6 +27,10 @@ class WindowsSession:
             return None
         return ((self.kernel.GetTickCount() - value.dwTime) & 0xffffffff) / 1000
 
+    def input_token(self):
+        value = LastInput(ctypes.sizeof(LastInput), 0)
+        return value.dwTime if self.user.GetLastInputInfo(ctypes.byref(value)) else None
+
     def locked(self):
         # Read the active input desktop name; never switch or unlock desktops.
         handle = self.user.OpenInputDesktop(0, False, 0x0001)

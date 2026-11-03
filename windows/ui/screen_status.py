@@ -7,7 +7,6 @@ from windows.core.sensor_protocol import control_sensor_ok
 
 
 class ScreenStatusBanner(QWidget):
-    cancel_requested = Signal()
     resume_requested = Signal()
 
     def __init__(self):
@@ -23,11 +22,6 @@ class ScreenStatusBanner(QWidget):
         words.addWidget(self.title)
         words.addWidget(self.detail)
         layout.addLayout(words, 1)
-        self.cancel = QPushButton("꺼짐 취소")
-        self.cancel.setMinimumHeight(40)
-        self.cancel.clicked.connect(self.cancel_requested.emit)
-        self.cancel.setVisible(False)
-        layout.addWidget(self.cancel)
         self.resume = QPushButton("자동 제어 재개")
         self.resume.setMinimumHeight(40)
         self.resume.clicked.connect(self.resume_requested.emit)
@@ -48,10 +42,10 @@ class ScreenStatusBanner(QWidget):
     def update_status(self, runtime, now, controller):
         state = runtime.presence
         snap = runtime.sensors.snapshot(now)
-        title, detail, tone, cancel = state.status_text(now), "", "idle", False
+        title, detail, tone = state.status_text(now), "", "idle"
         if controller.state == State.COUNTDOWN:
             left = max(0, math.ceil(controller.deadline - now))
-            title, detail, tone, cancel = f"{left}초 후 화면이 꺼집니다", "수동 화면 꺼짐 시험 · 취소할 수 있습니다.", "countdown", True
+            title, detail, tone = f"{left}초 후 화면이 꺼집니다", "키보드·마우스 입력 또는 재감지로 취소됩니다.", "countdown"
         elif runtime.external_block and controller.state == State.IDLE:
             title, detail = "자동 제어가 중단되었습니다", "설정과 센서 상태를 확인한 뒤 설정 적용 또는 자동 제어 재개를 누르세요."
         elif state.pending == "off":
@@ -68,17 +62,15 @@ class ScreenStatusBanner(QWidget):
             title, detail = "센서 안정화 중", "정상 측정이 이어지면 자동으로 시작합니다."
         elif state.countdown_until is not None:
             left = max(0, math.ceil(state.countdown_until - now))
-            title, detail, tone, cancel = f"{left}초 후 화면이 꺼집니다", "다시 감지하거나 꺼짐 취소를 누르면 취소됩니다.", "countdown", True
+            title, detail, tone = f"{left}초 후 화면이 꺼집니다", "키보드·마우스 입력 또는 재감지로 취소됩니다.", "countdown"
         elif state.reason == "연속 부재 확인 중":
             left = max(0, math.ceil(runtime.settings.absence_seconds - (now - state.absent_since)))
-            title, detail, tone, cancel = f"자리 비움 · {left}초 후 꺼짐 카운트다운", "다시 범위 안으로 돌아오면 대기를 취소합니다.", "waiting", True
+            title, detail, tone = f"자리 비움 · {left}초 후 꺼짐 카운트다운", "입력하거나 범위 안으로 돌아오면 대기를 취소합니다.", "waiting"
         elif state.reason == "인체 감지":
             title, detail = "사용 중 · 착석 범위 안입니다", "자리를 비우면 설정한 시간 뒤에 꺼짐 카운트다운을 시작합니다."
         else:
             detail = "이 조건이 해제되면 자리 비움 확인을 시작합니다."
         self.title.setText(title)
         self.detail.setText(detail)
-        self.cancel.setVisible(cancel)
-        self.cancel.setToolTip("수동 화면 꺼짐 시험 취소" if controller.state == State.COUNTDOWN else "자동 제어를 15분 중단하고 꺼짐을 취소합니다.")
         self.resume.setVisible(title == "자동 제어 일시 중단")
         self.set_tone(tone)
