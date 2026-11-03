@@ -1,5 +1,6 @@
 """Independent lux mapping, filtering, transitions and command rate limits."""
 import math
+from .brightness_profiles import StepBrightness
 
 
 def map_lux(lux, curve):
@@ -26,6 +27,14 @@ class BrightnessController:
         self.light_on = None
         self.light_candidate = None
         self.light_candidate_since = 0.0
+        self.steps = StepBrightness(next(profile for profile in settings.brightness_profiles
+                                        if profile["name"] == settings.brightness_profile)) if settings.brightness_mode == "steps" else None
+
+    def invalidate_observation(self):
+        """Discard pending threshold dwell across missing/invalid sensor observations."""
+        if self.steps:
+            self.steps.reset()
+            self.target = self.filtered_lux = None
 
     def seed(self, brightness, now):
         if brightness is None or not 0 <= brightness <= 100:
@@ -37,6 +46,10 @@ class BrightnessController:
     def observe(self, lux, now):
         if type(lux) not in (int, float) or not math.isfinite(lux) or lux < 0:
             raise ValueError("유효한 lux 필요")
+        if self.steps:
+            self.filtered_lux = lux
+            self.target = self.steps.observe(lux, now)
+            return self.target
         if self.settings.brightness_mode == "two_level":
             self.filtered_lux = lux
             candidate = lux >= self.settings.light_threshold_lux
@@ -72,7 +85,7 @@ class BrightnessController:
     def propose(self, now):
         if self.target is None or now < self.pause_until or now - self.last_sent < self.settings.brightness_interval:
             return None
-        if self.settings.brightness_mode == "two_level":
+        if self.settings.brightness_mode in ("two_level", "steps"):
             return self.target if self.target != self.requested else None
         progress = min(1, max(0, (now - self.ramp_start) / self.settings.transition_seconds))
         value = round(self.ramp_value + (self.target - self.ramp_value) * progress)

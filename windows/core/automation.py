@@ -41,12 +41,20 @@ class AutomationRuntime:
         if not value.get("connected"):
             with self.lock:
                 self.sensors.invalidate(value.get("message", "연결 종료"), new_session=True)
+                self.brightness.invalidate_observation()
 
     def ingest(self, event):
         with self.lock:
             if event.get("new_session"):
                 self.sensors.invalidate("새 연결", new_session=True)
-            self.sensors.ingest(event["packet"], event["received_at"])
+                self.brightness.invalidate_observation()
+            try:
+                snapshot = self.sensors.ingest(event["packet"], event["received_at"])
+            except (ValueError, TypeError):
+                self.brightness.invalidate_observation()
+                raise
+            if snapshot.healthy_since is None:
+                self.brightness.invalidate_observation()
             if event["packet"]["light_ok"]:
                 self.brightness.observe(event["packet"]["lux"], self.clock())
 

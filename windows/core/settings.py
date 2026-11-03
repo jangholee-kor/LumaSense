@@ -3,6 +3,7 @@ from dataclasses import asdict, dataclass, field
 import math
 import ipaddress
 from pathlib import Path
+from .brightness_profiles import default_brightness_profiles, validate_profiles
 
 
 @dataclass
@@ -23,6 +24,8 @@ class Settings:
     auto_brightness: bool = False
     auto_presence: bool = False
     brightness_mode: str = "curve"
+    brightness_profile: str = "기본"
+    brightness_profiles: list = field(default_factory=default_brightness_profiles)
     light_threshold_lux: float = 100.0
     light_on_brightness: int = 55
     light_off_brightness: int = 2
@@ -112,8 +115,9 @@ class Settings:
             raise ValueError("최소 밝기는 최대 밝기 이하여야 합니다.")
         if self.tof_min_distance_cm >= self.tof_max_distance_cm:
             raise ValueError("ToF 최소 거리는 최대 거리보다 작아야 합니다.")
-        if self.brightness_mode not in ("curve", "two_level"):
+        if self.brightness_mode not in ("curve", "two_level", "steps"):
             raise ValueError("지원하지 않는 밝기 방식")
+        validate_profiles(self.brightness_profiles, self.brightness_profile)
         for name in ("light_on_lux", "light_off_lux"):
             value = getattr(self, name)
             if value is not None and (type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 65535):
