@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, Q
 from windows.core.settings import Settings
 from windows.ui.brightness_profiles import BrightnessProfileEditor
 from windows.ui.lux import LuxSpinBox, LuxDelegate, format_lux
+from windows.ui.simple_settings import SimpleSettingsPage
 
 
 class AutomationPanel(QWidget):
@@ -30,6 +31,7 @@ class AutomationPanel(QWidget):
     def __init__(self, settings, simulation=False):
         super().__init__()
         self.simulation = simulation
+        self.ui_mode = settings.ui_mode
         layout = QVBoxLayout(self)
         banner = QLabel("시뮬레이션 · 실제 모니터와 USB 장치를 제어하지 않습니다." if simulation
                         else "센서 자동 제어 · 화면 상태는 마지막 요청과 실제 관찰을 구분합니다.")
@@ -42,6 +44,7 @@ class AutomationPanel(QWidget):
         dash = QVBoxLayout(dashboard)
         group = QGroupBox("센서 연결")
         form = QFormLayout(group)
+        self.connection_form = form
         self.transport = QComboBox()
         self.transport.addItem("USB", "serial")
         self.transport.addItem("Wi-Fi · TCP", "tcp")
@@ -87,6 +90,7 @@ class AutomationPanel(QWidget):
         dash.addWidget(group)
         live = QGroupBox("현재 상태")
         status = QFormLayout(live)
+        self.live_form = status
         self.labels = {}
         for name, caption in (("lux", "조도"), ("lighting", "조도 기준 판정"), ("brightness", "목표 / 요청 밝기"), ("presence", "인체 감지"),
                               ("motion", "움직임 / 정지"), ("distance", "감지 거리"), ("sensor", "센서 유효성"),
@@ -139,11 +143,11 @@ class AutomationPanel(QWidget):
               ("transition_seconds", "전환 시간 (초)", 1, 3, True), ("ema_alpha", "EMA 반영 비율", .01, 1, True),
               ("brightness_interval", "명령 최소 간격 (초)", .2, 10, True), ("brightness_deadband", "변경 최소 폭 (%)", 1, 20, False),
               ("manual_pause_seconds", "수동 조절 후 자동 밝기 중단 (초)", 0, 86400, False)]),
-            ("존재 감지", [("absence_seconds", "연속 부재 시간 (초)", 5, 3600, False), ("max_distance_cm", "PC 감지 범위 (cm)", 1, 900, False),
+            ("존재 감지", [("absence_seconds", "연속 부재 시간 (초)", 1, 3600, False), ("max_distance_cm", "PC 감지 범위 (cm)", 1, 900, False),
               ("tof_min_distance_cm", "ToF 착석 최소 거리 (cm)", 4, 399, False),
               ("tof_max_distance_cm", "ToF 착석 최대 거리 (cm)", 5, 400, False),
               ("tof_hysteresis_cm", "ToF 착석 유지 거리 여유 (cm)", 0, 50, False),
-              ("tof_hold_seconds", "ToF 상태 전환 유지 시간 (초)", .1, 5, True),
+              ("tof_hold_seconds", "ToF 상태 전환 유지 시간 (초)", 0, 5, True),
               ("recent_input_seconds", "최근 입력 보호 시간 (초)", 1, 3600, False),
               ("stabilization_seconds", "연결·오류 복구 후 안정화 (초)", 1, 60, True),
               ("sensor_stale_seconds", "센서 데이터 만료 (초)", .5, 15, True)])]
@@ -347,6 +351,24 @@ class AutomationPanel(QWidget):
         system_scroll.setWidgetResizable(True)
         system_scroll.setWidget(system)
         self.tabs.addTab(system_scroll, "시스템 / 센서")
+        self.simple_page = SimpleSettingsPage(self)
+        self.tabs.insertTab(0, self.simple_page, "간편 설정")
+        self.advanced_pages = (controls_scroll, curve_scroll)
+        self.dashboard = dashboard
+        self.set_ui_mode(settings.ui_mode)
+
+    def set_ui_mode(self, mode):
+        self.ui_mode = mode
+        simple = mode == "simple"
+        self.tabs.setTabVisible(self.tabs.indexOf(self.simple_page), simple)
+        for page in self.advanced_pages:
+            self.tabs.setTabVisible(self.tabs.indexOf(page), not simple)
+        self.tabs.setTabText(self.tabs.indexOf(self.dashboard), "연결 / 상태" if simple else "대시보드")
+        self.radar_group.setVisible(not simple)
+        for key in ("lighting", "motion", "power", "last"):
+            self.live_form.setRowVisible(self.labels[key], not simple)
+        self.update_transport()
+        self.tabs.setCurrentWidget(self.simple_page if simple else self.dashboard)
 
     def set_curve(self, points):
         self.curve.setRowCount(len(points))
@@ -360,6 +382,11 @@ class AutomationPanel(QWidget):
             widget.setEnabled(tcp)
         for widget in (self.port, self.serial_number):
             widget.setEnabled(not tcp)
+        simple = self.ui_mode == "simple"
+        self.connection_form.setRowVisible(self.serial_number, not simple)
+        self.connection_form.setRowVisible(self.tcp_port, not simple)
+        for widget in (self.tcp_host, self.tcp_token):
+            self.connection_form.setRowVisible(widget, not simple or tcp)
 
     def update_brightness_mode(self):
         mode = self.brightness_mode.currentData()
@@ -402,6 +429,7 @@ class AutomationPanel(QWidget):
 
     def collect(self, base):
         result = Settings(**asdict(base))
+        result.ui_mode = self.ui_mode
         result.serial_port = self.selected_port()
         result.serial_number = self.serial_number.text().strip()
         result.sensor_transport = self.transport.currentData()
@@ -411,7 +439,7 @@ class AutomationPanel(QWidget):
         result.auto_brightness = self.auto_brightness.isChecked()
         result.auto_presence = self.auto_presence.isChecked()
         result.brightness_mode = self.brightness_mode.currentData()
-        result.brightness_profiles, result.brightness_profile = self.profile_editor.snapshot(include_draft=result.brightness_mode == "steps")
+        result.brightness_profiles, result.brightness_profile = self.profile_editor.snapshot(include_draft=result.ui_mode == "advanced" and result.brightness_mode == "steps")
         for state, (lux, recorded_at) in self.light_samples.items():
             setattr(result, f"light_{state}_lux", lux)
             setattr(result, f"light_{state}_recorded_at", recorded_at)
@@ -430,7 +458,7 @@ class AutomationPanel(QWidget):
         result.radar_apply_thresholds = self.radar_thresholds.isChecked()
         result.radar_moving_thresholds = [self.thresholds.cellWidget(i, 1).value() for i in range(14)]
         result.radar_stationary_thresholds = [self.thresholds.cellWidget(i, 2).value() for i in range(14)]
-        if result.brightness_mode == "curve":
+        if result.ui_mode == "advanced" and result.brightness_mode == "curve":
             try:
                 result.curve = [[float(self.curve.item(row, col).text()) for col in range(2)] for row in range(self.curve.rowCount())]
             except (AttributeError, ValueError):

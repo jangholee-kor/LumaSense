@@ -13,7 +13,7 @@ from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout, QGroupBox,
                                QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMenu, QPushButton, QSlider,
                                QSpinBox, QSystemTrayIcon, QTextEdit, QVBoxLayout, QWidget, QScrollArea,
-                               QTabWidget, QWidgetAction)
+                               QTabWidget, QWidgetAction, QInputDialog)
 
 from windows.core.brightness import TwinkleTrayBackend, discover_twinkle
 from windows.core.display_controller import State
@@ -31,6 +31,7 @@ from windows.core.settings import Settings
 from windows.core.sensor_log import SensorRecorder
 from windows.ui.automation_panel import AutomationPanel
 from windows.ui.lux import format_lux
+from windows.ui.screen_status import ScreenStatusBanner
 from windows import __version__
 
 
@@ -116,7 +117,7 @@ class MainWindow(QMainWindow):
         self.pool.setMaxThreadCount(1)
         self.setWindowTitle(f"LumaSense {__version__} · Smart Monitor Controller" + (" · 시뮬레이션" if simulation else ""))
         self.setWindowIcon(app_icon())
-        self.resize(900, 820)
+        self.resize(940, 900)
         self.setStyleSheet("QGroupBox{font-weight:600;margin-top:12px;padding-top:16px} QPushButton{padding:7px 12px} QLineEdit,QComboBox,QSpinBox{padding:5px}")
         body = QWidget()
         layout = QVBoxLayout(body)
@@ -253,6 +254,21 @@ class MainWindow(QMainWindow):
         root = QWidget()
         root_layout = QVBoxLayout(root)
         root_layout.setContentsMargins(0, 0, 0, 0)
+        self.screen_status = ScreenStatusBanner()
+        self.screen_status.cancel_requested.connect(self.cancel_banner_countdown)
+        self.screen_status.resume_requested.connect(self.resume_automation)
+        root_layout.addWidget(self.screen_status)
+        mode_row = QHBoxLayout()
+        mode_row.setContentsMargins(12, 0, 12, 0)
+        mode_row.addWidget(QLabel("사용 모드"))
+        self.ui_mode = QComboBox()
+        self.ui_mode.addItem("일반모드", "simple")
+        self.ui_mode.addItem("고급모드", "advanced")
+        self.ui_mode.setCurrentIndex(self.ui_mode.findData(settings.ui_mode))
+        mode_row.addWidget(self.ui_mode)
+        mode_row.addWidget(QLabel("변경 후 설정 적용을 누르세요."))
+        mode_row.addStretch()
+        root_layout.addLayout(mode_row)
         self.pages = QTabWidget()
         self.diagnostic_page = scroll
         self.auto_scroll = QScrollArea()
@@ -260,6 +276,8 @@ class MainWindow(QMainWindow):
         self.install_auto_panel(settings)
         self.pages.addTab(self.auto_scroll, "자동 제어 / 센서")
         self.pages.addTab(scroll, "수동 모니터 시험")
+        self.ui_mode.currentIndexChanged.connect(self.change_ui_mode)
+        self.change_ui_mode()
         root_layout.addWidget(self.pages)
         root_layout.addLayout(footer)
         self.setCentralWidget(root)
@@ -538,7 +556,7 @@ class MainWindow(QMainWindow):
         panel.wifi_config_requested.connect(self.configure_wifi)
         panel.network_status_requested.connect(lambda: self.sensor_request({"cmd": "network_status"}))
         panel.tof_reset_requested.connect(self.reset_tof)
-        panel.monitor_requested.connect(lambda: self.pages.setCurrentWidget(self.diagnostic_page))
+        panel.monitor_requested.connect(self.choose_monitor)
         panel.light_sample_requested.connect(self.record_light_sample)
         panel.light_preview_requested.connect(self.set_brightness)
         panel.auto_brightness.toggled.connect(lambda checked: self.disable_automation("brightness") if not checked else None)
@@ -547,6 +565,39 @@ class MainWindow(QMainWindow):
             panel.login_start.setEnabled(False)
         self.auto_panel = panel
         self.auto_scroll.setWidget(panel)
+        if hasattr(self, "ui_mode"):
+            self.ui_mode.blockSignals(True)
+            self.ui_mode.setCurrentIndex(self.ui_mode.findData(settings.ui_mode))
+            self.ui_mode.blockSignals(False)
+            self.change_ui_mode()
+
+    def change_ui_mode(self):
+        simple = self.ui_mode.currentData() == "simple"
+        self.auto_panel.set_ui_mode(self.ui_mode.currentData())
+        if self.pages.count() > 1:
+            self.pages.setTabVisible(1, not simple)
+            if simple:
+                self.pages.setCurrentIndex(0)
+
+    def choose_monitor(self):
+        if self.ui_mode.currentData() == "advanced":
+            self.pages.setCurrentWidget(self.diagnostic_page)
+            return
+        if not self.monitors.count():
+            self.scan_monitors()
+            self.message("모니터를 검색합니다. 검색 후 모니터 선택을 다시 누르세요.")
+            return
+        names = [self.monitors.itemText(i) for i in range(self.monitors.count())]
+        chosen, ok = QInputDialog.getItem(self, "밝기를 바꿀 모니터", "모니터", names,
+                                        max(0, self.monitors.currentIndex()), False)
+        if ok:
+            self.monitors.setCurrentIndex(names.index(chosen))
+
+    def cancel_banner_countdown(self):
+        if self.controller.state == State.COUNTDOWN:
+            self.cancel_sleep()
+        else:
+            self.pause_automation()
 
     def record_light_sample(self, state):
         try:
@@ -619,7 +670,7 @@ class MainWindow(QMainWindow):
                 lambda event: self.serial_signals.packet.emit({**event, "token": token}),
                 lambda event: self.serial_signals.status.emit({**event, "token": token}),
                 lambda event: self.serial_signals.command.emit({**event, "token": token}),
-                **options, stale_seconds=self.settings.sensor_stale_seconds)
+                **options, stale_seconds=self.runtime.settings.sensor_stale_seconds)
             self.serial_worker.start()
         except Exception as error:
             self.fail(str(error))
@@ -748,7 +799,7 @@ class MainWindow(QMainWindow):
                                      next((m.brightness for m in getattr(self, "monitor_list", []) if m.identifier == candidate.monitor_id), None))
             self.auto_fault = False
             if self.serial_worker:
-                self.serial_worker.stale_seconds = candidate.sensor_stale_seconds
+                self.serial_worker.stale_seconds = self.runtime.settings.sensor_stale_seconds
             if reconnect and active:
                 self.disconnect_sensor()
                 self.pending_connect = True
@@ -757,6 +808,8 @@ class MainWindow(QMainWindow):
             self.auto_panel.pause_status.setText("설정을 적용했습니다.")
             self.message("자동 제어 설정을 적용했습니다. 센서 안정화 후 제어합니다.")
             self.log.event("automation_settings_applied", auto_brightness=candidate.auto_brightness, auto_presence=candidate.auto_presence,
+                           ui_mode=candidate.ui_mode, effective_brightness_mode=self.runtime.settings.brightness_mode,
+                           effective_input_protection=self.runtime.settings.use_recent_input,
                            absence_seconds=candidate.absence_seconds, use_recent_input=candidate.use_recent_input,
                            recent_input_seconds=candidate.recent_input_seconds,
                            tof_min_distance_cm=candidate.tof_min_distance_cm, tof_max_distance_cm=candidate.tof_max_distance_cm,
@@ -887,10 +940,10 @@ class MainWindow(QMainWindow):
             labels["brightness"].setText(f"{text(self.runtime.brightness.target)} / {text(self.runtime.brightness.requested)} %")
             light_on = self.runtime.brightness.light_on
             lighting = "조도 곡선"
-            if self.settings.brightness_mode == "two_level":
+            if self.runtime.settings.brightness_mode == "two_level":
                 lighting = "미확인" if not snapshot.valid or not packet.get("light_ok") or light_on is None else (
                     "기준 이상 · 형광등 ON 밝기" if light_on else "기준 미만 · 불 끔 밝기")
-            elif self.settings.brightness_mode == "steps":
+            elif self.runtime.settings.brightness_mode == "steps":
                 steps = self.runtime.brightness.steps
                 lighting = "미확인" if not snapshot.valid or not packet.get("light_ok") or steps.index is None else (
                     f"{self.settings.brightness_profile} · {format_lux(steps.points[steps.index][0])} lux 이상 → {steps.points[steps.index][1]}%" +
@@ -913,6 +966,9 @@ class MainWindow(QMainWindow):
             manual = max(0, math.ceil(self.runtime.brightness.pause_until - now))
             self.auto_panel.pause_status.setText(f"자동 밝기 {'ON' if self.settings.auto_brightness else 'OFF'} · 자동 절전 {'ON' if self.settings.auto_presence else 'OFF'}\n"
                                                 f"전체 중단 {remaining}초 · 수동 밝기 보호 {manual}초")
+            self.auto_panel.simple_page.live.setText(
+                f"현재 조도 {format_lux(packet.get('lux'))} lux · 거리 {text(packet.get('distance_cm'))} cm{previous}")
+            self.screen_status.update_status(self.runtime, now, self.controller)
         except Exception as error:
             self.auto_fault = True
             self.runtime.external_block = True

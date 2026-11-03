@@ -331,3 +331,48 @@ def test_step_profile_only_changes_runtime_after_apply_and_live_marker_expires(s
     assert editor.graph.current_lux is None
     saved = Settings.load(view.log.root / "settings.json")
     assert saved.brightness_profiles[0]["points"][1] == [200, 40]
+
+
+def test_simple_mode_shared_fields_apply_and_advanced_options_survive(simulated):
+    view = simulated
+    panel = view.auto_panel
+    panel.brightness_mode.setCurrentIndex(panel.brightness_mode.findData("steps"))
+    panel.fields["tof_hold_seconds"].setValue(3)
+    panel.fields["recent_input_seconds"].setValue(90)
+    view.ui_mode.setCurrentIndex(view.ui_mode.findData("simple"))
+    assert panel.tabs.currentWidget() is panel.simple_page
+    assert not view.pages.isTabVisible(1)
+    assert all(not panel.tabs.isTabVisible(panel.tabs.indexOf(p)) for p in panel.advanced_pages)
+    panel.simple_page.fields["light_threshold_lux"].setValue(120.5)
+    panel.simple_page.fields["light_on_brightness"].setValue(35)
+    panel.simple_page.fields["tof_max_distance_cm"].setValue(100)
+    panel.simple_page.fields["absence_seconds"].setValue(7)
+    panel.simple_page.auto_presence.setChecked(True)
+    assert view.settings.ui_mode == "advanced"
+    view.apply_automation_settings()
+    saved = Settings.load(view.log.root / "settings.json")
+    assert saved.ui_mode == "simple" and saved.brightness_mode == "steps"
+    assert saved.tof_hold_seconds == 3 and saved.recent_input_seconds == 90
+    assert saved.light_threshold_lux == 120.5 and saved.light_on_brightness == 35
+    assert view.runtime.settings.brightness_mode == "two_level"
+    assert view.runtime.settings.absence_seconds == 7
+    assert view.runtime.settings.tof_hold_seconds == 0 and not view.runtime.settings.use_recent_input
+    assert view.centralWidget().layout().itemAt(0).widget() is view.screen_status
+    view.ui_mode.setCurrentIndex(view.ui_mode.findData("advanced"))
+    assert view.pages.isTabVisible(1)
+    view.apply_automation_settings()
+    assert view.runtime.settings.brightness_mode == "steps"
+    assert view.runtime.settings.tof_hold_seconds == 3 and view.runtime.settings.recent_input_seconds == 90
+
+
+def test_simple_mode_ignores_hidden_invalid_profile_and_checkbox_disables_immediately(simulated):
+    view = simulated
+    panel = view.auto_panel
+    panel.brightness_mode.setCurrentIndex(panel.brightness_mode.findData("steps"))
+    panel.profile_editor.table.cellWidget(1, 0).setValue(0)
+    view.ui_mode.setCurrentIndex(view.ui_mode.findData("simple"))
+    panel.simple_page.auto_presence.setChecked(True)
+    view.apply_automation_settings()
+    assert view.settings.auto_presence and view.runtime.settings.auto_presence
+    panel.simple_page.auto_presence.setChecked(False)
+    assert not view.settings.auto_presence and not view.runtime.settings.auto_presence

@@ -1,0 +1,50 @@
+{
+  "date": "2026-11-03",
+  "app_version": "0.6.0",
+  "automated_tests": {
+    "full_passed": 185,
+    "final_ui_passed": 23,
+    "full_log": ".local/modes-pytest.log"
+  },
+  "packaged_checks": {
+    "executable": "C:\\work\\git\\LumaSense\\.local\\modes-dist\\LumaSense\\LumaSense.exe",
+    "exe_sha256": "ffff4b7c75c7e2b215048b8a66d5f3863564fb8944dc34eb26df9587791a6d06",
+    "checks": [
+      {
+        "case": "gui",
+        "pass": true,
+        "screenshot": "C:\\work\\git\\LumaSense\\.local\\modes-exe-check\\gui\\ui.png"
+      },
+      {
+        "case": "watchdog",
+        "pass": true,
+        "simulated": true
+      },
+      {
+        "case": "lease_guard",
+        "pass": true,
+        "simulated": true
+      }
+    ],
+    "physical_validation": "not_run"
+  },
+  "ui_checks": {
+    "simple_countdown": ".local/modes-preview-final/simple-countdown.png",
+    "advanced_countdown": ".local/modes-preview-final/advanced-countdown.png",
+    "simple_present": ".local/modes-preview-final/simple-present.png",
+    "korean_render": "inspected"
+  },
+  "coverage": [
+    "fresh install simple and legacy settings advanced",
+    "mode persistence and preservation of advanced settings",
+    "shared simple and advanced fields",
+    "simple invalid hidden profile isolation",
+    "checkbox immediate disable",
+    "raw range exit without recent input or ToF hold delay",
+    "five-second cancel countdown and redetection cancellation",
+    "fixed top countdown in both modes",
+    "manual countdown and sensor error banner"
+  ],
+  "physical_validation": "not_run",
+  "firmware_changed": false
+}
