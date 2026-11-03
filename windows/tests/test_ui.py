@@ -53,6 +53,30 @@ def test_mouse_opt_in(window):
     assert not calls
 
 
+def test_help_button_opens_local_guide(window, monkeypatch):
+    from PySide6.QtWidgets import QPushButton
+    from windows.ui import main_window
+    view, _ = window
+    opened = []
+    monkeypatch.setattr(main_window, "QDesktopServices", SimpleNamespace(openUrl=lambda url: opened.append(url) or True))
+    button = next(b for b in view.findChildren(QPushButton) if b.text() == "도움말 / Wi-Fi 설정")
+    button.click()
+    assert len(opened) == 1 and opened[0].isLocalFile()
+    from pathlib import Path
+    guide = Path(opened[0].toLocalFile())
+    assert guide.is_file() and "Wi-Fi 설정과" in guide.read_text(encoding="utf-8")
+
+
+def test_missing_help_reports_error(window, monkeypatch, tmp_path):
+    from windows.ui import main_window
+    view, _ = window
+    errors = []
+    monkeypatch.setattr(main_window, "help_path", lambda: tmp_path / "missing.html")
+    monkeypatch.setattr(view, "fail", errors.append)
+    view.open_help()
+    assert len(errors) == 1 and "도움말 파일이 없습니다" in errors[0]
+
+
 def test_fallback_preview_persistence_and_countdown_lock(window):
     view, _ = window
     view.delay.setValue(5)

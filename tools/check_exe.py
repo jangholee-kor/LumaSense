@@ -26,10 +26,13 @@ def check(executable, root):
         result = subprocess.run([str(executable), "--smoke-test", "--screenshot", str(image)], env=env, timeout=30, creationflags=flags)
         assert result.returncode == 0, f"GUI exit code {result.returncode}"
         assert image.exists() and image.stat().st_size > 1024
+        guide = executable.parent / "_internal/windows/resources/help.html"
+        assert guide.is_file(), "Offline help missing from package"
+        assert "Wi-Fi 설정과" in guide.read_text(encoding="utf-8")
         events = records(folder / "smoke")
         assert any(e["event"] == "app_started" and e["mode"] == "smoke" for e in events)
         assert not any(e["event"] == "twinkle_cli" for e in events)
-        return {"case": "gui", "pass": True, "screenshot": str(image)}
+        return {"case": "gui", "pass": True, "screenshot": str(image), "help_page": str(guide)}
     def watchdog():
         folder = root / "watchdog"
         folder.mkdir()

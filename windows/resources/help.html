@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LumaSense · Wi-Fi 설정과 사용 안내</title>
+<style>
+:root{--ink:#142e36;--muted:#53666c;--teal:#087d73;--line:#dbe5e4;--paper:#fff;--bg:#f3f6f5}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:28px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 "Malgun Gothic","맑은 고딕",sans-serif;word-break:keep-all;overflow-wrap:anywhere}
+a{color:var(--teal);text-underline-offset:4px}button{font:inherit;cursor:pointer}
+.shell{max-width:1280px;margin:auto;padding:48px 32px;display:grid;grid-template-columns:210px minmax(0,1fr);gap:48px}
+aside{position:sticky;top:36px;align-self:start}.brand{font-size:24px;font-weight:800;letter-spacing:-1px}.edition{font-size:12px;color:var(--muted);margin:0 0 30px}
+nav a{display:block;text-decoration:none;color:var(--muted);padding:9px 0;font-size:14px}nav a:hover,nav a:focus{color:var(--teal);text-decoration:underline}
+.print{border:1px solid var(--line);background:white;border-radius:8px;padding:7px 15px;margin-top:24px;color:var(--ink);font-size:13px}
+main{min-width:0}.eyebrow{color:var(--teal);font-size:13px;font-weight:700;letter-spacing:1px;margin:0 0 12px}
+h1{font-size:38px;line-height:1.35;letter-spacing:-1.8px;margin:0 0 20px}h2{font-size:25px;letter-spacing:-.8px;line-height:1.5;margin:0 0 20px}h3{font-size:18px;margin:0 0 8px;line-height:1.6}
+p{margin:8px 0 16px}.lead{font-size:18px;color:var(--muted);margin-bottom:24px}.tags{display:flex;flex-wrap:wrap;gap:8px}.tag{border:1px solid #c8ded9;background:#e9f5f1;color:#176659;border-radius:24px;padding:3px 12px;font-size:12px}
+section{margin-top:42px;padding:32px;background:var(--paper);border:1px solid var(--line);border-radius:16px}.number{color:var(--teal);font-size:13px;margin-right:10px;vertical-align:middle}
+.flow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:24px 0}.node{flex:1;border:1px solid var(--line);border-radius:12px;padding:14px 8px;text-align:center;font-weight:700;font-size:14px}.node small{display:block;color:var(--muted);font-size:12px;font-weight:400}.arrow{color:var(--teal)}
+.note{background:#edf7f4;border-left:3px solid var(--teal);padding:14px 18px;border-radius:0 8px 8px 0;font-size:14px;margin:20px 0 0}.note p{margin:0}.note.amber{background:#fff8e9;border-color:#b87c12}
+.steps{list-style:none;counter-reset:step;padding:0;margin:0}.steps>li{counter-increment:step;position:relative;padding:0 0 24px 44px;margin-bottom:20px;border-bottom:1px solid var(--line)}.steps>li:last-child{border:0;margin-bottom:0;padding-bottom:0}.steps>li:before{content:counter(step);position:absolute;left:0;top:0;background:var(--ink);color:white;width:28px;height:28px;border-radius:50%;text-align:center;font-size:14px;line-height:28px}
+.steps p{font-size:15px;margin:6px 0 0}.path{display:block;color:var(--teal);font-size:13px;font-weight:700;margin:4px 0 8px}strong{font-weight:700}code{background:#edf1f2;border-radius:4px;padding:2px 6px;font:14px/1.6 Consolas,monospace}
+.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{background:#f4f7f6;font-weight:700}td:first-child{min-width:130px}tr:last-child td{border-bottom:0}
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:24px}.columns>div{padding:18px;border:1px solid var(--line);border-radius:10px}.columns p{font-size:14px;margin-bottom:0}
+.timeline{border:1px dashed #9dbfb5;border-radius:10px;padding:18px;text-align:center;margin:20px 0;color:#176659;font-weight:700}.timeline small{display:block;color:var(--muted);font-size:13px;font-weight:400}
+ul{padding-left:22px}li{margin:6px 0}details{border-top:1px solid var(--line);padding:15px 0}details:last-child{padding-bottom:0}summary{font-size:16px;font-weight:700;cursor:pointer}details p{font-size:14px;color:var(--muted);margin:12px 0 0}footer{color:var(--muted);font-size:12px;margin:28px 0}
+@media(max-width:850px){.shell{grid-template-columns:1fr;gap:26px;padding:26px 20px}aside{position:static}.edition{margin-bottom:12px}nav{display:flex;flex-wrap:wrap;gap:0 20px}.print{margin-top:12px}h1{font-size:30px}section{padding:24px;margin-top:28px}.columns{grid-template-columns:1fr}}
+@media(max-width:480px){.shell{padding:20px 14px}section{padding:20px 16px}.flow{gap:5px}.node{font-size:12px;padding:12px 4px}.node small{font-size:11px}.steps>li{padding-left:38px}h2{font-size:22px}}
+@media print{body{background:white;color:#000;font-size:11pt}.shell{display:block;padding:0;max-width:none}aside,button,.tags{display:none}section{break-inside:avoid;border-radius:0;margin-top:22px;padding:16px}h1{font-size:25pt}h2{font-size:18pt}a{color:inherit}details{break-inside:avoid}details>p{display:block}footer{margin-top:14px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside aria-label="안내서 목차">
+<div class="brand">LumaSense</div>
+<p class="edition">0.7.4 · 오프라인 사용 안내</p>
+<nav>
+<a href="#prepare">01 준비와 연결 구조</a>
+<a href="#wifi">02 집에서 Wi-Fi 설정</a>
+<a href="#usb">03 USB로 다시 사용</a>
+<a href="#simple">04 밝기와 자리 비움 설정</a>
+<a href="#daily">05 매일 사용하는 방법</a>
+<a href="#trouble">06 연결이 안 될 때</a>
+</nav>
+<button class="print" type="button" onclick="window.print()">인쇄 / PDF 저장</button>
+</aside>
+<main>
+<header>
+<p class="eyebrow">SETUP &amp; GUIDE</p>
+<h1>Wi-Fi 설정과<br>사용 안내</h1>
+<p class="lead">처음 한 번은 USB로 공유기 정보를 저장하세요.<br>
+그다음부터는 센서에 전원만 공급하고 무선으로 사용할 수 있습니다.</p>
+<div class="tags"><span class="tag">ESP32-S3 SuperMini</span><span class="tag">BH1750 + VL53L1X</span><span class="tag">2.4GHz Wi-Fi</span><span class="tag">Windows 11</span></div>
+</header>
+
+<section id="prepare">
+<h2><span class="number">01</span>준비와 연결 구조</h2>
+<div class="flow" aria-label="센서에서 공유기를 거쳐 PC 앱으로 데이터 전송">
+<div class="node">센서 + S3<small>조도·거리 측정</small></div><span class="arrow" aria-hidden="true">→</span>
+<div class="node">집 공유기<small>2.4GHz Wi-Fi</small></div><span class="arrow" aria-hidden="true">→</span>
+<div class="node">PC 앱<small>밝기·화면 꺼짐 제어</small></div>
+</div>
+<ul>
+<li>USB 데이터 케이블과 집 공유기의 이름·비밀번호를 준비합니다.</li>
+<li>센서와 PC는 서로 통신할 수 있는 같은 집 내부 네트워크에 연결합니다.<br>
+PC는 공유기에 유선 LAN으로 연결해도 됩니다.</li>
+<li>밝기를 제어하려면 PC에 Twinkle Tray를 설치하고 모니터의 DDC/CI 기능을 켭니다.</li>
+<li>배포 폴더 안의 <code>LumaSense.exe</code>와 <code>_internal</code> 폴더를 함께 보관합니다.</li>
+</ul>
+<div class="note"><p><strong>무선은 데이터 전송 방식입니다.</strong><br>
+S3에는 계속 전원이 필요하고, PC에서는 LumaSense가 실행 중이어야 합니다.</p></div>
+</section>
+
+<section id="wifi">
+<h2><span class="number">02</span>집에서 Wi-Fi 설정하기</h2>
+<ol class="steps">
+<li><h3>먼저 센서를 PC USB에 연결합니다</h3>
+<span class="path">일반 → 연결 / 상태</span>
+<p><strong>연결 방식: USB</strong>를 선택합니다.<br>
+<strong>포트 새로고침</strong>을 누르고 S3의 COM 포트를 선택한 뒤 <strong>연결</strong>을 누릅니다.<br>
+COM 번호는 PC나 USB 포트에 따라 달라지므로 현재 표시된 번호를 사용합니다.<br>
+조도·거리가 들어오고 센서가 정상인지 확인합니다.</p></li>
+<li><h3>집 공유기 정보를 저장합니다</h3>
+<span class="path">시스템 / 센서 → SuperMini Wi-Fi 설정 · 먼저 USB로 연결</span>
+<p><strong>2.4GHz 공유기 이름</strong>과 <strong>공유기 비밀번호</strong>를 입력합니다.<br>
+<strong>USB로 Wi-Fi 설정 저장</strong>을 누르고 저장 응답을 확인합니다.<br>
+공유기 이름은 UTF-8 기준 1~32바이트, 비밀번호는 8~63바이트이며 WPA2 비밀번호 방식으로 연결합니다.<br>
+무선 장치 키는 비어 있으면 앱에서 자동으로 만들어 저장합니다.<br>
+저장 후 비밀번호 입력칸이 비워지는 것은 정상입니다.</p></li>
+<li><h3>센서의 IP를 확인합니다</h3>
+<span class="path">시스템 / 센서 → 장치 IP / 연결 상태 조회</span>
+<p>잠시 기다렸다가 <strong>장치 IP / 연결 상태 조회</strong>를 누릅니다.<br>
+<strong>공유기 연결됨</strong>과 IP 주소가 표시되면 공유기 접속이 완료된 것입니다.<br>
+아직 IP가 없다면 잠시 후 다시 조회합니다.<br>
+확인된 IP는 연결 화면의 센서 IP 입력칸에도 자동으로 들어갑니다.</p></li>
+<li><h3>USB 데이터 연결을 해제합니다</h3>
+<span class="path">연결 / 상태 → 연결 해제 / 플래시 준비</span>
+<p><strong>연결 해제 / 플래시 준비</strong>를 누르고 기존 연결이 종료될 때까지 기다립니다.<br>
+무선 연결을 확인하는 동안에는 PC에 꽂힌 USB를 그대로 두어 전원을 공급해도 됩니다.</p></li>
+<li><h3>연결 방식을 Wi-Fi로 바꿉니다</h3>
+<span class="path">연결 / 상태 → 연결 방식: Wi-Fi · TCP</span>
+<p><strong>Wi-Fi · TCP</strong>를 선택하고 센서 IP와 자동 저장된 무선 장치 키를 확인합니다.<br>
+<strong>연결</strong>을 누른 뒤 조도·거리가 계속 갱신되는지 확인합니다.<br>
+고급모드의 <strong>대시보드</strong>에서도 같은 연결을 설정할 수 있습니다.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>항목</th><th>입력할 값</th></tr></thead>
+<tbody><tr><td>센서 IP</td><td>장치에서 조회한 IPv4 주소<br>예: <code>192.168.0.50</code> — 실제 조회값으로 바꿉니다.</td></tr>
+<tr><td>TCP 포트</td><td><code>47653</code> · 일반모드에서는 표시하지 않습니다.</td></tr>
+<tr><td>무선 장치 키</td><td>USB로 Wi-Fi 설정을 저장할 때 만든 값<br>공유기 비밀번호와 다른 값이며 임의로 바꾸지 않습니다.</td></tr></tbody>
+</table></div></li>
+<li><h3>USB를 전원용 포트로 옮깁니다</h3>
+<p>무선 수신을 확인한 뒤 S3를 모니터 USB나 별도 USB 전원에 연결합니다.<br>
+보드가 다시 켜지고 공유기에 접속하면 앱이 재연결을 시도합니다.<br>
+<strong>시스템 / 센서</strong>에서 <strong>시작 시 센서 자동 연결</strong>을 선택하고 <strong>시스템 설정 적용</strong>을 누르면 다음 실행에도 저장된 Wi-Fi 연결을 시도합니다.</p></li>
+</ol>
+<div class="note amber"><p><strong>모니터 USB를 쓴다면 대기 전원을 확인하세요.</strong><br>
+화면이 꺼질 때 USB 전원도 끊기면 센서가 꺼져 착석을 감지할 수 없습니다.<br>
+모니터 설정에서 USB 대기 전원을 유지하거나 별도 USB 전원을 사용합니다.</p></div>
+</section>
+
+<section id="usb">
+<h2><span class="number">03</span>USB로 다시 사용하기</h2>
+<p>무선 연결 중이라면 <strong>연결 해제 / 플래시 준비</strong>를 누르고 종료를 기다립니다.<br>
+S3를 데이터 케이블로 PC에 연결한 뒤 <strong>연결 방식: USB</strong>와 COM 포트를 선택하고 <strong>연결</strong>을 누릅니다.<br>
+센서에 저장한 공유기 정보는 그대로 남아 있어 나중에 Wi-Fi로 돌아갈 수 있습니다.</p>
+<div class="columns">
+<div><h3>USB 사용</h3><p>PC USB 한 가닥으로 전원과 데이터를 함께 연결합니다.<br>
+센서 IP나 무선 장치 키를 입력하지 않습니다.</p></div>
+<div><h3>Wi-Fi 사용</h3><p>USB는 전원 공급에 사용하고 데이터는 공유기를 통해 전송합니다.<br>
+공유기 정보를 바꿀 때는 PC에 USB로 연결해 다시 저장합니다.</p></div>
+</div>
+</section>
+
+<section id="simple">
+<h2><span class="number">04</span>밝기와 자리 비움 설정</h2>
+<span class="path">사용 모드: 일반 → 간편 설정</span>
+<h3>조명에 맞춰 밝기 바꾸기</h3>
+<p><strong>자동 밝기 사용</strong>을 켜고 조명 ON 기준 Lux와 두 가지 밝기를 입력한 뒤 <strong>설정 적용</strong>을 누릅니다.<br>
+기준 이상이면 조명이 켜졌을 때 밝기를, 기준 미만이면 조명이 꺼졌을 때 밝기를 사용합니다.<br>
+밝아질 때와 어두워질 때 모두 같은 상태가 <strong>1초</strong> 유지되면 목표 밝기를 요청합니다.<br>
+모니터 반영에는 센서 수신과 모니터 처리 시간이 더해집니다.</p>
+<div class="note"><p>예: 기준 <strong>100 Lux</strong> · 조명 ON <strong>22%</strong> · 조명 OFF <strong>5%</strong><br>
+이 값은 예시입니다.<br>
+조명을 켠 상태와 끈 상태의 현재 조도를 확인하고 기준을 그 사이에 정하세요.</p></div>
+<h3 style="margin-top:28px">자리 비우면 화면 끄기</h3>
+<p>센서가 앉아 있는 몸통을 향하도록 설치하고 현재 거리를 확인합니다.<br>
+<strong>자동 화면 꺼짐·켜짐 사용</strong>을 켜고 앉아 있을 때 거리 범위와 범위 밖에서 기다릴 시간을 입력한 뒤 <strong>설정 적용</strong>을 누릅니다.</p>
+<div class="timeline">착석 범위 이탈 → 설정한 대기 시간 → 5초 카운트다운 → 화면 끄기 요청
+<small>대기 시간을 5초로 입력했다면 범위 이탈 후 약 10초 뒤에 끄기를 요청합니다.</small></div>
+<ul>
+<li>카운트다운은 기본 모니터 중앙에 큰 숫자로 표시됩니다.</li>
+<li>새 키보드·마우스 입력이나 착석 재감지가 있으면 대기·카운트다운을 취소합니다.</li>
+<li>일반모드에서 새 입력으로 취소하면 설정한 대기 시간부터 다시 셉니다.</li>
+<li>꺼진 뒤 다시 착석하거나 키보드·마우스를 사용하면 화면 켜기를 요청합니다.</li>
+<li>센서 통신이 정상이면 거리가 측정되지 않는 상태도 부재로 판단합니다.<br>
+연결 끊김·센서 고장·데이터 갱신 중단은 자동 꺼짐을 보류합니다.</li>
+</ul>
+<div class="note"><p>VL53L1X는 거리로 착석 여부를 판단합니다.<br>
+사람과 의자·벽 같은 물체를 구분하지 않으므로 빈 의자가 착석 범위 안에 잡히지 않게 각도와 범위를 조절하세요.<br>
+밝기는 선택한 모니터에 적용하고, 화면 끄기 요청은 연결된 화면 전체에 적용합니다.</p></div>
+</section>
+
+<section id="daily">
+<h2><span class="number">05</span>매일 사용하는 방법</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>하고 싶은 일</th><th>사용 방법</th></tr></thead>
+<tbody>
+<tr><td>밝기 제어 모니터 선택</td><td>연결 / 상태 → 모니터 선택 / 탐색</td></tr>
+<tr><td>Windows 시작 시 자동 실행</td><td>시스템 / 센서 → Windows 로그인 시 트레이로 실행 → 시스템 설정 적용</td></tr>
+<tr><td>자동으로 센서 연결</td><td>시스템 / 센서 → 시작 시 센서 자동 연결 → 시스템 설정 적용</td></tr>
+<tr><td>앱을 직접 실행</td><td>실행파일을 열면 일반 창으로 시작합니다.<br>이미 트레이에 실행 중이면 트레이 아이콘을 두 번 누르거나 메뉴에서 창을 엽니다.</td></tr>
+<tr><td>창만 숨기기</td><td>창 닫기(X) 또는 트레이로 숨기기<br>센서 자동 제어는 계속 실행됩니다.</td></tr>
+<tr><td>앱 완전히 종료</td><td>창 아래 종료 버튼 또는 트레이 메뉴의 종료</td></tr>
+<tr><td>세부 설정</td><td>사용 모드를 고급으로 바꾸고 설정을 적용합니다.<br>조도 곡선·구간별 밝기 프로필·감지 유지 시간 등을 조절할 수 있습니다.</td></tr>
+</tbody></table></div>
+<p style="font-size:14px;margin-top:20px">수동으로 밝기를 바꾸면 자동 밝기는 기본 15분 동안 중단됩니다.<br>
+바로 돌리려면 연결 / 상태 또는 고급모드 대시보드의 <strong>자동 제어 재개</strong>를 누릅니다.<br>
+앱 폴더를 옮겼다면 로그인 자동 실행을 해제·적용한 뒤 다시 선택·적용해 실행 경로를 갱신합니다.</p>
+</section>
+
+<section id="trouble">
+<h2><span class="number">06</span>연결이 안 될 때</h2>
+<details open><summary>공유기 연결됨이나 IP가 표시되지 않아요</summary>
+<p>USB 연결이 유지되는지 확인하고 공유기 이름과 비밀번호를 다시 확인합니다.<br>
+2.4GHz 네트워크와 WPA2 비밀번호 방식을 사용합니다.<br>
+공유기는 WPA2 개인 네트워크 또는 WPA2 호환 모드로 설정합니다.<br>
+5GHz 전용이나 비밀번호 없는 네트워크는 이 설정 방식으로 연결할 수 없습니다.<br>
+설정을 저장한 뒤 잠시 기다렸다가 IP를 다시 조회합니다.</p></details>
+<details open><summary>IP는 있는데 무선 연결이 안 돼요</summary>
+<p>기존 USB 연결을 먼저 해제했는지 확인합니다.<br>
+센서 IP와 무선 장치 키, TCP 포트 47653을 확인합니다.<br>
+PC와 센서를 같은 내부 네트워크에 연결하고 게스트 Wi-Fi나 장치 간 통신 차단 설정을 확인합니다.<br>
+공유기의 포트 포워딩은 필요하지 않습니다.<br>
+PC 보안 프로그램의 연결 차단 여부도 확인합니다.</p></details>
+<details><summary>어제는 됐는데 오늘은 연결이 안 돼요</summary>
+<p>센서 전원을 확인하고 USB로 연결해 IP를 다시 조회합니다.<br>
+공유기가 센서에 다른 IP를 할당했다면 앱의 센서 IP를 새 값으로 바꿉니다.<br>
+공유기에서 해당 센서의 DHCP 주소 예약을 설정하면 같은 IP를 유지하기 편합니다.</p></details>
+<details><summary>새 PC에서 무선 장치 키가 없어요</summary>
+<p>새 PC에 센서를 USB로 연결하고 Wi-Fi 설정을 다시 저장합니다.<br>
+장치 키가 비어 있으면 새 키를 생성하며, 기존 PC에서 연결하려면 같은 키를 사용해야 합니다.<br>
+설정 내보내기 파일에는 무선 장치 키가 포함되지 않습니다.</p></details>
+<details><summary>앉아 있어도 화면이 꺼지거나, 떠나도 안 꺼져요</summary>
+<p>센서 각도와 현재 거리, 착석 범위를 확인합니다.<br>
+빈 의자나 벽이 범위 안에 잡히면 계속 착석으로 판단할 수 있습니다.<br>
+상단에 센서 확인 중·자동 꺼짐 보류가 표시되면 연결과 센서 상태를 먼저 확인합니다.<br>
+연결·오류 복구 뒤에는 정상 측정이 5초 이어진 후 자동 제어를 시작합니다.</p></details>
+<details><summary>화면이 꺼지면 센서도 같이 꺼져요</summary>
+<p>모니터 USB의 대기 전원이 끊긴 상황일 수 있습니다.<br>
+모니터의 USB 대기 전원 설정을 확인하거나 전원이 유지되는 별도 USB 포트·전원을 사용합니다.</p></details>
+<details><summary>USB COM 포트가 안 보이거나 연결이 안 돼요</summary>
+<p>충전 전용 케이블 대신 데이터 케이블을 사용하고 PC USB에 직접 연결합니다.<br>
+포트 새로고침을 누르고 현재 S3의 COM 포트를 선택합니다.<br>
+보드 기록 도구나 다른 시리얼 프로그램이 포트를 사용 중이면 종료합니다.</p></details>
+</section>
+<footer>LumaSense 0.7.4 · 2026-11-03<br>
+이 안내서는 앱에 포함된 HTML 파일이며 인터넷 연결 없이 열립니다.</footer>
+</main>
+</div>
+</body>
+</html>

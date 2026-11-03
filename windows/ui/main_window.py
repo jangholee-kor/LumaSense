@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 from dataclasses import replace
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, Signal, Qt
-from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, Signal, Qt, QUrl
+from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap, QDesktopServices
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout, QGroupBox,
                                QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMenu, QPushButton, QSlider,
                                QSpinBox, QSystemTrayIcon, QTextEdit, QVBoxLayout, QWidget, QScrollArea,
@@ -28,6 +28,7 @@ from windows.core.windows_session import WindowsSession
 from windows.core.processes import application_command, process_cwd
 from windows.core import startup
 from windows.core.settings import Settings
+from windows.core.help_page import help_path
 from windows.core.sensor_log import SensorRecorder
 from windows.ui.automation_panel import AutomationPanel
 from windows.ui.lux import format_lux
@@ -243,6 +244,9 @@ class MainWindow(QMainWindow):
         self.output.document().setMaximumBlockCount(500)
         layout.addWidget(self.output, 1)
         footer = QHBoxLayout()
+        help_button = QPushButton("도움말 / Wi-Fi 설정")
+        help_button.clicked.connect(self.open_help)
+        footer.addWidget(help_button)
         logs = QPushButton("로그 폴더 열기")
         logs.clicked.connect(lambda: os.startfile(self.log.root))
         footer.addWidget(logs)
@@ -292,6 +296,10 @@ class MainWindow(QMainWindow):
         self.tray = QSystemTrayIcon(self.windowIcon(), self)
         self.tray.setToolTip("Smart Monitor Controller" + (" · 시뮬레이션" if simulation else ""))
         menu = QMenu(self)
+        help_action = QAction("도움말 / Wi-Fi 설정", self)
+        help_action.triggered.connect(self.open_help)
+        menu.addAction(help_action)
+        menu.addSeparator()
         self.tray_auto_brightness = QAction("자동 밝기", self)
         self.tray_auto_brightness.setCheckable(True)
         self.tray_auto_brightness.setChecked(settings.auto_brightness)
@@ -338,6 +346,13 @@ class MainWindow(QMainWindow):
 
     def message(self, text):
         self.output.append(text)
+
+    def open_help(self):
+        path = help_path()
+        if not path.is_file():
+            self.fail("도움말 파일이 없습니다. 배포 폴더 전체를 다시 풀어 주세요.")
+        elif not QDesktopServices.openUrl(QUrl.fromLocalFile(str(path))):
+            self.fail("도움말을 열 수 없습니다. Windows 기본 브라우저 설정을 확인하세요.")
 
     def fail(self, error):
         self.log.event("ui_error", error=error)
