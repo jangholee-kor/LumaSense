@@ -8,7 +8,7 @@ import pytest
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
-from windows.core.brightness import Monitor
+from windows.core.brightness import Monitor, MonitorListUnavailable
 from windows.core.diagnostics import Diagnostics
 from windows.core.display_controller import DisplayController, State
 from windows.core.settings import Settings
@@ -129,6 +129,84 @@ def test_worker_does_not_block_ui_and_delivers_on_main_thread(app, window):
     assert received == [(42, app.thread())]
     assert worker_threads[0] != app.thread()
     assert not view.busy
+
+
+def test_startup_monitor_scan_recovers_after_delayed_inventory(app, window, monkeypatch, tmp_path):
+    from windows.ui import main_window
+    view, _ = window
+    view.settings.monitor_id = "saved-target"
+    calls, threads = [], []
+    def inventory():
+        calls.append("list")
+        threads.append(QThread.currentThread())
+        if len(calls) < 3:
+            raise MonitorListUnavailable("목록 준비 중")
+        return [Monitor("other", "Other", 20, "ddcci"), Monitor("saved-target", "Target", 55, "ddcci")]
+    backend = SimpleNamespace(monitors=inventory, set_brightness=lambda *args: calls.append("write"))
+    monkeypatch.setattr(main_window, "STARTUP_MONITOR_RETRY_DELAYS_MS", (10, 10))
+    monkeypatch.setattr(main_window, "discover_twinkle", lambda configured: tmp_path / "Twinkle.exe")
+    monkeypatch.setattr(main_window, "TwinkleTrayBackend", lambda *args: backend)
+    assert view.scan_monitors(startup=True)
+    deadline = time.monotonic() + 3
+    saw_waiting = False
+    while (len(calls) < 3 or view.busy) and time.monotonic() < deadline:
+        app.processEvents()
+        saw_waiting |= "목록 준비 중" in view.action_result.text()
+        time.sleep(.005)
+    assert calls == ["list", "list", "list"]
+    assert saw_waiting
+    assert all(thread != app.thread() for thread in threads)
+    assert view.monitors.currentData() == "saved-target"
+    assert view.runtime.monitor_id == "saved-target"
+    assert not view.startup_scan_timer.isActive()
+    assert "모니터 2대 검색됨" in view.action_result.text()
+
+
+def test_startup_monitor_scan_stops_after_retry_limit(app, window, monkeypatch, tmp_path):
+    from windows.ui import main_window
+    view, _ = window
+    calls = []
+    def inventory():
+        calls.append("list")
+        raise MonitorListUnavailable("목록 준비 중")
+    monkeypatch.setattr(main_window, "STARTUP_MONITOR_RETRY_DELAYS_MS", (10, 10))
+    monkeypatch.setattr(main_window, "discover_twinkle", lambda configured: tmp_path / "Twinkle.exe")
+    monkeypatch.setattr(main_window, "TwinkleTrayBackend", lambda *args: SimpleNamespace(monitors=inventory))
+    assert view.scan_monitors(startup=True)
+    deadline = time.monotonic() + 3
+    while (len(calls) < 3 or view.busy) and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(.005)
+    assert calls == ["list", "list", "list"]
+    assert not view.startup_scan_timer.isActive()
+    assert view.action_result.text() == "오류: 목록 준비 중"
+
+
+def test_manual_monitor_scan_cancels_startup_retry(app, window, monkeypatch, tmp_path):
+    from windows.ui import main_window
+    view, _ = window
+    calls = []
+    def inventory():
+        calls.append("list")
+        if len(calls) == 1:
+            raise MonitorListUnavailable("목록 준비 중")
+        return [Monitor("saved-target", "Target", 55, "ddcci")]
+    monkeypatch.setattr(main_window, "STARTUP_MONITOR_RETRY_DELAYS_MS", (50,))
+    monkeypatch.setattr(main_window, "discover_twinkle", lambda configured: tmp_path / "Twinkle.exe")
+    monkeypatch.setattr(main_window, "TwinkleTrayBackend", lambda *args: SimpleNamespace(monitors=inventory))
+    assert view.scan_monitors(startup=True)
+    deadline = time.monotonic() + 3
+    while not view.startup_scan_timer.isActive() and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(.005)
+    assert view.startup_scan_timer.isActive()
+    assert view.scan_monitors()
+    while view.busy and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(.005)
+    assert calls == ["list", "list"]
+    assert not view.startup_scan_timer.isActive()
+    assert view.monitors.currentData() == "saved-target"
 
 
 def test_brightness_uses_selected_id(app, window):

@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, 
                                QSpinBox, QSystemTrayIcon, QTextEdit, QVBoxLayout, QWidget, QScrollArea,
                                QTabWidget, QWidgetAction, QInputDialog)
 
-from windows.core.brightness import TwinkleTrayBackend, discover_twinkle
+from windows.core.brightness import MonitorListUnavailable, TwinkleTrayBackend, discover_twinkle
 from windows.core.display_controller import State
 from windows.core.watchdog import recovery_window_seconds, arm_watchdog
 from windows.core.automation import AutomationRuntime
@@ -35,6 +35,9 @@ from windows.ui.lux import format_lux
 from windows.ui.screen_status import ScreenStatusBanner
 from windows.ui.countdown_overlay import CountdownOverlay, countdown_seconds
 from windows import __version__
+
+
+STARTUP_MONITOR_RETRY_DELAYS_MS = (5000, 15000, 30000)
 
 
 class Signals(QObject):
@@ -343,9 +346,13 @@ class MainWindow(QMainWindow):
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.tick)
         self.timer.start()
+        self.startup_scan_failures = 0
+        self.startup_scan_timer = QTimer(self)
+        self.startup_scan_timer.setSingleShot(True)
+        self.startup_scan_timer.timeout.connect(lambda: self.scan_monitors(startup=True))
         self.message(f"로그 위치: {self.log.root}")
         if auto_scan:
-            QTimer.singleShot(0, self.scan_monitors)
+            QTimer.singleShot(0, lambda: self.scan_monitors(startup=True))
         if simulation or settings.connect_on_start:
             QTimer.singleShot(0, self.connect_sensor)
 
@@ -412,11 +419,20 @@ class MainWindow(QMainWindow):
         self.schedule.setText(f"절전 요청 직전 기준: 1차 약 {first}초 · 첫 추가 요청 약 {first + interval}초{extra}\n"
                               "추가 요청 전에 켜지는지 확인하세요. 실제 화면 켜짐에는 모니터 자체 지연이 더해집니다.")
 
-    def scan_monitors(self, on_ready=None):
+    def scan_monitors(self, on_ready=None, *, startup=False):
+        if not startup:
+            self.startup_scan_timer.stop()
+            self.startup_scan_failures = 0
         if self.controller.state != State.IDLE:
+            if startup:
+                self.startup_scan_timer.start(1000)
+                return False
             self.fail("진행 중인 화면 절전 시험이 끝난 뒤 모니터를 검색하세요.")
             return False
         if self.busy:
+            if startup:
+                self.startup_scan_timer.start(1000)
+                return False
             self.show_action_result("진행 중인 요청이 끝난 뒤 모니터를 다시 검색하세요.")
             return False
         self.show_action_result("Twinkle Tray에서 모니터 목록을 확인하고 있습니다.")
@@ -429,8 +445,26 @@ class MainWindow(QMainWindow):
             if not exe:
                 raise FileNotFoundError("Twinkle Tray를 찾지 못했습니다. 설치 경로를 지정하세요.")
             backend = TwinkleTrayBackend(exe, self.log)
-            return exe, backend, backend.monitors()
+            try:
+                return exe, backend, backend.monitors()
+            except MonitorListUnavailable as error:
+                if startup:
+                    return error
+                raise
         def done(result):
+            if isinstance(result, MonitorListUnavailable):
+                if self.startup_scan_failures < len(STARTUP_MONITOR_RETRY_DELAYS_MS):
+                    delay = STARTUP_MONITOR_RETRY_DELAYS_MS[self.startup_scan_failures]
+                    self.startup_scan_failures += 1
+                    self.startup_scan_timer.start(delay)
+                    self.log.event("monitor_scan_retry", attempt=self.startup_scan_failures,
+                                   delay_seconds=delay / 1000, error=str(result))
+                    self.show_action_result(f"Twinkle Tray 모니터 목록 준비 중 · {delay // 1000}초 후 다시 검색합니다.")
+                else:
+                    self.fail(str(result))
+                return
+            self.startup_scan_timer.stop()
+            self.startup_scan_failures = 0
             exe, self.backend, monitors = result
             self.path.setText(str(exe))
             selected = self.monitors.currentData() or self.settings.monitor_id
@@ -1078,6 +1112,7 @@ class MainWindow(QMainWindow):
         self.services_stopped = True
         self.countdown_overlay.close()
         self.timer.stop()
+        self.startup_scan_timer.stop()
         self.sim_timer.stop()
         if self.serial_worker:
             self.serial_worker.stop()

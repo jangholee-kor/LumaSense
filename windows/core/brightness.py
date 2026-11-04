@@ -19,6 +19,10 @@ class Monitor:
     kind: str
 
 
+class MonitorListUnavailable(ValueError):
+    """Twinkle Tray returned no monitor entries."""
+
+
 class BrightnessBackend(Protocol):
     def monitors(self) -> list[Monitor]: ...
     def set_brightness(self, identifier: str, percent: int) -> dict: ...
@@ -55,7 +59,7 @@ def parse_monitors(output: str) -> list[Monitor]:
             brightness = None
         monitors.append(Monitor(identifier, values.get("Name", identifier).strip(), brightness, values.get("Type", "unknown").strip()))
     if not monitors:
-        raise ValueError("Twinkle Tray --List에서 모니터를 읽지 못했습니다. 앱 실행 상태와 원본 로그를 확인하세요.")
+        raise MonitorListUnavailable("Twinkle Tray --List에서 모니터를 읽지 못했습니다. 앱 실행 상태와 원본 로그를 확인하세요.")
     return monitors
 
 
