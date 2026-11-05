@@ -8,6 +8,7 @@ from windows.core.settings import Settings
 from windows.ui.brightness_profiles import BrightnessProfileEditor
 from windows.ui.lux import LuxSpinBox, LuxDelegate, format_lux
 from windows.ui.simple_settings import SimpleSettingsPage
+from windows.ui.countdown_settings import CountdownSettingsPage
 
 
 class AutomationPanel(QWidget):
@@ -356,6 +357,8 @@ class AutomationPanel(QWidget):
         self.tabs.addTab(system_scroll, "시스템 / 센서")
         self.simple_page = SimpleSettingsPage(self)
         self.tabs.insertTab(0, self.simple_page, "간편 설정")
+        self.countdown_page = CountdownSettingsPage(settings, self.apply_requested)
+        self.tabs.addTab(self.countdown_page, "카운트다운 표시")
         self.advanced_pages = (controls_scroll, curve_scroll)
         self.dashboard = dashboard
         self.set_ui_mode(settings.ui_mode)
@@ -446,7 +449,7 @@ class AutomationPanel(QWidget):
         return self.port.currentText().strip()
 
     def collect(self, base):
-        result = Settings(**asdict(base))
+        result = self.countdown_page.collect(Settings(**asdict(base)))
         result.ui_mode = self.ui_mode
         result.serial_port = self.selected_port()
         result.serial_number = self.serial_number.text().strip()

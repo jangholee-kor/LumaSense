@@ -1,10 +1,12 @@
 import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from types import SimpleNamespace
+from dataclasses import replace
 import pytest
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtWidgets import QApplication, QPushButton
 from windows.core.display_controller import State
+from windows.core.settings import Settings
 from windows.ui.countdown_overlay import CountdownOverlay, countdown_seconds, overlay_geometry
 
 
@@ -73,8 +75,74 @@ def test_top_level_non_activating_overlay_displays_sequence_without_buttons():
             overlay.set_seconds(seconds)
             app.processEvents()
             assert overlay.isVisible() and overlay.number.text() == str(seconds)
-            assert overlay.geometry() == overlay_geometry(app.primaryScreen().geometry())
+            assert overlay.geometry() == overlay_geometry(app.primaryScreen().availableGeometry())
         overlay.set_seconds(None)
         assert not overlay.isVisible()
     finally:
         overlay.close()
+
+
+@pytest.mark.parametrize("style", ["large", "compact", "minimal"])
+@pytest.mark.parametrize("scale", [50, 100, 150])
+@pytest.mark.parametrize("position", ["center", "top_left", "top_right", "bottom_left", "bottom_right"])
+def test_styles_scale_and_anchor_fit_work_area(style, scale, position):
+    for screen in (QRect(-1920, 30, 1920, 1010), QRect(1080, -1920, 1080, 1880), QRect(0, 0, 320, 240)):
+        rect = overlay_geometry(screen, style, scale, position)
+        assert screen.contains(rect)
+        if position == "center":
+            assert abs(rect.center().x() - screen.center().x()) <= 1
+            assert abs(rect.center().y() - screen.center().y()) <= 1
+        else:
+            assert (rect.left() == screen.left() + 24 if position.endswith("left")
+                    else rect.right() == screen.right() - 24)
+            assert (rect.top() == screen.top() + 24 if position.startswith("top")
+                    else rect.bottom() == screen.bottom() - 24)
+
+
+def test_visible_overlay_resizes_and_disables_without_restarting_countdown():
+    app = QApplication.instance() or QApplication([])
+    settings = Settings()
+    overlay = CountdownOverlay(settings)
+    try:
+        overlay.set_seconds(3)
+        app.processEvents()
+        for style in ("minimal", "compact", "large", "minimal"):
+            settings = replace(settings, countdown_style=style, countdown_scale=50, countdown_position="bottom_right")
+            overlay.set_settings(settings)
+            app.processEvents()
+            assert overlay.geometry() == overlay_geometry(app.primaryScreen().availableGeometry(), style, 50, "bottom_right")
+            assert overlay.seconds == 3 and overlay.isVisible()
+            assert overlay.caption.isHidden() == (style == "minimal")
+        overlay.set_settings(replace(settings, countdown_enabled=False))
+        overlay.set_seconds(2)
+        assert not overlay.isVisible()
+        overlay.set_settings(replace(settings, countdown_enabled=True, countdown_show_hint=False, countdown_opacity=35))
+        overlay.set_seconds(1)
+        assert overlay.isVisible() and overlay.hint.isHidden()
+        assert overlay.windowOpacity() == pytest.approx(.35, abs=.005)
+    finally:
+        overlay.close()
+
+
+def test_countdown_settings_load_legacy_and_roundtrip_in_both_modes(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text('{"absence_seconds": 17}', encoding="utf-8")
+    settings = Settings.load(path)
+    assert settings.countdown_enabled and settings.countdown_style == "large"
+    for mode in ("simple", "advanced"):
+        expected = replace(settings, ui_mode=mode, countdown_enabled=False, countdown_style="minimal",
+                           countdown_scale=50, countdown_position="bottom_right", countdown_opacity=35,
+                           countdown_show_hint=False)
+        expected.save(path)
+        loaded = Settings.load(path)
+        assert loaded == expected
+        assert loaded.for_control().countdown_enabled is False
+        assert loaded.for_control().countdown_style == "minimal"
+
+
+@pytest.mark.parametrize("field,value", [("countdown_enabled", 0), ("countdown_show_hint", "false"),
+    ("countdown_style", "invalid"), ("countdown_position", "invalid"), ("countdown_scale", True),
+    ("countdown_scale", 49), ("countdown_scale", 151), ("countdown_opacity", 34), ("countdown_opacity", 101)])
+def test_invalid_countdown_settings_rejected(field, value):
+    with pytest.raises(ValueError):
+        replace(Settings(), **{field: value}).validate()

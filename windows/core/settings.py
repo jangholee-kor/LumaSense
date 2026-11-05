@@ -9,6 +9,12 @@ from .brightness_profiles import default_brightness_profiles, validate_profiles
 @dataclass
 class Settings:
     ui_mode: str = "advanced"
+    countdown_enabled: bool = True
+    countdown_style: str = "large"
+    countdown_scale: int = 100
+    countdown_position: str = "center"
+    countdown_opacity: int = 95
+    countdown_show_hint: bool = True
     twinkle_path: str = ""
     monitor_id: str = ""
     wake_method: str = "monitor_power"
@@ -78,6 +84,10 @@ class Settings:
         result = self
         if result.ui_mode not in ("simple", "advanced"):
             raise ValueError("일반모드 또는 고급모드를 선택하세요.")
+        if self.countdown_style not in ("large", "compact", "minimal"):
+            raise ValueError("카운트다운 UI를 선택하세요.")
+        if self.countdown_position not in ("center", "top_left", "top_right", "bottom_left", "bottom_right"):
+            raise ValueError("카운트다운 표시 위치를 선택하세요.")
         if result.wake_method not in ("monitor_power", "execution_state", "mouse_move"):
             raise ValueError("지원하지 않는 복귀 방식")
         if type(result.recovery_seconds) is not int or not 5 <= result.recovery_seconds <= 30:
@@ -101,10 +111,12 @@ class Settings:
                 (len(self.tcp_token) != 64 or any(c not in "0123456789abcdef" for c in self.tcp_token))):
             raise ValueError("무선 장치 키는 64자리 16진수 필요")
         for name in ("connect_on_start", "auto_brightness", "auto_presence", "use_recent_input", "start_minimized", "login_startup",
-                     "radar_engineering", "radar_apply_range", "radar_apply_thresholds"):
+                     "radar_engineering", "radar_apply_range", "radar_apply_thresholds",
+                     "countdown_enabled", "countdown_show_hint"):
             if type(getattr(self, name)) is not bool:
                 raise ValueError(f"잘못된 {name}")
         ranges = {"brightness_min": (0, 100), "brightness_max": (0, 100), "brightness_deadband": (1, 20),
+                  "countdown_scale": (50, 150), "countdown_opacity": (35, 100),
                   "light_on_brightness": (0, 100), "light_off_brightness": (0, 100),
                   "manual_pause_seconds": (0, 86400), "absence_seconds": (1, 3600),
                   "recent_input_seconds": (1, 3600), "max_distance_cm": (1, 900),

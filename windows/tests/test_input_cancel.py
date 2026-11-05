@@ -29,8 +29,10 @@ def step(model, now, t):
 
 
 @pytest.mark.parametrize("mode", ["simple", "advanced"])
-def test_input_cancels_countdown_without_fifteen_minute_pause_and_restarts_absence(tmp_path, mode):
+@pytest.mark.parametrize("display_enabled", [True, False])
+def test_input_cancels_countdown_without_fifteen_minute_pause_and_restarts_absence(tmp_path, mode, display_enabled):
     model, now, token, calls = make(tmp_path, mode)
+    model.settings.countdown_enabled = display_enabled
     # Advanced mode has one second ToF dwell, so wait until its countdown begins.
     t = 0
     while model.presence.countdown_until is None:

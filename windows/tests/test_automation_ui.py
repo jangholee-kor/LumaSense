@@ -459,7 +459,8 @@ def test_simple_mode_ignores_hidden_invalid_profile_and_checkbox_disables_immedi
 
 
 @pytest.mark.parametrize("simulation", [True, False])
-def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulated, monkeypatch, simulation):
+@pytest.mark.parametrize("display_enabled", [True, False])
+def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulated, monkeypatch, simulation, display_enabled):
     from unittest.mock import Mock
     from PySide6.QtWidgets import QSystemTrayIcon
     from windows.tests.test_tof import packet
@@ -468,6 +469,7 @@ def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulate
     view.ui_mode.setCurrentIndex(view.ui_mode.findData("simple"))
     view.auto_panel.simple_page.auto_presence.setChecked(True)
     view.auto_panel.simple_page.fields["absence_seconds"].setValue(5)
+    view.auto_panel.countdown_page.enabled.setChecked(display_enabled)
     view.apply_automation_settings()
     view.sim_timer.stop()
     view.simulation = simulation
@@ -485,7 +487,9 @@ def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulate
     assert "거리 미측정 · 부재 판정" in view.auto_panel.labels["distance"].text()
     assert "5초 후 화면이 꺼집니다" == view.screen_status.title.text()
     assert view.runtime.sensors.packet["sensor_ok"] is False
-    assert view.countdown_overlay.isVisible() and view.countdown_overlay.number.text() == "5"
+    assert view.countdown_overlay.isVisible() == display_enabled
+    if display_enabled:
+        assert view.countdown_overlay.number.text() == "5"
     assert "입력으로 취소" in view.tray.toolTip()
     notification.assert_not_called()
     assert not view.auto_fault
@@ -524,3 +528,79 @@ def test_manual_overlay_cancels_on_newly_detected_person(simulated):
     view.simulation_packet()
     view.automation_tick()
     assert view.controller.state == State.IDLE and not view.countdown_overlay.isVisible()
+
+
+@pytest.mark.parametrize("mode", ["simple", "advanced"])
+def test_countdown_appearance_applies_persists_and_hidden_manual_countdown_still_cancels(simulated, mode):
+    from windows.core.display_controller import State
+    view = simulated
+    view.ui_mode.setCurrentIndex(view.ui_mode.findData(mode))
+    page = view.auto_panel.countdown_page
+    assert view.auto_panel.tabs.isTabVisible(view.auto_panel.tabs.indexOf(page))
+    page.enabled.setChecked(False)
+    page.style.setCurrentIndex(page.style.findData("minimal"))
+    page.scale.setValue(65)
+    page.position.setCurrentIndex(page.position.findData("bottom_right"))
+    page.opacity.setValue(60)
+    page.show_hint.setChecked(False)
+    assert view.settings.countdown_enabled  # Editing does not change the live overlay.
+    view.apply_automation_settings()
+    saved = Settings.load(view.log.root / "settings.json")
+    assert not saved.countdown_enabled and saved.countdown_style == "minimal"
+    assert (saved.countdown_scale, saved.countdown_position, saved.countdown_opacity) == (65, "bottom_right", 60)
+    assert not saved.countdown_show_hint
+    token = [100]
+    view.runtime.input_token_provider = lambda: token[0]
+    view.start_sleep()
+    assert view.controller.state == State.COUNTDOWN and not view.countdown_overlay.isVisible()
+    assert 4 < view.controller.deadline - view.controller.clock() <= 5
+    token[0] += 1
+    view.automation_tick()
+    assert view.controller.state == State.IDLE
+    assert not view.countdown_overlay.isVisible()
+
+
+def test_preview_uses_draft_options_without_power_or_settings_changes(app, simulated, monkeypatch):
+    from unittest.mock import Mock
+    from windows.core.display_controller import State
+    import windows.ui.countdown_settings as countdown_settings
+    view = simulated
+    page = view.auto_panel.countdown_page
+    off = Mock()
+    monkeypatch.setattr(view.controller.power, "off", off)
+    view.auto_panel.tabs.setCurrentWidget(page)
+    page.start_preview()
+    assert page.preview.isVisible() and page.preview.number.text() == "5"
+    page.style.setCurrentIndex(page.style.findData("minimal"))
+    page.scale.setValue(50)
+    page.position.setCurrentIndex(page.position.findData("top_right"))
+    assert page.preview.width() == 56
+    assert view.settings.countdown_style == "large"
+    assert view.controller.state == State.IDLE and view.runtime.presence.countdown_until is None
+    monkeypatch.setattr(countdown_settings.time, "monotonic", lambda: page.preview_deadline + .01)
+    page.update_preview()
+    assert not page.preview.isVisible() and not page.preview_timer.isActive()
+    off.assert_not_called()
+
+
+def test_preview_closes_on_disable_tab_change_real_countdown_and_shutdown(app, simulated):
+    view = simulated
+    page = view.auto_panel.countdown_page
+    view.show()
+    view.auto_panel.tabs.setCurrentWidget(page)
+    app.processEvents()
+    page.start_preview()
+    page.enabled.setChecked(False)
+    assert not page.preview.isVisible() and not page.preview_timer.isActive()
+    page.enabled.setChecked(True)
+    page.start_preview()
+    view.auto_panel.tabs.setCurrentWidget(view.auto_panel.dashboard)
+    assert not page.preview.isVisible() and not page.preview_timer.isActive()
+    view.auto_panel.tabs.setCurrentWidget(page)
+    page.start_preview()
+    view.start_sleep()
+    assert not page.preview.isVisible() and view.countdown_overlay.isVisible()
+    view.cancel_sleep()
+    page.start_preview()
+    view.stop_services()
+    assert not page.preview.isVisible() and not page.preview_timer.isActive()

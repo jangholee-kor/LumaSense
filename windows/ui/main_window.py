@@ -266,7 +266,7 @@ class MainWindow(QMainWindow):
         root_layout = QVBoxLayout(root)
         root_layout.setContentsMargins(0, 0, 0, 0)
         self.screen_status = ScreenStatusBanner()
-        self.countdown_overlay = CountdownOverlay()
+        self.countdown_overlay = CountdownOverlay(settings)
         self.screen_status.resume_requested.connect(self.resume_automation)
         root_layout.addWidget(self.screen_status)
         mode_row = QHBoxLayout()
@@ -558,6 +558,7 @@ class MainWindow(QMainWindow):
             snap = self.runtime.sensors.snapshot(time.monotonic())
             self.manual_absent_seen = not (snap.valid and snap.packet and snap.packet.get("presence"))
             self.controller.start()
+            self.auto_panel.countdown_page.stop_preview()
             self.countdown_overlay.set_seconds(5)
             self.cancel_button.setEnabled(True)
             self.sleep_button.setEnabled(False)
@@ -919,6 +920,8 @@ class MainWindow(QMainWindow):
             active = bool(self.serial_worker and self.serial_worker.thread and self.serial_worker.thread.is_alive())
             self.settings = candidate
             self.runtime.apply_settings(candidate)
+            self.auto_panel.countdown_page.stop_preview()
+            self.countdown_overlay.set_settings(candidate)
             self.countdown_overlay.set_seconds(None)
             self.runtime.external_block = self.controller.state != State.IDLE
             self.runtime.set_monitor(candidate.monitor_id,
@@ -1103,7 +1106,10 @@ class MainWindow(QMainWindow):
             self.auto_panel.simple_page.live.setText(
                 f"현재 조도 {format_lux(packet.get('lux'))} lux · {distance_text}{previous}")
             self.screen_status.update_status(self.runtime, now, self.controller)
-            self.countdown_overlay.set_seconds(countdown_seconds(self.runtime, now, self.controller))
+            seconds = countdown_seconds(self.runtime, now, self.controller)
+            if seconds is not None:
+                self.auto_panel.countdown_page.stop_preview()
+            self.countdown_overlay.set_seconds(seconds)
         except Exception as error:
             self.countdown_overlay.set_seconds(None)
             self.auto_fault = True
@@ -1114,6 +1120,7 @@ class MainWindow(QMainWindow):
         if self.services_stopped:
             return
         self.services_stopped = True
+        self.auto_panel.countdown_page.stop_preview()
         self.countdown_overlay.close()
         self.timer.stop()
         self.startup_scan_timer.stop()
