@@ -109,7 +109,6 @@ class MainWindow(QMainWindow):
         self.sim_recorder = SensorRecorder(diagnostics.root) if simulation else None
         self.services_stopped = False
         self.auto_fault = False
-        self.notified_countdown = None
         self.sim_started = time.monotonic()
         self.sim_timer = QTimer(self)
         self.sim_timer.setInterval(200)
@@ -339,7 +338,6 @@ class MainWindow(QMainWindow):
             menu.addAction(action)
         self.tray.setContextMenu(menu)
         self.tray.activated.connect(lambda reason: self.show_main_window() if reason == QSystemTrayIcon.ActivationReason.DoubleClick else None)
-        self.tray.messageClicked.connect(self.pause_automation)
         if QSystemTrayIcon.isSystemTrayAvailable():
             self.tray.show()
         self.timer = QTimer(self)
@@ -1082,12 +1080,7 @@ class MainWindow(QMainWindow):
             state = self.runtime.presence
             countdown = f" · 절전까지 {max(0, math.ceil(state.countdown_until - now))}초" if state.countdown_until is not None and not state.owns_off else ""
             if countdown:
-                self.tray.setToolTip(f"LumaSense{countdown} · 알림을 누르면 취소")
-                if self.notified_countdown != state.countdown_until:
-                    self.notified_countdown = state.countdown_until
-                    if not self.simulation:
-                        self.tray.showMessage("5초 후 화면 절전", "이 알림을 누르면 자동 제어를 15분 중단하고 절전을 취소합니다.",
-                                              QSystemTrayIcon.MessageIcon.Information, 5000)
+                self.tray.setToolTip(f"LumaSense{countdown} · 키보드·마우스 입력으로 취소")
             else:
                 self.tray.setToolTip("Smart Monitor Controller" + (" · 시뮬레이션" if self.simulation else ""))
             labels["power"].setText(f"{state.state.value} · {state.status_text(now)}{countdown}")

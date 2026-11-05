@@ -430,7 +430,10 @@ def test_simple_mode_ignores_hidden_invalid_profile_and_checkbox_disables_immedi
     assert not view.settings.auto_presence and not view.runtime.settings.auto_presence
 
 
-def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulated):
+@pytest.mark.parametrize("simulation", [True, False])
+def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulated, monkeypatch, simulation):
+    from unittest.mock import Mock
+    from PySide6.QtWidgets import QSystemTrayIcon
     from windows.tests.test_tof import packet
     from windows.tests.test_tof_no_target import missing
     view = simulated
@@ -439,6 +442,10 @@ def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulate
     view.auto_panel.simple_page.fields["absence_seconds"].setValue(5)
     view.apply_automation_settings()
     view.sim_timer.stop()
+    view.simulation = simulation
+    view.session = SimpleNamespace(input_age=lambda: 1000, locked=lambda: False)
+    notification = Mock()
+    monkeypatch.setattr(QSystemTrayIcon, "showMessage", notification)
     view.runtime.sensors.invalidate("test", new_session=True)
     base = time.monotonic() - 11
     for i in range(12):
@@ -451,6 +458,9 @@ def test_live_no_target_display_uses_absence_countdown_not_sensor_error(simulate
     assert "5초 후 화면이 꺼집니다" == view.screen_status.title.text()
     assert view.runtime.sensors.packet["sensor_ok"] is False
     assert view.countdown_overlay.isVisible() and view.countdown_overlay.number.text() == "5"
+    assert "입력으로 취소" in view.tray.toolTip()
+    notification.assert_not_called()
+    assert not view.auto_fault
     view.runtime.sensor_status({"connected": False, "message": "test disconnect"})
     view.automation_tick()
     assert not view.countdown_overlay.isVisible()
