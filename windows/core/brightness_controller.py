@@ -32,9 +32,16 @@ class BrightnessController:
 
     def invalidate_observation(self):
         """Discard pending threshold dwell across missing/invalid sensor observations."""
+        self.light_candidate = self.light_on = None
+        self.target = self.filtered_lux = None
         if self.steps:
             self.steps.reset()
-            self.target = self.filtered_lux = None
+
+    @property
+    def settled(self):
+        if self.settings.brightness_mode == "two_level":
+            return self.light_on is not None and self.light_on == self.light_candidate
+        return self.steps is None or self.steps.candidate is None
 
     def seed(self, brightness, now):
         if brightness is None or not 0 <= brightness <= 100:

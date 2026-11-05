@@ -15,9 +15,11 @@ class SimulatedBackend:
         self.value = 40
     def monitors(self):
         return [Monitor("SIMULATED-DISPLAY", "가상 모니터", self.value, "ddcci")]
-    def set_brightness(self, identifier, percent):
+    def set_brightness(self, identifier, percent, *, before_send=None):
         if identifier != "SIMULATED-DISPLAY" or type(percent) is not int or not 0 <= percent <= 100:
             raise ValueError("잘못된 시뮬레이션 밝기 요청")
+        if before_send is not None:
+            before_send()
         self.value = percent
         return self.log.event("simulated_brightness", monitor_id=identifier, percent=percent, simulated=True)
 

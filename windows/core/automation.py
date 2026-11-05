@@ -4,6 +4,8 @@ import time
 import uuid
 
 from .brightness_controller import BrightnessController
+from .brightness import BrightnessCancelled
+from .brightness_feedback import BrightnessFeedback
 from .lease_guard import LeaseGuard
 from .presence_controller import PresenceController
 from .sensor_manager import SensorManager
@@ -40,6 +42,10 @@ class AutomationRuntime:
         self.last_action = "없음"
         self.last_state = None
         self.brightness_retry = 0.0
+        self.brightness_feedback = BrightnessFeedback()
+        self.feedback_key = None
+        self.brightness_revision = 0
+        self.force_brightness = False
 
     @staticmethod
     def _tof_presence(settings):
@@ -51,9 +57,16 @@ class AutomationRuntime:
             with self.lock:
                 self.sensors.invalidate(value.get("message", "연결 종료"), new_session=True)
                 self.brightness.invalidate_observation()
+                self.brightness_revision += 1
+
+    def _brightness_state(self):
+        steps = self.brightness.steps
+        return (self.brightness.target, self.brightness.light_candidate,
+                steps.candidate if steps else None, self.sensors.generation)
 
     def ingest(self, event):
         with self.lock:
+            previous = self._brightness_state()
             if event.get("new_session"):
                 self.sensors.invalidate("새 연결", new_session=True)
                 self.brightness.invalidate_observation()
@@ -66,6 +79,43 @@ class AutomationRuntime:
                 self.brightness.invalidate_observation()
             if event["packet"]["light_ok"]:
                 self.brightness.observe(event["packet"]["lux"], self.clock())
+            if self._brightness_state() != previous:
+                self.brightness_revision += 1
+
+    def _sync_feedback(self):
+        key = (self.epoch, self.monitor_id, self.sensors.generation, self.brightness.target)
+        if key != self.feedback_key:
+            self.brightness_feedback = BrightnessFeedback()
+            self.feedback_key = key
+
+    def _brightness_context(self, now):
+        snap = self.sensors.snapshot(now)
+        packet = snap.packet or {}
+        return {"lux": packet.get("lux"), "sensor_seq": packet.get("seq"),
+                "sensor_received_at": snap.received_at, "sensor_generation": snap.generation,
+                "filtered_lux": self.brightness.filtered_lux, "light_on": self.brightness.light_on,
+                "light_candidate": self.brightness.light_candidate,
+                "threshold_lux": self.settings.light_threshold_lux,
+                "target": self.brightness.target, "requested": self.brightness.requested,
+                "mode": self.settings.brightness_mode, "decision_at": now}
+
+    def _current_brightness_action(self, action):
+        return (action["epoch"] == self.epoch and action["monitor_id"] == self.monitor_id
+                and action["revision"] == self.brightness_revision
+                and action["sensor_generation"] == self.sensors.generation)
+
+    def _check_brightness_action(self, action, *, stage="execution"):
+        with self.lock:
+            now = self.clock()
+            if (not self._current_brightness_action(action) or not self.settings.auto_brightness
+                    or self.external_block or now < self.pause_until or now < self.brightness.pause_until
+                    or not self.sensors.ready(now) or not self.brightness.settled
+                    or self.presence.owns_off or self.presence.pending in ("off", "wake") or self.locked_provider()):
+                raise BrightnessCancelled("밝기 요청 취소: 최신 조도 또는 제어 조건 변경")
+            self.log.event("brightness_execution", action_id=action["id"], kind=action["kind"],
+                           stage=stage,
+                           percent=action["percent"], retry=action.get("retry", False),
+                           **self._brightness_context(now))
 
     def set_monitor(self, identifier, reported=None):
         with self.lock:
@@ -84,6 +134,7 @@ class AutomationRuntime:
     def resume(self):
         with self.lock:
             self.pause_until = 0
+            self.feedback_key = None
             self.brightness.resume(self.clock())
             self.presence.cancel(self.clock())
 
@@ -173,13 +224,38 @@ class AutomationRuntime:
                     self.guard.pulse()
                     self.last_pulse = now
             if (self.settings.auto_brightness and ready and not paused and not locked and backend_ready and self.monitor_id
-                    and not self.presence.owns_off and self.presence.pending != "off"
+                    and not self.presence.owns_off and self.presence.pending not in ("off", "wake")
+                    and now >= self.brightness.pause_until
+                    and self.brightness.settled
                     and not self.brightness_pending and now >= self.brightness_retry):
-                value = self.brightness.propose(now)
+                self._sync_feedback()
+                feedback = self.brightness_feedback
+                value, kind, retry = None, "brightness", False
+                if not feedback.exhausted:
+                    if feedback.retry_pending:
+                        if now >= feedback.due:
+                            proposed = self.brightness.propose(now)
+                            value, retry = proposed if proposed is not None else feedback.expected, True
+                    else:
+                        value = self.brightness.propose(now)
+                        if self.force_brightness:
+                            value = self.brightness.target
+                        if value is None:
+                            if feedback.expected is None and self.brightness.requested is not None:
+                                feedback.written(self.brightness.requested, now)
+                                feedback.status = "기존 요청값 재확인 대기"
+                            if now >= feedback.due:
+                                value, kind = feedback.expected, "brightness_verify"
+                if kind == "brightness" and now - self.brightness.last_sent < self.settings.brightness_interval:
+                    value = None
                 if value is not None:
                     self.brightness_pending = True
-                    actions.append({"kind": "brightness", "percent": value, "monitor_id": self.monitor_id,
-                                    "epoch": self.epoch, "id": uuid.uuid4().hex})
+                    action = {"kind": kind, "percent": value, "monitor_id": self.monitor_id,
+                              "epoch": self.epoch, "revision": self.brightness_revision,
+                              "sensor_generation": self.sensors.generation,
+                              "retry": retry, "id": uuid.uuid4().hex}
+                    actions.append(action)
+                    self.log.event("brightness_decision", action=action, **self._brightness_context(now))
             state = (self.presence.state.value, self.presence.reason)
             if state != self.last_state:
                 self.log.event("presence_state", state=state[0], reason=state[1],
@@ -204,6 +280,7 @@ class AutomationRuntime:
         error = ""
         cancelled = False
         guard = None
+        retry_feedback = None
         try:
             with self.lock:
                 now = self.clock()
@@ -211,11 +288,11 @@ class AutomationRuntime:
                     if (action.get("countdown_until", self.presence.countdown_until) != self.presence.countdown_until
                             or not self._safe_off(now, self.input_provider(), self.locked_provider(), require_countdown=True)):
                         raise OffCancelled("입력·감지 변경으로 화면 꺼짐 취소")
-                elif kind == "brightness":
-                    if (action["epoch"] != self.epoch or not self.settings.auto_brightness or self.external_block
-                            or now < self.pause_until or now < self.brightness.pause_until or not self.sensors.ready(now)
-                            or self.presence.owns_off or self.locked_provider()):
-                        raise RuntimeError("밝기 요청 취소: 제어 조건 변경")
+                elif kind in ("brightness", "brightness_verify"):
+                    self._check_brightness_action(action)
+                    if action.get("retry"):
+                        retry_feedback = self.brightness_feedback
+                        retry_feedback.retries += 1
             if kind == "off":
                 guard = self.guard_factory(self.log.root, self.settings.production_wake_method, self.settings.allow_mouse)
                 guard.arm()
@@ -234,11 +311,23 @@ class AutomationRuntime:
                 if self.guard:
                     self.guard.release()
                     self.guard = None
+            elif kind == "brightness_verify":
+                if backend is None:
+                    raise RuntimeError("밝기 백엔드 없음")
+                matches = [m for m in backend.monitors() if m.identifier == action["monitor_id"]]
+                if len(matches) != 1 or matches[0].kind.lower() not in ("ddcci", "wmi"):
+                    raise ValueError("대상 모니터 보고값을 확인할 수 없습니다.")
+                result = {"reported": matches[0].brightness, "physical_result": "unverified"}
+                self._check_brightness_action(action, stage="after_read")
             else:
                 if backend is None:
                     raise RuntimeError("밝기 백엔드 없음")
-                result = backend.set_brightness(action["monitor_id"], action["percent"])
+                result = backend.set_brightness(action["monitor_id"], action["percent"],
+                                               before_send=lambda: self._check_brightness_action(action, stage="before_send"))
             success = True
+        except BrightnessCancelled as exception:
+            cancelled = True
+            error = str(exception)
         except OffCancelled as exception:
             cancelled = True
             error = str(exception)
@@ -252,18 +341,35 @@ class AutomationRuntime:
         except Exception as exception:
             error = str(exception)
         with self.lock:
-            if kind == "brightness":
+            if kind in ("brightness", "brightness_verify"):
                 self.brightness_pending = False
-                if success and action["epoch"] == self.epoch:
-                    self.brightness.sent(action["percent"], self.clock())
-                elif not success:
-                    self.brightness_retry = self.clock() + 5
+                if cancelled and retry_feedback is not None:
+                    retry_feedback.retries -= 1
+                if not cancelled and self._current_brightness_action(action):
+                    feedback = self.brightness_feedback
+                    if kind == "brightness_verify":
+                        reported = result.get("reported") if success else None
+                        feedback.checked(reported, self.clock(), error)
+                        self.log.event("brightness_verification", action_id=action["id"],
+                                       expected=action["percent"], reported=reported,
+                                       retries=feedback.retries, status=feedback.status, error=error,
+                                       **self._brightness_context(self.clock()), physical_result="unverified")
+                    elif success:
+                        self.brightness.sent(action["percent"], self.clock())
+                        feedback.written(action["percent"], self.clock())
+                        self.force_brightness = False
+                    else:
+                        feedback.failed(action["percent"], self.clock(), error)
             elif cancelled:
                 self.presence.pending = None
                 self.observe_input(self.clock())
                 self.presence.cancel(self.clock())
             else:
                 self.presence.completed(kind, success, self.clock())
+                if kind == "wake" and success:
+                    self.force_brightness = True
+                    self.feedback_key = None
+                    self.brightness_retry = self.clock() + 2
             self.last_action = f"{kind}: {'요청 접수' if success else error}"
             return self.log.event("automation_result", action=action, ok=success, result=result, error=error,
                                   cancelled=cancelled,

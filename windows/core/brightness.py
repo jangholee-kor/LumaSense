@@ -23,9 +23,13 @@ class MonitorListUnavailable(ValueError):
     """Twinkle Tray returned no monitor entries."""
 
 
+class BrightnessCancelled(RuntimeError):
+    """The latest control conditions no longer permit this write."""
+
+
 class BrightnessBackend(Protocol):
     def monitors(self) -> list[Monitor]: ...
-    def set_brightness(self, identifier: str, percent: int) -> dict: ...
+    def set_brightness(self, identifier: str, percent: int, *, before_send=None) -> dict: ...
 
 
 def discover_twinkle(configured: str = "") -> Path | None:
@@ -92,7 +96,7 @@ class TwinkleTrayBackend:
                 time.sleep(0.25)
         return parse_monitors(output)
 
-    def set_brightness(self, identifier, percent):
+    def set_brightness(self, identifier, percent, *, before_send=None):
         if type(percent) is not int or not 0 <= percent <= 100:
             raise ValueError("밝기는 0~100 정수")
         matches = [m for m in self.monitors() if m.identifier == identifier]
@@ -101,6 +105,9 @@ class TwinkleTrayBackend:
         # Twinkle Tray accepts partial IDs: reject ambiguous substring matches.
         if sum(identifier.lower() in m.identifier.lower() for m in self.monitors()) != 1:
             raise ValueError("모호한 모니터 ID")
+        # Inventory reads can take seconds; recheck after them, just before Set.
+        if before_send is not None:
+            before_send()
         output = self.command(f"--MonitorID={identifier}", f"--Set={percent}")
         if not re.search(r"(?m)^\s*OK\s*$", output):
             raise RuntimeError("Twinkle Tray가 OK를 반환하지 않았습니다. 로그를 확인하세요.")

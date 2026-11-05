@@ -6,11 +6,11 @@ import time
 import uuid
 from datetime import datetime, timezone
 from logging import Logger
-from logging.handlers import RotatingFileHandler
 
 import serial
 
 from .sensor_protocol import JsonLines, ports, select_port, validate_telemetry
+from .log_handler import ReportingRotatingFileHandler
 
 
 class SerialManager:
@@ -33,7 +33,8 @@ class SerialManager:
         self.thread = None
         self.sensor_log = Logger(f"sensor.{id(self)}")
         self.sensor_log.setLevel(20)
-        self.handler = RotatingFileHandler(self.log.root / "sensor.jsonl", maxBytes=4_000_000, backupCount=5, encoding="utf-8")
+        self.handler = ReportingRotatingFileHandler(self.log.root / "sensor.jsonl", maxBytes=4_000_000, backupCount=5,
+                                                   encoding="utf-8", on_error=self.log.storage_error)
         self.sensor_log.addHandler(self.handler)
 
     def _status(self, state, message):

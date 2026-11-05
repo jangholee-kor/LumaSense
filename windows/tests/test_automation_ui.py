@@ -96,6 +96,34 @@ def test_simulation_never_launches_live_backend(simulated, monkeypatch):
     assert "시뮬레이션" in view.auto_panel.radar_result.text()
 
 
+def test_brightness_verification_uses_worker_and_displays_mismatch(app, simulated, monkeypatch):
+    import threading
+    view = simulated
+    view.timer.stop()
+    view.sim_timer.stop()
+    assert pump(app, lambda: not view.busy)
+    main_thread = threading.get_ident()
+    threads = []
+    pending = [{"kind": "brightness_verify"}]
+    def tick(*args):
+        result = list(pending)
+        pending.clear()
+        return result
+    def perform(action, backend):
+        threads.append(threading.get_ident())
+        view.runtime.brightness_feedback.reported = 1
+        view.runtime.brightness_feedback.status = "보고값 불일치 · 재시도 종료"
+        return {"ok": True}
+    monkeypatch.setattr(view.runtime, "tick", tick)
+    monkeypatch.setattr(view.runtime, "perform", perform)
+    view.automation_tick()
+    assert pump(app, lambda: bool(threads) and not view.busy)
+    view.automation_tick()
+    assert threads[0] != main_thread
+    for label in (view.auto_panel.labels["brightness_report"], view.auto_panel.simple_page.brightness_status):
+        assert "보고 1%" in label.text() and "재시도 종료" in label.text()
+
+
 def test_gui_simulation_full_auto_off_and_redetection(app, tmp_path):
     log = Diagnostics(tmp_path)
     settings = Settings(auto_brightness=True, auto_presence=True, absence_seconds=5, stabilization_seconds=1)

@@ -95,7 +95,8 @@ class AutomationPanel(QWidget):
         status = QFormLayout(live)
         self.live_form = status
         self.labels = {}
-        for name, caption in (("lux", "조도"), ("lighting", "조도 기준 판정"), ("brightness", "목표 / 요청 밝기"), ("presence", "인체 감지"),
+        for name, caption in (("lux", "조도"), ("lighting", "조도 기준 판정"), ("brightness", "목표 / 요청 밝기"),
+                              ("brightness_report", "밝기 보고값 / 확인 상태"), ("presence", "인체 감지"),
                               ("motion", "움직임 / 정지"), ("distance", "감지 거리"), ("sensor", "센서 유효성"),
                               ("power", "존재 상태 / 화면 요청"), ("last", "마지막 제어")):
             label = QLabel("미확인")

@@ -106,7 +106,7 @@ class MainWindow(QMainWindow):
         self.serial_signals.status.connect(self.sensor_status)
         self.serial_signals.command.connect(self.sensor_command_result)
         self.sim_seq = 0
-        self.sim_recorder = SensorRecorder(diagnostics.root) if simulation else None
+        self.sim_recorder = SensorRecorder(diagnostics.root, diagnostics.storage_error) if simulation else None
         self.services_stopped = False
         self.auto_fault = False
         self.sim_started = time.monotonic()
@@ -1038,7 +1038,7 @@ class MainWindow(QMainWindow):
                 locked = False if self.simulation else self.session.locked()
                 actions = self.runtime.tick(now, age, locked, bool(self.backend and not self.busy))
                 for action in actions:
-                    if action["kind"] == "brightness":
+                    if action["kind"] in ("brightness", "brightness_verify"):
                         backend = self.backend
                         if not self.submit(lambda item=action: self.runtime.perform(item, backend),
                                            lambda result: self.message(f"자동 밝기: {result['ok']}")):
@@ -1066,6 +1066,13 @@ class MainWindow(QMainWindow):
             ready = self.runtime.sensors.ready(now)
             labels["sensor"].setText(f"{snapshot.reason} · {'안정화 완료' if ready else '자동 절전 보류'}")
             labels["brightness"].setText(f"{text(self.runtime.brightness.target)} / {text(self.runtime.brightness.requested)} %")
+            feedback = self.runtime.brightness_feedback
+            feedback_text = f"Twinkle Tray 보고 {text(feedback.reported)}% · {feedback.status}"
+            labels["brightness_report"].setText(feedback_text)
+            self.auto_panel.simple_page.brightness_status.setText(feedback_text)
+            if self.log.storage_error_message:
+                labels["brightness_report"].setText(feedback_text + "\n" + self.log.storage_error_message)
+                self.auto_panel.simple_page.brightness_status.setText(feedback_text + "\n" + self.log.storage_error_message)
             light_on = self.runtime.brightness.light_on
             lighting = "조도 곡선"
             if self.runtime.settings.brightness_mode == "two_level":
